@@ -26,8 +26,8 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-0 md:p-4">
-        <Card className="w-full max-w-2xl mx-auto shadow-lg">
+      <div className="container mx-auto p-4 md:p-6">
+        <Card className="w-full shadow-lg">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">
               ابدأ رحلتك
@@ -92,15 +92,15 @@ export default function DashboardPage() {
 
               {/* Booking Philosophy */}
               <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted p-1">
-                 <Button variant={bookingType === 'carrier' ? 'default' : 'ghost'} onClick={() => setBookingType('carrier')} className={cn("flex-col h-auto", bookingType === 'carrier' && "bg-primary text-primary-foreground")}>
+                 <Button variant={bookingType === 'carrier' ? 'default' : 'ghost'} onClick={() => setBookingType('carrier')} className={cn("flex-col h-auto p-2", bookingType === 'carrier' && "bg-primary text-primary-foreground")}>
                     <User className="w-5 h-5 mb-1" />
                     <span className="text-xs">ناقل محدد</span>
                 </Button>
-                <Button variant={bookingType === 'scheduled' ? 'default' : 'ghost'} onClick={() => setBookingType('scheduled')} className={cn("flex-col h-auto", bookingType === 'scheduled' && "bg-primary text-primary-foreground")}>
+                <Button variant={bookingType === 'scheduled' ? 'default' : 'ghost'} onClick={() => setBookingType('scheduled')} className={cn("flex-col h-auto p-2", bookingType === 'scheduled' && "bg-primary text-primary-foreground")}>
                     <CalendarDays className="w-5 h-5 mb-1" />
                     <span className="text-xs">رحلات مجدولة</span>
                 </Button>
-                 <Button variant={bookingType === 'date' ? 'default' : 'ghost'} onClick={() => setBookingType('date')} className={cn("flex-col h-auto", bookingType === 'date' && "bg-primary text-primary-foreground")}>
+                 <Button variant={bookingType === 'date' ? 'default' : 'ghost'} onClick={() => setBookingType('date')} className={cn("flex-col h-auto p-2", bookingType === 'date' && "bg-primary text-primary-foreground")}>
                     <Calendar className="w-5 h-5 mb-1" />
                     <span className="text-xs">بتاريخ محدد</span>
                 </Button>
