@@ -48,8 +48,8 @@ export default function HistoryPage() {
     <AppLayout>
       <Card>
         <CardHeader>
-          <CardTitle>Trip History</CardTitle>
-          <CardDescription>View your past and current international trips.</CardDescription>
+          <CardTitle>My Bookings</CardTitle>
+          <CardDescription>View and manage your current and past trip bookings.</CardDescription>
         </CardHeader>
         <CardContent>
           {/* For larger screens, use a table */}
@@ -57,7 +57,7 @@ export default function HistoryPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Trip ID</TableHead>
+                  <TableHead>Booking ID</TableHead>
                   <TableHead>Origin</TableHead>
                   <TableHead>Destination</TableHead>
                   <TableHead>Departure Date</TableHead>

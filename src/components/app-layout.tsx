@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  History,
+  Ticket,
   LogOut,
   MapPin,
   Settings,
@@ -39,8 +39,8 @@ const menuItems = [
   },
   {
     href: '/history',
-    label: 'Trip History',
-    icon: History,
+    label: 'My Bookings',
+    icon: Ticket,
   },
   {
     href: '/profile',
