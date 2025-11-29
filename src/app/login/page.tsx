@@ -53,6 +53,7 @@ export default function LoginPage() {
   });
 
   const onSubmit = (data: LoginFormValues) => {
+    if (!auth) return;
     initiateEmailSignIn(auth, data.email, data.password);
     toast({
       title: 'Logging in...',

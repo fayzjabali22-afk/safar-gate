@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import { doc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
@@ -27,7 +27,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/logo';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useFirestore, initiateEmailSignUp, setDocumentNonBlocking } from '@/firebase';
+import { useFirestore, initiateEmailSignUp, setDocumentNonBlocking, useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect } from 'react';
 
@@ -43,7 +43,7 @@ export default function SignupPage() {
   const bgImage = PlaceHolderImages.find(
     (img) => img.id === 'login-background'
   );
-  const auth = getAuth();
+  const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -58,6 +58,7 @@ export default function SignupPage() {
   });
 
   useEffect(() => {
+    if (!auth) return;
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user && form.formState.isSubmitSuccessful && firestore) {
         const [firstName, ...lastNameParts] = form.getValues('fullName').split(' ');
@@ -83,6 +84,7 @@ export default function SignupPage() {
   }, [auth, firestore, form, router, toast]);
 
   const onSubmit = (data: SignupFormValues) => {
+    if (!auth) return;
     initiateEmailSignUp(auth, data.email, data.password);
   };
 
