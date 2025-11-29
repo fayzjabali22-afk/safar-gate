@@ -1,1 +1,5 @@
-// Flows will be imported for their side effects in this file.
+import { config } from 'dotenv';
+config();
+
+import '@/ai/flows/summarize-ride-history.ts';
+import '@/ai/flows/fare-estimate-from-prompt.ts';
