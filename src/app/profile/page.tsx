@@ -22,7 +22,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { useUser } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useDoc, setDocumentNonBlocking } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { useEffect } from 'react';
 
 const profileFormSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters.'),
@@ -36,23 +38,51 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 export default function ProfilePage() {
   const { toast } = useToast();
   const { user } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile, isLoading } = useDoc(userProfileRef);
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
       firstName: '',
       lastName: '',
-      email: user?.email || '',
-      phoneNumber: user?.phoneNumber || ''
+      email: '',
+      phoneNumber: ''
     },
   });
 
+  useEffect(() => {
+    if (userProfile) {
+      form.reset({
+        firstName: userProfile.firstName || '',
+        lastName: userProfile.lastName || '',
+        email: userProfile.email || user?.email || '',
+        phoneNumber: userProfile.phoneNumber || user?.phoneNumber || ''
+      });
+    } else if (user) {
+        form.reset({
+        ...form.getValues(),
+        email: user.email || '',
+        phoneNumber: user.phoneNumber || ''
+        });
+    }
+  }, [userProfile, user, form]);
+  
   function onSubmit(data: ProfileFormValues) {
+    if (!userProfileRef) return;
+    
+    setDocumentNonBlocking(userProfileRef, data, { merge: true });
+
     toast({
       title: 'Profile Updated',
       description: 'Your changes have been saved successfully.',
     });
-    console.log(data);
   }
 
   return (
@@ -71,9 +101,7 @@ export default function ProfilePage() {
                 <Avatar className="h-20 w-20">
                   {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || ''} />}
                   <AvatarFallback>
-                    {user?.displayName
-                      ? user.displayName.split(' ').map((n) => n[0]).join('')
-                      : user?.email?.charAt(0).toUpperCase()}
+                    {userProfile?.firstName ? userProfile.firstName.charAt(0) : user?.email?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <Button variant="outline">Change Photo</Button>
