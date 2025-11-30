@@ -18,7 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Users, Search, ShipWheel, CalendarIcon } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Trip } from '@/lib/data';
 import { TripCard } from '@/components/trip-card';
 import { Calendar } from "@/components/ui/calendar"
@@ -30,7 +30,7 @@ import {
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
-import { collection, query } from 'firebase/firestore';
+import { collection, query, where, Query } from 'firebase/firestore';
 import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
 import { useToast } from '@/hooks/use-toast';
 
@@ -49,14 +49,32 @@ export default function DashboardPage() {
   const [quickBookingDestination, setQuickBookingDestination] = useState('');
   const [quickBookingSeats, setQuickBookingSeats] = useState(1);
 
+  const [activeFilters, setActiveFilters] = useState<{origin?: string; destination?: string}>({});
 
   const tripsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
+
+    const constraints = [];
+    if (activeFilters.origin) {
+      constraints.push(where('origin', '==', activeFilters.origin));
+    }
+    if (activeFilters.destination) {
+      constraints.push(where('destination', '==', activeFilters.destination));
+    }
+    
+    if (constraints.length > 0) {
+        return query(collection(firestore, 'trips'), ...constraints);
+    }
+
     return query(collection(firestore, 'trips'));
-  }, [firestore, user]);
+  }, [firestore, user, activeFilters]);
 
   const { data: upcomingTrips, isLoading } = useCollection<Trip>(tripsQuery);
   
+  const handleSearch = () => {
+    setActiveFilters({ origin: searchOrigin, destination: searchDestination });
+  };
+
   const handleQuickBookingSubmit = () => {
     if (!user || !firestore) {
         toast({
@@ -140,7 +158,7 @@ export default function DashboardPage() {
                       <Select onValueChange={setSearchDestination} value={searchDestination}>
                         <SelectTrigger id="destination-city">
                           <SelectValue placeholder="اختر مدينة الوصول" />
-                        </SelectTrigger>
+                        </Trigger>
                         <SelectContent>
                           <SelectItem value="amman">عمّان</SelectItem>
                           <SelectItem value="damascus">دمشق</SelectItem>
@@ -194,9 +212,9 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Action Button */}
-                  <Button size="lg" className="w-full md:w-auto md:col-start-2 justify-self-end mt-2 bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <Button onClick={handleSearch} size="lg" className="w-full md:w-auto md:col-start-2 justify-self-end mt-2 bg-accent hover:bg-accent/90 text-accent-foreground">
                     <Search className="ml-2 h-5 w-5" />
-                    ابحث عن رحلة
+                    البحث عن ناقل
                   </Button>
                 </div>
               </CardContent>
@@ -215,7 +233,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="text-center text-muted-foreground py-12">
                   <ShipWheel className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                  <p className="text-lg">{user ? 'لا توجد رحلات مجدولة في الوقت الحالي.' : 'يرجى تسجيل الدخول لعرض الرحلات المجدولة.'}</p>
+                  <p className="text-lg">{user ? 'لا توجد رحلات تطابق بحثك.' : 'يرجى تسجيل الدخول لعرض الرحلات المجدولة.'}</p>
                   <p className="text-sm mt-2">{user ? 'جرّب البحث بتاريخ أو وجهة مختلفة.' : 'يمكنك البحث عن رحلة أو نشر طلب حجز.'}</p>
                 </div>
               )}
@@ -264,7 +282,7 @@ export default function DashboardPage() {
                       <Select onValueChange={(val) => setQuickBookingSeats(parseInt(val))} value={String(quickBookingSeats)}>
                         <SelectTrigger id="quick-seats">
                           <SelectValue placeholder="اختر عدد المقاعد" />
-                        </SelectTrigger>
+                        </Trigger>
                         <SelectContent>
                           {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
                             <SelectItem key={num} value={String(num)}>{num}</SelectItem>
