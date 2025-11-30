@@ -15,12 +15,25 @@ export type Trip = {
   destination: string;
   departureDate: string; // ISO 8601 format: 'YYYY-MM-DDTHH:mm:ssZ'
   arrivalDate?: string;
-  status: 'Planned' | 'In-Transit' | 'Completed' | 'Cancelled';
+  status: 'Planned' | 'In-Transit' | 'Completed' | 'Cancelled' | 'Awaiting-Offers';
   cargoDetails: string;
   vehicleType: string;
   vehicleModelYear: number;
   availableSeats: number;
+  passengers?: number;
 };
+
+export type Notification = {
+    id: string;
+    userId: string;
+    title: string;
+    message: string;
+    type: 'new_offer' | 'booking_confirmed' | 'trip_update' | 'payment_reminder';
+    isRead: boolean;
+    createdAt: string; // ISO 8601 format
+    link?: string;
+};
+
 
 export const userProfile: UserProfile = {
   id: 'user123',
