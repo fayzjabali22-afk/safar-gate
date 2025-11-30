@@ -295,15 +295,15 @@ export default function DashboardPage() {
                         >
                           <div className="flex items-center space-x-2 space-x-reverse">
                             <RadioGroupItem value="all" id="r-all" />
-                            <Label htmlFor="r-all">المتوفر</Label>
+                            <Label htmlFor="r-all" className="mr-2">المتوفر</Label>
                           </div>
                           <div className="flex items-center space-x-2 space-x-reverse">
                             <RadioGroupItem value="small" id="r-small" />
-                            <Label htmlFor="r-small">مركبة صغيرة</Label>
+                            <Label htmlFor="r-small" className="mr-2">مركبة صغيرة</Label>
                           </div>
                           <div className="flex items-center space-x-2 space-x-reverse">
                             <RadioGroupItem value="bus" id="r-bus" />
-                            <Label htmlFor="r-bus">حافلة</Label>
+                            <Label htmlFor="r-bus" className="mr-2">حافلة</Label>
                           </div>
                         </RadioGroup>
                       </div>
