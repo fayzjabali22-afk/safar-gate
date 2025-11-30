@@ -68,7 +68,7 @@ export default function DashboardPage() {
   const [searchSeats, setSearchSeats] = useState(1);
   const [searchCarrier, setSearchCarrier] = useState('');
 
-  const [searchMode, setSearchMode] = useState<'specific-carrier' | 'all-carriers' | 'by-rating'>('all-carriers');
+  const [searchMode, setSearchMode] = useState<'specific-carrier' | 'all-carriers'>('all-carriers');
 
   // Quick Booking States
   const [quickBookingOrigin, setQuickBookingOrigin] = useState('');
@@ -182,16 +182,13 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 gap-4">
 
                   {/* Search Philosophy Buttons */}
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                      <Button variant={searchMode === 'specific-carrier' ? 'default' : 'outline'} onClick={() => setSearchMode('specific-carrier')} className="w-full text-xs sm:text-sm">
                         <UserSearch className="ml-2 h-4 w-4" /> ناقل محدد
                      </Button>
                      <Button variant={searchMode === 'all-carriers' ? 'default' : 'outline'} onClick={() => setSearchMode('all-carriers')} className="w-full text-xs sm:text-sm">
                         <Globe className="ml-2 h-4 w-4" /> كل الناقلين
                      </Button>
-                      <Button variant={searchMode === 'by-rating' ? 'default' : 'outline'} onClick={() => setSearchMode('by-rating')} disabled className="w-full text-xs sm:text-sm">
-                        <Star className="ml-2 h-4 w-4" /> بالتقييم
-                      </Button>
                   </div>
                   
                   <div className="border-t border-border/60 my-2"></div>
