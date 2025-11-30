@@ -192,7 +192,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="border-2 border-[#8B0000]">
+                    <Avatar className="border-2 border-maroon-800">
                     {user?.photoURL && (
                         <AvatarImage
                         src={user.photoURL}
@@ -239,7 +239,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="border-2 border-[#8B0000]">
+                    <Avatar className="border-2 border-maroon-800">
                     {user?.photoURL && (
                         <AvatarImage
                         src={user.photoURL}
