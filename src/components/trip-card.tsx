@@ -5,9 +5,9 @@ import type { Trip } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Clock, DollarSign, MapPin, Users, Phone, Car, Tag } from 'lucide-react';
+import { Clock, Users, Car } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LegalDisclaimerDialog } from './legal-disclaimer-dialog';
 
 interface TripCardProps {
@@ -16,11 +16,20 @@ interface TripCardProps {
 
 export function TripCard({ trip }: TripCardProps) {
   const carrierImage = PlaceHolderImages.find((img) => img.id === 'user-avatar');
-  const departureTime = new Date(trip.departureDate).toLocaleTimeString('ar-EG', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
+  const [departureTime, setDepartureTime] = useState('');
+
+  useEffect(() => {
+    // Format the time on the client-side to avoid hydration mismatch
+    setDepartureTime(
+      new Date(trip.departureDate).toLocaleTimeString('ar-SA', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })
+    );
+  }, [trip.departureDate]);
+
 
   const handleBookingClick = () => {
     setIsDisclaimerOpen(true);
@@ -41,10 +50,6 @@ export function TripCard({ trip }: TripCardProps) {
                 <Car className="h-4 w-4 text-accent" />
                 <span>{trip.vehicleType} - موديل {trip.vehicleModelYear}</span>
               </div>
-               <div className="flex items-center text-sm text-muted-foreground gap-2">
-                <MapPin className="h-4 w-4 text-accent" />
-                <span>نقطة الانطلاق: {trip.origin}</span>
-              </div>
             </div>
           </div>
 
@@ -53,7 +58,7 @@ export function TripCard({ trip }: TripCardProps) {
           <div className="flex justify-between items-center text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                   <Clock className="h-4 w-4"/>
-                  <span>وقت المغادرة: {departureTime}</span>
+                  <span>وقت المغادرة: {departureTime || '...'}</span>
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                   <Users className="h-4 w-4"/>
