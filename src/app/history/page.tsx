@@ -78,7 +78,7 @@ const dummyOffers = [
 export default function HistoryPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
-  const [openAccordion, setOpenAccordion] = useState<string | undefined>();
+  const [openAccordion, setOpenAccordion] = useState<string | undefined>('confirmed');
 
   // State for Dialogs
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
@@ -235,29 +235,31 @@ export default function HistoryPage() {
                            </CardHeader>
                            <CardContent className="grid md:grid-cols-2 gap-4 md:gap-6 p-0 md:p-6">
                                 {/* Left Column: E-Ticket */}
-                                <div className="p-4 md:border md:rounded-lg bg-background/30 space-y-3">
-                                    <h3 className="font-bold border-b pb-2 mb-3">التذكرة الإلكترونية</h3>
-                                    <p><strong>الناقل:</strong> {trip.carrierName}</p>
-                                    <p><strong>وقت الحجز:</strong> {new Date().toLocaleDateString('ar-SA')}</p>
-                                    <p><strong>القيمة الإجمالية:</strong> 250 ريال</p>
-                                    <p><strong>العربون:</strong> 25 ريال (غير مسترد)</p>
-                                    <p><strong>المتبقي:</strong> 225 ريال (يدفع عند الانطلاق)</p>
-                                    <div className="border-t my-2"></div>
-                                    <p><strong>الركاب:</strong> فايز الحربي (بالغ)</p>
-                                    <p><strong>تاريخ الانطلاق:</strong> {new Date(trip.departureDate).toLocaleString('ar-SA', { dateStyle: 'full', timeStyle: 'short' })}</p>
-                                    <p><strong>نقطة الانطلاق:</strong> محطة النقل الجماعي، الرياض</p>
-                                    <p><strong>الوصول:</strong> محطة العبدلي، عمّان</p>
-                                    <p><strong>الحقائب:</strong> 2 حقيبة كبيرة</p>
-                                    <div className="border-t my-2"></div>
-                                    <p className="text-xs text-amber-500"><strong>تعليمات:</strong> التواجد في موقع الانطلاق قبل ساعة ونصف من وقت الانطلاق.</p>
+                                <div className="p-4 md:p-0 md:border md:rounded-lg bg-background/30 space-y-3">
+                                    <h3 className="font-bold border-b pb-2 mb-3 p-4 md:p-4">التذكرة الإلكترونية</h3>
+                                    <div className="px-4 md:px-4 space-y-3">
+                                        <p><strong>الناقل:</strong> {trip.carrierName}</p>
+                                        <p><strong>وقت الحجز:</strong> {new Date().toLocaleDateString('ar-SA')}</p>
+                                        <p><strong>القيمة الإجمالية:</strong> 250 ريال</p>
+                                        <p><strong>العربون:</strong> 25 ريال (غير مسترد)</p>
+                                        <p><strong>المتبقي:</strong> 225 ريال (يدفع عند الانطلاق)</p>
+                                        <div className="border-t my-2"></div>
+                                        <p><strong>الركاب:</strong> فايز الحربي (بالغ)</p>
+                                        <p><strong>تاريخ الانطلاق:</strong> {new Date(trip.departureDate).toLocaleString('ar-SA', { dateStyle: 'full', timeStyle: 'short' })}</p>
+                                        <p><strong>نقطة الانطلاق:</strong> محطة النقل الجماعي، الرياض</p>
+                                        <p><strong>الوصول:</strong> محطة العبدلي، عمّان</p>
+                                        <p><strong>الحقائب:</strong> 2 حقيبة كبيرة</p>
+                                        <div className="border-t my-2"></div>
+                                        <p className="text-xs text-amber-500"><strong>تعليمات:</strong> التواجد في موقع الانطلاق قبل ساعة ونصف من وقت الانطلاق.</p>
+                                    </div>
                                 </div>
 
                                 {/* Right Column: Control & Communication Hub */}
-                                <div className="p-4 md:border md:rounded-lg bg-background/30 space-y-4 flex flex-col">
-                                     <h3 className="font-bold border-b pb-2 mb-3">مركز التحكم والتواصل</h3>
+                                <div className="p-4 md:p-0 md:border md:rounded-lg bg-background/30 space-y-4 flex flex-col">
+                                     <h3 className="font-bold border-b pb-2 mb-3 p-4 md:p-4">مركز التحكم والتواصل</h3>
 
                                     {/* Critical Updates */}
-                                    <div className="p-3 rounded-lg bg-yellow-900/50 border border-yellow-700">
+                                    <div className="p-3 mx-4 md:mx-4 rounded-lg bg-yellow-900/50 border border-yellow-700">
                                         <div className="flex items-center gap-2">
                                             <AlertCircle className="h-5 w-5 text-yellow-400" />
                                             <h4 className="font-bold text-yellow-300">تحديث على الموعد</h4>
@@ -266,7 +268,7 @@ export default function HistoryPage() {
                                     </div>
                                     
                                      {/* Chat Section */}
-                                     <div className="flex-grow flex flex-col space-y-2 h-96">
+                                     <div className="flex-grow flex flex-col space-y-2 h-96 px-4 md:px-4">
                                         <div className="flex-grow bg-muted/30 rounded-lg p-4 space-y-4 overflow-y-auto">
                                             {/* Incoming Message */}
                                             <div className="flex items-end gap-2">
@@ -277,9 +279,9 @@ export default function HistoryPage() {
                                             </div>
                                             {/* Outgoing Message */}
                                             <div className="flex items-end gap-2 justify-end">
-                                                <div className="bg-blue-600 text-white p-3 rounded-lg max-w-xs">
+                                                <div className="bg-accent text-accent-foreground p-3 rounded-lg max-w-xs">
                                                     <p className="text-sm">شكرًا لكم. كل شيء واضح حاليًا.</p>
-                                                    <p className="text-xs text-blue-200 mt-1 text-left">10:01 صباحًا</p>
+                                                    <p className="text-xs text-accent-foreground/80 mt-1 text-left">10:01 صباحًا</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -288,13 +290,13 @@ export default function HistoryPage() {
                                                 <Paperclip className="h-5 w-5" />
                                             </Button>
                                             <Input placeholder="اكتب رسالتك هنا..." className="flex-grow bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0" />
-                                            <Button size="icon" variant="default" className="h-10 w-10 shrink-0 bg-blue-600 hover:bg-blue-700">
+                                            <Button size="icon" variant="default" className="h-10 w-10 shrink-0">
                                                 <SendHorizonal className="h-5 w-5" />
                                             </Button>
                                         </div>
                                     </div>
 
-                                    <div className="border-t pt-4 space-y-2">
+                                    <div className="border-t pt-4 space-y-2 px-4 md:px-4 pb-4 md:pb-0">
                                          <Button variant="outline" className="w-full"><Phone className="ml-2 h-4 w-4"/> التواصل مع الناقل</Button>
                                          <Button variant="destructive" className="w-full"><Pencil className="ml-2 h-4 w-4"/> طلب إلغاء الحجز</Button>
                                     </div>
@@ -346,6 +348,8 @@ export default function HistoryPage() {
     </AppLayout>
   );
     
+    
+
     
 
     
