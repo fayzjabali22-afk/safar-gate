@@ -5,6 +5,7 @@ import {
   LogOut,
   Settings,
   Menu,
+  Bell,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -23,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
+import { Badge } from '@/components/ui/badge';
 
 const menuItems = [
   {
@@ -54,67 +56,100 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }, [firestore, user]);
 
   const { data: userProfile } = useDoc(userProfileRef);
+  
+  const notificationCount = 5; // Placeholder
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 flex h-16 items-center justify-between border-b bg-white px-4 text-gray-800 md:px-6 z-50">
+       <header className="sticky top-0 flex h-16 items-center justify-between border-b bg-white px-4 text-gray-800 md:px-6 z-50">
+        
+        {/* Left Section: User Menu & Notifications */}
         <div className="flex items-center gap-4">
-          {/* Desktop User Menu - Moved to the left (for LTR) / right (for RTL) */}
-          <div className="hidden md:flex items-center gap-4">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar>
-                      {user?.photoURL && <AvatarImage src={user.photoURL} alt={userProfile?.firstName || ''} />}
-                      <AvatarFallback className="bg-primary/20 text-primary">
-                        {userProfile?.firstName ? userProfile.firstName.charAt(0) : user?.email?.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>{userProfile?.firstName ? `مرحباً، ${userProfile.firstName}`: 'حسابي'}</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                      <Settings className="ml-2 h-4 w-4" />
-                      <span>ملفي الشخصي</span>
-                    </Link>
-                  </DropdownMenuItem>
-                   <DropdownMenuItem asChild>
-                    <Link href="/profile">
-                      <Settings className="ml-2 h-4 w-4" />
-                      <span>الإعدادات</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/login">
-                      <LogOut className="ml-2 h-4 w-4" />
-                      <span>تسجيل الخروج</span>
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar>
+                  {user?.photoURL && <AvatarImage src={user.photoURL} alt={userProfile?.firstName || ''} />}
+                  <AvatarFallback className="bg-primary/20 text-primary">
+                    {userProfile?.firstName ? userProfile.firstName.charAt(0) : user?.email?.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuLabel>{userProfile?.firstName ? `مرحباً، ${userProfile.firstName}`: 'حسابي'}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/profile">
+                  <Settings className="ml-2 h-4 w-4" />
+                  <span>ملفي الشخصي</span>
+                </Link>
+              </DropdownMenuItem>
+               <DropdownMenuItem asChild>
+                <Link href="/profile">
+                  <Settings className="ml-2 h-4 w-4" />
+                  <span>الإعدادات</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/login">
+                  <LogOut className="ml-2 h-4 w-4" />
+                  <span>تسجيل الخروج</span>
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+           <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                {notificationCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-xs">
+                    {notificationCount}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-80">
+              <DropdownMenuLabel>الإشعارات</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {/* Placeholder notifications */}
+              <DropdownMenuItem className="flex flex-col items-start gap-1">
+                <p className="font-bold">عرض جديد لرحلتك</p>
+                <p className="text-xs text-muted-foreground">
+                  قدمت شركة النقل السريع عرضًا جديدًا لرحلتك من الرياض إلى دبي.
+                </p>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="flex flex-col items-start gap-1">
+                 <p className="font-bold">تم تأكيد الحجز</p>
+                <p className="text-xs text-muted-foreground">
+                  تم تأكيد حجزك مع سفريات الأمان.
+                </p>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
         </div>
         
-        {/* Main Header Content */}
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 text-lg font-semibold md:absolute md:left-1/2 md:-translate-x-1/2"
-        >
-          <img 
-            src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
-            alt="Safar Carrier Logo" 
-            style={{ height: '110px', width: '145px' }} 
-          />
-          <span className="sr-only">Safar Carrier</span>
-        </Link>
+        {/* Center Section: Logo */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-2 text-lg font-semibold"
+            >
+              <img 
+                src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
+                alt="Safar Carrier Logo" 
+                style={{ height: '110px', width: '145px' }} 
+              />
+              <span className="sr-only">Safar Carrier</span>
+            </Link>
+        </div>
         
-        {/* Mobile Menu Wrapper */}
-        <div className="flex items-center gap-4 md:hidden">
-          {/* Mobile Menu */}
+        {/* Right Section: Mobile Menu */}
+        <div className="flex items-center md:hidden">
           <Sheet>
             <SheetTrigger asChild>
               <Button
@@ -130,7 +165,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <nav className="grid gap-6 text-lg font-medium">
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-2 text-lg font-semibold mb-4"
+                  className="flex items-center gap-2 text-lg font-semibold mb-4 -ml-4"
                 >
                   <img 
                     src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
