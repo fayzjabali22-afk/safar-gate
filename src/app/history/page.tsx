@@ -39,9 +39,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Notification } from '@/lib/data';
-import { Bell, CheckCircle, PackageOpen, X, Ship, Star, MessageSquare, AlertCircle, Phone, Pencil, SendHorizonal } from 'lucide-react';
+import { Bell, CheckCircle, PackageOpen, X, Ship, Star, MessageSquare, AlertCircle, Phone, Pencil, SendHorizonal, Paperclip } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const statusMap: Record<string, string> = {
     'Awaiting-Offers': 'بانتظار العروض',
@@ -77,7 +78,7 @@ const dummyOffers = [
 export default function HistoryPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
-  const [openAccordion, setOpenAccordion] = useState<string | undefined>('confirmed');
+  const [openAccordion, setOpenAccordion] = useState<string | undefined>();
 
   // State for Dialogs
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
@@ -265,14 +266,29 @@ export default function HistoryPage() {
                                     </div>
                                     
                                      {/* Chat Section */}
-                                     <div className="flex-grow flex flex-col space-y-2">
-                                        <h4 className="font-semibold flex items-center gap-2"><MessageSquare className="h-5 w-5"/> الدردشة مع الناقل</h4>
-                                        <div className="flex-grow h-40 border rounded-md p-2 text-center text-muted-foreground text-sm flex items-center justify-center bg-muted/30">
-                                            سجل الدردشة يظهر هنا
+                                     <div className="flex-grow flex flex-col space-y-2 h-96">
+                                        <div className="flex-grow bg-muted/30 rounded-lg p-4 space-y-4 overflow-y-auto">
+                                            {/* Incoming Message */}
+                                            <div className="flex items-end gap-2">
+                                                <div className="bg-gray-700 text-white p-3 rounded-lg max-w-xs">
+                                                    <p className="text-sm">أهلاً بك، تم تأكيد حجزك. هل لديك أي استفسارات؟</p>
+                                                    <p className="text-xs text-gray-400 mt-1 text-left">10:00 صباحًا</p>
+                                                </div>
+                                            </div>
+                                            {/* Outgoing Message */}
+                                            <div className="flex items-end gap-2 justify-end">
+                                                <div className="bg-blue-600 text-white p-3 rounded-lg max-w-xs">
+                                                    <p className="text-sm">شكرًا لكم. كل شيء واضح حاليًا.</p>
+                                                    <p className="text-xs text-blue-200 mt-1 text-left">10:01 صباحًا</p>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2 mt-auto">
-                                            <Textarea placeholder="اكتب رسالتك هنا..." className="flex-grow resize-none" rows={1}/>
+                                        <div className="flex items-center gap-2 mt-auto bg-card p-2 rounded-lg">
                                             <Button size="icon" variant="ghost" className="h-10 w-10 shrink-0">
+                                                <Paperclip className="h-5 w-5" />
+                                            </Button>
+                                            <Input placeholder="اكتب رسالتك هنا..." className="flex-grow bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0" />
+                                            <Button size="icon" variant="default" className="h-10 w-10 shrink-0 bg-blue-600 hover:bg-blue-700">
                                                 <SendHorizonal className="h-5 w-5" />
                                             </Button>
                                         </div>
@@ -330,6 +346,8 @@ export default function HistoryPage() {
     </AppLayout>
   );
     
+    
+
     
 
     
