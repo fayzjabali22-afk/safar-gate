@@ -114,12 +114,18 @@ export default function DashboardPage() {
 
 
   useEffect(() => {
-    if (searchMode !== 'specific-carrier' || !selectedCarrierName || !allTrips) {
-      setFilteredTrips(null); // Clear trips if no carrier is selected
-      return;
-    }
+    if (!allTrips) return;
 
-    let trips = allTrips.filter(trip => trip.carrierName === selectedCarrierName);
+    let trips: Trip[] = [];
+    if (searchMode === 'specific-carrier') {
+        if (!selectedCarrierName) {
+            setFilteredTrips(null);
+            return;
+        }
+        trips = allTrips.filter(trip => trip.carrierName === selectedCarrierName);
+    } else { // 'all-carriers'
+        trips = [...allTrips];
+    }
 
     // Filter by origin
     if (searchOriginCity) {
@@ -164,7 +170,7 @@ export default function DashboardPage() {
 
   }, [selectedCarrierName, searchOriginCity, searchDestinationCity, searchSeats, date, allTrips, searchMode]);
 
-  const tripsToDisplay = searchMode === 'specific-carrier' ? filteredTrips : [];
+  const tripsToDisplay = filteredTrips;
   
   const handleMainActionButtonClick = () => {
     if (searchMode === 'all-carriers') {
@@ -231,7 +237,9 @@ export default function DashboardPage() {
     handleBookingRequestSubmit();
   };
 
-  const showFilterMessage = searchMode === 'specific-carrier' && selectedCarrierName && allTrips && allTrips.length > 0;
+  const showFilterMessage = searchMode === 'specific-carrier' && selectedCarrierName;
+  const showAllCarriersMessage = searchMode === 'all-carriers';
+
 
   return (
     <AppLayout>
@@ -388,6 +396,12 @@ export default function DashboardPage() {
                     </div>
                   )}
 
+                  {showAllCarriersMessage && (
+                     <div className="mt-2 text-center text-sm text-accent bg-accent/10 p-2 rounded-md border border-accent/30">
+                        هناك رحلات مجدولة معروضة أدناه. يمكنك الآن تصفية النتائج أو تكملة إدخال بياناتك ثم إرسال طلب جديد.
+                    </div>
+                  )}
+
 
                   {/* Action Button */}
                   <Button onClick={handleMainActionButtonClick} size="lg" className="w-full justify-self-stretch sm:justify-self-end mt-2 bg-accent hover:bg-accent/90 text-accent-foreground">
@@ -400,9 +414,9 @@ export default function DashboardPage() {
             {/* Upcoming Scheduled Trips */}
             <div className="mt-12">
               <h2 className="text-2xl font-bold mb-4">الرحلات المجدولة القادمة</h2>
-              {(isLoading && searchMode === 'specific-carrier') && <p>جاري تحميل الرحلات...</p>}
+              {isLoading && <p>جاري تحميل الرحلات...</p>}
               
-              {!isLoading && searchMode === 'specific-carrier' && tripsToDisplay && tripsToDisplay.length > 0 ? (
+              {!isLoading && tripsToDisplay && tripsToDisplay.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {tripsToDisplay.map(trip => (
                     <TripCard key={trip.id} trip={trip} />
@@ -422,7 +436,7 @@ export default function DashboardPage() {
                     </>
                    )}
                    {searchMode === 'all-carriers' && (
-                       <p className="text-lg">املأ بيانات رحلتك ثم اضغط "البحث عن مناقص ناقلين" ليصل طلبك لجميع الناقلين.</p>
+                       <p className="text-lg">{isLoading ? 'جاري التحميل...' : 'لا توجد رحلات مجدولة تطابق بحثك. جرب تغيير فلاتر البحث أو أرسل طلبًا جديدًا.'}</p>
                    )}
                 </div>
               )}
