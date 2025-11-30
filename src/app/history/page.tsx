@@ -222,83 +222,77 @@ export default function HistoryPage() {
             </Card>
           </AccordionItem>
           
-          <AccordionItem value="confirmed" className="border-none">
-            <Card>
-              <AccordionTrigger className="p-6 text-lg hover:no-underline">
-                <div className='flex items-center gap-2'><CheckCircle className="h-6 w-6 text-green-500" /><CardTitle>رحلاتي المؤكدة</CardTitle></div>
-              </AccordionTrigger>
-              <AccordionContent>
-                <CardContent>
-                  <CardDescription className="mb-4">تابع رحلاتك التي قمت بحجزها بالفعل وأي تحديثات عليها.</CardDescription>
-                  
-                  {isLoadingConfirmed ? renderSkeleton() : (
-                    <>
-                      {(!confirmedTrips || confirmedTrips.length === 0) ? (
-                        <p className="text-center text-muted-foreground py-4">ليس لديك حجوزات مؤكدة حاليًا.</p>
-                      ) : (
-                        <>
-                          {/* Mobile View */}
-                          <div className="md:hidden space-y-4">
-                            {confirmedTrips.map((trip) => (
-                              <Card key={trip.id} className="w-full">
-                                <CardContent className="p-4 grid gap-3">
-                                  <div className="flex justify-between items-center">
-                                    <span className="font-medium text-lg">{trip.id.substring(0, 7).toUpperCase()}</span>
-                                    <Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge>
-                                  </div>
-                                  <div className="text-muted-foreground text-sm">
-                                    <p>من: {trip.origin}</p>
-                                    <p>إلى: {trip.destination}</p>
-                                  </div>
-                                  <div className="flex justify-between items-center pt-2">
-                                    <p className="text-sm">المغادرة: {new Date(trip.departureDate).toLocaleDateString()}</p>
-                                    <Button variant="outline" size="sm" onClick={() => handleOpenTicket(trip)}>
-                                      {getConfirmedTripActionLabel(trip)}
-                                    </Button>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                          {/* Desktop View */}
-                          <div className="hidden md:block border rounded-lg">
-                            <Table>
-                              <TableHeader>
-                                  <TableRow>
-                                  <TableHead>معرّف الطلب</TableHead>
-                                  <TableHead>الانطلاق</TableHead>
-                                  <TableHead>الوجهة</TableHead>
-                                  <TableHead>تاريخ المغادرة</TableHead>
-                                  <TableHead>الحالة</TableHead>
-                                  <TableHead>الإجراء</TableHead>
+          {isLoadingConfirmed ? renderSkeleton() : (
+            confirmedTrips && confirmedTrips.length > 0 && (
+              <AccordionItem value="confirmed" className="border-none">
+                <Card>
+                  <AccordionTrigger className="p-6 text-lg hover:no-underline">
+                    <div className='flex items-center gap-2'><CheckCircle className="h-6 w-6 text-green-500" /><CardTitle>رحلاتي المؤكدة</CardTitle></div>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <CardContent>
+                      <CardDescription className="mb-4">تابع رحلاتك التي قمت بحجزها بالفعل وأي تحديثات عليها.</CardDescription>
+                      
+                      {/* Mobile View */}
+                      <div className="md:hidden space-y-4">
+                        {confirmedTrips.map((trip) => (
+                          <Card key={trip.id} className="w-full">
+                            <CardContent className="p-4 grid gap-3">
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium text-lg">{trip.id.substring(0, 7).toUpperCase()}</span>
+                                <Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge>
+                              </div>
+                              <div className="text-muted-foreground text-sm">
+                                <p>من: {trip.origin}</p>
+                                <p>إلى: {trip.destination}</p>
+                              </div>
+                              <div className="flex justify-between items-center pt-2">
+                                <p className="text-sm">المغادرة: {new Date(trip.departureDate).toLocaleDateString()}</p>
+                                <Button variant="outline" size="sm" onClick={() => handleOpenTicket(trip)}>
+                                  {getConfirmedTripActionLabel(trip)}
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                      {/* Desktop View */}
+                      <div className="hidden md:block border rounded-lg">
+                        <Table>
+                          <TableHeader>
+                              <TableRow>
+                              <TableHead>معرّف الطلب</TableHead>
+                              <TableHead>الانطلاق</TableHead>
+                              <TableHead>الوجهة</TableHead>
+                              <TableHead>تاريخ المغادرة</TableHead>
+                              <TableHead>الحالة</TableHead>
+                              <TableHead>الإجراء</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {confirmedTrips.map((trip) => (
+                                  <TableRow key={trip.id}>
+                                  <TableCell className="font-medium">{trip.id.substring(0, 7).toUpperCase()}</TableCell>
+                                  <TableCell>{trip.origin}</TableCell>
+                                  <TableCell>{trip.destination}</TableCell>
+                                  <TableCell>{new Date(trip.departureDate).toLocaleDateString()}</TableCell>
+                                  <TableCell><Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge></TableCell>
+                                  <TableCell>
+                                      <Button variant="outline" size="sm" onClick={() => handleOpenTicket(trip)}>
+                                          {getConfirmedTripActionLabel(trip)}
+                                      </Button>
+                                  </TableCell>
                                   </TableRow>
-                              </TableHeader>
-                              <TableBody>
-                                  {confirmedTrips.map((trip) => (
-                                      <TableRow key={trip.id}>
-                                      <TableCell className="font-medium">{trip.id.substring(0, 7).toUpperCase()}</TableCell>
-                                      <TableCell>{trip.origin}</TableCell>
-                                      <TableCell>{trip.destination}</TableCell>
-                                      <TableCell>{new Date(trip.departureDate).toLocaleDateString()}</TableCell>
-                                      <TableCell><Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge></TableCell>
-                                      <TableCell>
-                                          <Button variant="outline" size="sm" onClick={() => handleOpenTicket(trip)}>
-                                              {getConfirmedTripActionLabel(trip)}
-                                          </Button>
-                                      </TableCell>
-                                      </TableRow>
-                                  ))}
-                              </TableBody>
-                            </Table>
-                          </div>
-                        </>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </AccordionContent>
-            </Card>
-          </AccordionItem>
+                              ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </CardContent>
+                  </AccordionContent>
+                </Card>
+              </AccordionItem>
+            )
+          )}
         </Accordion>
       </div>
 
@@ -337,3 +331,5 @@ export default function HistoryPage() {
     </AppLayout>
   );
 }
+
+    
