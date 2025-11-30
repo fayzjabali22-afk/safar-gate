@@ -183,13 +183,13 @@ export default function DashboardPage() {
 
                   {/* Search Philosophy Buttons */}
                   <div className="grid grid-cols-3 gap-2">
-                     <Button variant={searchMode === 'specific-carrier' ? 'default' : 'outline'} onClick={() => setSearchMode('specific-carrier')} className="w-full">
+                     <Button variant={searchMode === 'specific-carrier' ? 'default' : 'outline'} onClick={() => setSearchMode('specific-carrier')} className="w-full text-xs sm:text-sm">
                         <UserSearch className="ml-2 h-4 w-4" /> ناقل محدد
                      </Button>
-                     <Button variant={searchMode === 'all-carriers' ? 'default' : 'outline'} onClick={() => setSearchMode('all-carriers')} className="w-full">
+                     <Button variant={searchMode === 'all-carriers' ? 'default' : 'outline'} onClick={() => setSearchMode('all-carriers')} className="w-full text-xs sm:text-sm">
                         <Globe className="ml-2 h-4 w-4" /> كل الناقلين
                      </Button>
-                      <Button variant={searchMode === 'by-rating' ? 'default' : 'outline'} onClick={() => setSearchMode('by-rating')} disabled className="w-full">
+                      <Button variant={searchMode === 'by-rating' ? 'default' : 'outline'} onClick={() => setSearchMode('by-rating')} disabled className="w-full text-xs sm:text-sm">
                         <Star className="ml-2 h-4 w-4" /> بالتقييم
                       </Button>
                   </div>
