@@ -45,7 +45,7 @@ export default function DashboardPage() {
           {/* Main Content: Trip Search and Display */}
           <div className="flex-1 min-w-0">
             <header className="mb-8">
-              <h1 className="text-4xl font-bold tracking-tight text-foreground">أهلاً بك، أين وجهتك التالية؟</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground">أهلاً بك، أين وجهتك التالية؟</h1>
               <p className="text-muted-foreground mt-2">ابحث عن رحلتك القادمة أو استعرض الرحلات المجدولة بسهولة.</p>
             </header>
 
