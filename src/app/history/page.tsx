@@ -8,14 +8,24 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Trip } from '@/lib/data';
+import type { Trip, Notification } from '@/lib/data';
+import { Bell } from 'lucide-react';
 
 export default function HistoryPage() {
   const { user, isUserLoading } = useUser();
@@ -34,6 +44,18 @@ export default function HistoryPage() {
   }, [firestore, user]);
 
   const { data: trips, isLoading } = useCollection<Trip>(tripsQuery);
+  
+  const notificationsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'users', user.uid, 'notifications'),
+      where('isRead', '==', false)
+    );
+  }, [firestore, user]);
+
+  const { data: notifications } = useCollection<Notification>(notificationsQuery);
+  const notificationCount = notifications?.length || 0;
+
 
   const renderSkeleton = () => (
     <div className="space-y-4">
@@ -97,9 +119,44 @@ export default function HistoryPage() {
     <AppLayout>
       <div className="bg-[#130609] p-4 md:p-8 rounded-lg">
         <Card>
-          <CardHeader>
-            <CardTitle>My Bookings</CardTitle>
-            <CardDescription>View and manage your current and past trip bookings.</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+                <CardTitle>My Bookings</CardTitle>
+                <CardDescription>View and manage your current and past trip bookings.</CardDescription>
+            </div>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {notificationCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-xs">
+                        {notificationCount}
+                    </Badge>
+                    )}
+                </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>الإشعارات</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {notifications && notifications.length > 0 ? (
+                    notifications.map((notif) => (
+                    <DropdownMenuItem
+                        key={notif.id}
+                        className="flex flex-col items-start gap-1"
+                    >
+                        <p className="font-bold">{notif.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                        {notif.message}
+                        </p>
+                    </DropdownMenuItem>
+                    ))
+                ) : (
+                    <div className="p-4 text-center text-sm text-muted-foreground">
+                    لا توجد إشعارات جديدة.
+                    </div>
+                )}
+                </DropdownMenuContent>
+            </DropdownMenu>
           </CardHeader>
           <CardContent>
             {/* For larger screens, use a table */}

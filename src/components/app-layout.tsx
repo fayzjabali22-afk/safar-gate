@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LogOut, Settings, Menu, Bell } from 'lucide-react';
+import { LogOut, Settings, Menu } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,11 +18,8 @@ import {
   useDoc,
   useFirestore,
   useMemoFirebase,
-  useCollection,
 } from '@/firebase';
-import { doc, collection, query, where } from 'firebase/firestore';
-import { Badge } from '@/components/ui/badge';
-import type { Notification } from '@/lib/data';
+import { doc } from 'firebase/firestore';
 
 const menuItems = [
   {
@@ -54,20 +51,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   }, [firestore, user]);
 
   const { data: userProfile } = useDoc(userProfileRef);
-
-  const notificationsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
-    return query(
-      collection(firestore, 'users', user.uid, 'notifications'),
-      where('isRead', '==', false)
-    );
-  }, [firestore, user]);
-
-  const { data: notifications } = useCollection<Notification>(
-    notificationsQuery
-  );
-  
-  const notificationCount = notifications?.length || 0;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
@@ -117,42 +100,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </Sheet>
         </div>
 
-        {/* Mobile: Center (User Menu & Notifications) */}
+        {/* Mobile: Center (User Menu) */}
         <div className="flex flex-1 items-center justify-center gap-4 md:hidden">
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative">
-                    <Bell className="h-5 w-5" />
-                    {notificationCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-xs">
-                        {notificationCount}
-                    </Badge>
-                    )}
-                </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="center" className="w-80">
-                <DropdownMenuLabel>الإشعارات</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {notifications && notifications.length > 0 ? (
-                    notifications.map((notif) => (
-                    <DropdownMenuItem
-                        key={notif.id}
-                        className="flex flex-col items-start gap-1"
-                    >
-                        <p className="font-bold">{notif.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                        {notif.message}
-                        </p>
-                    </DropdownMenuItem>
-                    ))
-                ) : (
-                    <div className="p-4 text-center text-sm text-muted-foreground">
-                    لا توجد إشعارات جديدة.
-                    </div>
-                )}
-                </DropdownMenuContent>
-            </DropdownMenu>
-
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -202,41 +151,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
 
-        {/* Desktop: Left side (User Menu & Notifications) */}
+        {/* Desktop: Left side (User Menu) */}
         <div className="hidden items-center gap-4 md:flex">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                {notificationCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-xs">
-                    {notificationCount}
-                  </Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-80">
-              <DropdownMenuLabel>الإشعارات</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              {notifications && notifications.length > 0 ? (
-                notifications.map((notif) => (
-                  <DropdownMenuItem
-                    key={notif.id}
-                    className="flex flex-col items-start gap-1"
-                  >
-                    <p className="font-bold">{notif.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {notif.message}
-                    </p>
-                  </DropdownMenuItem>
-                ))
-              ) : (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  لا توجد إشعارات جديدة.
-                </div>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
