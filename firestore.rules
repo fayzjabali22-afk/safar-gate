@@ -15,10 +15,10 @@ service cloud.firestore {
     }
 
     match /trips/{tripId} {
-      // Allow any signed-in user to read the list of trips
-      allow list: if isSignedIn();
-      // Allow read/create if the user is the owner
-      allow read, create: if isOwner(request.resource.data.userId);
+      // Allow any user (signed-in or anonymous) to read/list trips
+      allow read, list: if true;
+      // Allow create if the user is the owner
+      allow create: if isOwner(request.resource.data.userId);
       // Allow update/delete if the user was the original owner
       allow update, delete: if isOwner(resource.data.userId);
     }
