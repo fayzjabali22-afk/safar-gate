@@ -241,9 +241,9 @@ export default function HistoryPage() {
                                     <Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge>
                                 </div>
                            </CardHeader>
-                           <CardContent className="grid md:grid-cols-2 gap-6">
+                           <CardContent className="grid md:grid-cols-2 gap-4 md:gap-6 p-0 md:p-6">
                                 {/* Left Column: E-Ticket */}
-                                <div className="p-4 border rounded-lg bg-background/30 space-y-3">
+                                <div className="p-4 border-b md:border md:rounded-lg bg-background/30 space-y-3">
                                     <h3 className="font-bold border-b pb-2 mb-3">التذكرة الإلكترونية</h3>
                                     <p><strong>الناقل:</strong> {trip.carrierName}</p>
                                     <p><strong>وقت الحجز:</strong> {new Date().toLocaleDateString('ar-SA')}</p>
@@ -261,7 +261,7 @@ export default function HistoryPage() {
                                 </div>
 
                                 {/* Right Column: Control & Communication Hub */}
-                                <div className="p-4 border rounded-lg bg-background/30 space-y-4 flex flex-col">
+                                <div className="p-4 md:border md:rounded-lg bg-background/30 space-y-4 flex flex-col">
                                      <h3 className="font-bold border-b pb-2 mb-3">مركز التحكم والتواصل</h3>
 
                                     {/* Critical Updates */}
@@ -338,6 +338,7 @@ export default function HistoryPage() {
       </Dialog>
     </AppLayout>
   );
-
     
+    
+
     
