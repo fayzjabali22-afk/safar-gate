@@ -256,7 +256,7 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <div className="container mx-auto p-0 md:p-4 bg-[#130609] rounded-lg">
-        <div className="flex flex-col lg:flex-row gap-8 p-4">
+        <div className="flex flex-col lg:flex-row gap-8 p-2 lg:p-4">
 
           {/* Main Content: Trip Search and Display */}
           <div className="flex-1 min-w-0">
@@ -514,3 +514,4 @@ export default function DashboardPage() {
   );
 }
 
+    

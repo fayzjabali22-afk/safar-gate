@@ -134,7 +134,7 @@ export default function HistoryPage() {
 
   return (
     <AppLayout>
-      <div className="bg-[#130609] p-4 md:p-8 rounded-lg space-y-8">
+      <div className="bg-[#130609] p-2 md:p-8 rounded-lg space-y-8">
         <Card style={{ backgroundColor: '#EDC17C' }}>
           <CardHeader>
             <div className="flex justify-between items-start">
@@ -339,4 +339,5 @@ export default function HistoryPage() {
     </AppLayout>
   );
 
+    
     
