@@ -1,3 +1,4 @@
+
 'use client';
 import { AppLayout } from '@/components/app-layout';
 import {
@@ -264,5 +265,5 @@ export default function HistoryPage() {
     </AppLayout>
   );
 }
-
+    
     
