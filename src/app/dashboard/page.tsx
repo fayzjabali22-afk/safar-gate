@@ -116,36 +116,31 @@ export default function DashboardPage() {
 
 
   useEffect(() => {
-    if (!allTrips) return;
-
     let trips: Trip[] = [];
     if (searchMode === 'specific-carrier') {
         if (!selectedCarrierName) {
-            setFilteredTrips(null);
+            setFilteredTrips(null); // Clear trips if no carrier is selected
             return;
         }
         trips = allTrips.filter(trip => trip.carrierName === selectedCarrierName);
-    } else { // 'all-carriers'
-        trips = [...allTrips];
-         // Filter by vehicle type
+    } else { // 'all-carriers' mode
+        trips = [...allTrips]; // Start with all trips
+        // Filter by vehicle type
         if (searchVehicleType !== 'all') {
           trips = trips.filter(trip => trip.vehicleCategory === searchVehicleType);
         }
     }
 
-    // Filter by origin
+    // Common filters for both modes
     if (searchOriginCity) {
         trips = trips.filter(trip => trip.origin === searchOriginCity);
     }
-    // Filter by destination
     if (searchDestinationCity) {
         trips = trips.filter(trip => trip.destination === searchDestinationCity);
     }
-    // Filter by available seats
     if (searchSeats > 0) {
         trips = trips.filter(trip => trip.availableSeats >= searchSeats);
     }
-    // Filter and sort by date
     if (date) {
         const selectedDate = new Date(date.setHours(0,0,0,0));
         trips = trips.filter(trip => {
@@ -154,29 +149,16 @@ export default function DashboardPage() {
         });
     }
 
-    // Sort to bring more relevant trips to the top
-    trips.sort((a, b) => {
-        // Prioritize trips with enough seats
-        const aHasSeats = a.availableSeats >= searchSeats;
-        const bHasSeats = b.availableSeats >= searchSeats;
-        if (aHasSeats !== bHasSeats) return aHasSeats ? -1 : 1;
-
-        // Prioritize by date if selected
-        if (date) {
-            const aDateMatch = new Date(new Date(a.departureDate).setHours(0,0,0,0)).getTime() === new Date(date.setHours(0,0,0,0)).getTime();
-            const bDateMatch = new Date(new Date(b.departureDate).setHours(0,0,0,0)).getTime() === new Date(date.setHours(0,0,0,0)).getTime();
-            if (aDateMatch !== bDateMatch) return aDateMatch ? -1 : 1;
-        }
-
-        // Default sort by departure date
-        return new Date(a.departureDate).getTime() - new Date(b.departureDate).getTime();
-    });
+    // Sort results
+    trips.sort((a, b) => new Date(a.departureDate).getTime() - new Date(b.departureDate).getTime());
 
     setFilteredTrips(trips);
 
   }, [selectedCarrierName, searchOriginCity, searchDestinationCity, searchSeats, date, allTrips, searchMode, searchVehicleType]);
 
-  const tripsToDisplay = filteredTrips;
+
+  const tripsToDisplay = filteredTrips === null && searchMode === 'all-carriers' ? allTrips : filteredTrips;
+
   
   const handleMainActionButtonClick = () => {
     if (searchMode === 'all-carriers') {
@@ -303,8 +285,8 @@ export default function DashboardPage() {
 
                   {/* Vehicle Type Radio Group (Only for all-carriers mode) */}
                   {searchMode === 'all-carriers' && (
-                    <div className="grid gap-2">
-                      <Label>نوع وسيلة النقل</Label>
+                    <div className="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap">
+                      <Label className="font-semibold">نوع وسيلة النقل:</Label>
                       <RadioGroup
                         defaultValue="all"
                         className="flex items-center gap-4"
@@ -325,6 +307,7 @@ export default function DashboardPage() {
                       </RadioGroup>
                     </div>
                   )}
+
 
                   {/* Origin and Destination */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
