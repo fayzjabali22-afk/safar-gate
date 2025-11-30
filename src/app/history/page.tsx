@@ -95,26 +95,6 @@ export default function HistoryPage() {
     );
   }
 
-  if (!trips || trips.length === 0) {
-    return (
-        <AppLayout>
-          <div className="bg-[#130609] p-4 md:p-8 rounded-lg">
-            <Card>
-                <CardHeader>
-                    <CardTitle>My Bookings</CardTitle>
-                    <CardDescription>View and manage your current and past trip bookings.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-center py-12">
-                        <p className="text-lg text-muted-foreground">You have no bookings yet.</p>
-                    </div>
-                </CardContent>
-            </Card>
-          </div>
-        </AppLayout>
-    )
-  }
-
   return (
     <AppLayout>
       <div className="bg-[#130609] p-4 md:p-8 rounded-lg">
@@ -161,63 +141,71 @@ export default function HistoryPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {/* For larger screens, use a table */}
-            <div className="hidden md:block">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Booking ID</TableHead>
-                    <TableHead>Origin</TableHead>
-                    <TableHead>Destination</TableHead>
-                    <TableHead>Departure Date</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {trips.map((trip) => (
-                    <TableRow key={trip.id}>
-                      <TableCell className="font-medium">{trip.id.substring(0,7).toUpperCase()}</TableCell>
-                      <TableCell>{trip.origin}</TableCell>
-                      <TableCell>{trip.destination}</TableCell>
-                      <TableCell>{new Date(trip.departureDate).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Badge variant={
-                          trip.status === 'Completed' ? 'default' :
-                          trip.status === 'In-Transit' ? 'secondary' :
-                          trip.status === 'Cancelled' ? 'destructive' :
-                          'outline'
-                        }>{trip.status}</Badge>
-                      </TableCell>
+            {(!trips || trips.length === 0) ? (
+                 <div className="text-center py-12">
+                    <p className="text-lg text-muted-foreground">You have no bookings yet.</p>
+                </div>
+            ): (
+                <>
+                {/* For larger screens, use a table */}
+                <div className="hidden md:block">
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>Booking ID</TableHead>
+                        <TableHead>Origin</TableHead>
+                        <TableHead>Destination</TableHead>
+                        <TableHead>Departure Date</TableHead>
+                        <TableHead>Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            {/* For mobile screens, use a list of cards */}
-            <div className="md:hidden space-y-4">
-              {trips.map((trip) => (
-                <Card key={trip.id} className="w-full">
-                  <CardContent className="p-4 grid gap-2">
-                      <div className="flex justify-between items-center">
-                          <span className="font-medium text-lg">{trip.id.substring(0,7).toUpperCase()}</span>
-                          <Badge variant={
+                    </TableHeader>
+                    <TableBody>
+                    {trips.map((trip) => (
+                        <TableRow key={trip.id}>
+                        <TableCell className="font-medium">{trip.id.substring(0,7).toUpperCase()}</TableCell>
+                        <TableCell>{trip.origin}</TableCell>
+                        <TableCell>{trip.destination}</TableCell>
+                        <TableCell>{new Date(trip.departureDate).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                            <Badge variant={
                             trip.status === 'Completed' ? 'default' :
                             trip.status === 'In-Transit' ? 'secondary' :
                             trip.status === 'Cancelled' ? 'destructive' :
                             'outline'
-                          }>{trip.status}</Badge>
-                      </div>
-                      <div className="text-muted-foreground text-sm">
-                          <p>From: {trip.origin}</p>
-                          <p>To: {trip.destination}</p>
-                      </div>
-                      <div className="text-sm pt-2">
-                          <p>Departure: {new Date(trip.departureDate).toLocaleDateString()}</p>
-                      </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                            }>{trip.status}</Badge>
+                        </TableCell>
+                        </TableRow>
+                    ))}
+                    </TableBody>
+                </Table>
+                </div>
+                {/* For mobile screens, use a list of cards */}
+                <div className="md:hidden space-y-4">
+                {trips.map((trip) => (
+                    <Card key={trip.id} className="w-full">
+                    <CardContent className="p-4 grid gap-2">
+                        <div className="flex justify-between items-center">
+                            <span className="font-medium text-lg">{trip.id.substring(0,7).toUpperCase()}</span>
+                            <Badge variant={
+                                trip.status === 'Completed' ? 'default' :
+                                trip.status === 'In-Transit' ? 'secondary' :
+                                trip.status === 'Cancelled' ? 'destructive' :
+                                'outline'
+                            }>{trip.status}</Badge>
+                        </div>
+                        <div className="text-muted-foreground text-sm">
+                            <p>From: {trip.origin}</p>
+                            <p>To: {trip.destination}</p>
+                        </div>
+                        <div className="text-sm pt-2">
+                            <p>Departure: {new Date(trip.departureDate).toLocaleDateString()}</p>
+                        </div>
+                    </CardContent>
+                    </Card>
+                ))}
+                </div>
+                </>
+            )}
           </CardContent>
         </Card>
       </div>
