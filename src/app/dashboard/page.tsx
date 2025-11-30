@@ -30,23 +30,26 @@ import { Badge } from '@/components/ui/badge';
 import { tripHistory } from '@/lib/data'; 
 import { TripCard } from '@/components/trip-card';
 import Link from 'next/link';
+import { format } from 'date-fns';
+import { arEG } from 'date-fns/locale';
 
 export default function DashboardPage() {
   const [bookingType, setBookingType] = useState<'carrier' | 'scheduled' | 'date'>('scheduled');
 
   const scheduledTripsByDate = tripHistory.reduce((acc, trip) => {
-    const date = new Date(trip.departureDate).toLocaleDateString('ar-EG', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-    if (!acc[date]) {
-      acc[date] = [];
+    const tripDate = new Date(trip.departureDate);
+    // Use date-fns for consistent date formatting
+    const dateKey = format(tripDate, 'yyyy-MM-dd');
+    
+    if (!acc[dateKey]) {
+      acc[dateKey] = {
+        displayDate: format(tripDate, 'EEEE, d MMMM yyyy', { locale: arEG }),
+        trips: []
+      };
     }
-    acc[date].push(trip);
+    acc[dateKey].trips.push(trip);
     return acc;
-  }, {} as Record<string, typeof tripHistory>);
+  }, {} as Record<string, { displayDate: string, trips: typeof tripHistory }>);
 
   return (
     <AppLayout>
@@ -151,11 +154,11 @@ export default function DashboardPage() {
                 {(bookingType === 'scheduled' || bookingType === 'date') && (
                   <Accordion type="single" collapsible className="w-full">
                     {Object.keys(scheduledTripsByDate).length > 0 ? (
-                      Object.entries(scheduledTripsByDate).map(([date, trips], index) => (
-                        <AccordionItem value={`item-${index}`} key={date}>
+                      Object.entries(scheduledTripsByDate).map(([dateKey, { displayDate, trips }], index) => (
+                        <AccordionItem value={`item-${index}`} key={dateKey}>
                           <AccordionTrigger>
                             <div className="flex items-center justify-between w-full">
-                              <span>{date}</span>
+                              <span>{displayDate}</span>
                               <Badge variant="secondary">{trips.length} رحلات</Badge>
                             </div>
                           </AccordionTrigger>
