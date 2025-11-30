@@ -39,7 +39,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Notification } from '@/lib/data';
-import { Bell, CheckCircle, PackageOpen, X, Ship, Star } from 'lucide-react';
+import { Bell, CheckCircle, PackageOpen, X, Ship, Star, MessageSquare, AlertCircle, Phone, Pencil } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 
@@ -230,63 +230,67 @@ export default function HistoryPage() {
                     <div className='flex items-center gap-2'><CheckCircle className="h-6 w-6 text-green-500" /><CardTitle>رحلاتي المؤكدة</CardTitle></div>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <CardContent>
+                    <CardContent className="space-y-6">
                       <CardDescription className="mb-4">تابع رحلاتك التي قمت بحجزها بالفعل وأي تحديثات عليها.</CardDescription>
                       
-                      {/* Mobile View */}
-                      <div className="md:hidden space-y-4">
-                        {confirmedTrips.map((trip) => (
-                          <Card key={trip.id} className="w-full">
-                            <CardContent className="p-4 grid gap-3">
-                              <div className="flex justify-between items-center">
-                                <span className="font-medium text-lg">{trip.id.substring(0, 7).toUpperCase()}</span>
-                                <Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge>
-                              </div>
-                              <div className="text-muted-foreground text-sm">
-                                <p>من: {trip.origin}</p>
-                                <p>إلى: {trip.destination}</p>
-                              </div>
-                              <div className="flex justify-between items-center pt-2">
-                                <p className="text-sm">المغادرة: {new Date(trip.departureDate).toLocaleDateString()}</p>
-                                <Button variant="outline" size="sm" onClick={() => handleOpenTicket(trip)}>
-                                  {getConfirmedTripActionLabel(trip)}
-                                </Button>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                      {/* Desktop View */}
-                      <div className="hidden md:block border rounded-lg">
-                        <Table>
-                          <TableHeader>
-                              <TableRow>
-                              <TableHead>معرّف الطلب</TableHead>
-                              <TableHead>الانطلاق</TableHead>
-                              <TableHead>الوجهة</TableHead>
-                              <TableHead>تاريخ المغادرة</TableHead>
-                              <TableHead>الحالة</TableHead>
-                              <TableHead>الإجراء</TableHead>
-                              </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                              {confirmedTrips.map((trip) => (
-                                  <TableRow key={trip.id}>
-                                  <TableCell className="font-medium">{trip.id.substring(0, 7).toUpperCase()}</TableCell>
-                                  <TableCell>{trip.origin}</TableCell>
-                                  <TableCell>{trip.destination}</TableCell>
-                                  <TableCell>{new Date(trip.departureDate).toLocaleDateString()}</TableCell>
-                                  <TableCell><Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge></TableCell>
-                                  <TableCell>
-                                      <Button variant="outline" size="sm" onClick={() => handleOpenTicket(trip)}>
-                                          {getConfirmedTripActionLabel(trip)}
-                                      </Button>
-                                  </TableCell>
-                                  </TableRow>
-                              ))}
-                          </TableBody>
-                        </Table>
-                      </div>
+                      {confirmedTrips.map((trip) => (
+                        <Card key={trip.id} className="bg-card/50 border-border/50">
+                           <CardHeader>
+                                <div className="flex justify-between items-center">
+                                    <CardTitle className="text-base font-bold">رحلة {trip.origin} إلى {trip.destination}</CardTitle>
+                                    <Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge>
+                                </div>
+                           </CardHeader>
+                           <CardContent className="grid md:grid-cols-2 gap-6">
+                                {/* Left Column: E-Ticket */}
+                                <div className="p-4 border rounded-lg bg-background/30 space-y-3">
+                                    <h3 className="font-bold border-b pb-2 mb-3">التذكرة الإلكترونية</h3>
+                                    <p><strong>الناقل:</strong> {trip.carrierName}</p>
+                                    <p><strong>وقت الحجز:</strong> {new Date().toLocaleDateString('ar-SA')}</p>
+                                    <p><strong>القيمة الإجمالية:</strong> 250 ريال</p>
+                                    <p><strong>العربون:</strong> 25 ريال (غير مسترد)</p>
+                                    <p><strong>المتبقي:</strong> 225 ريال (يدفع عند الانطلاق)</p>
+                                    <div className="border-t my-2"></div>
+                                    <p><strong>الركاب:</strong> فايز الحربي (بالغ)</p>
+                                    <p><strong>تاريخ الانطلاق:</strong> {new Date(trip.departureDate).toLocaleString('ar-SA', { dateStyle: 'full', timeStyle: 'short' })}</p>
+                                    <p><strong>نقطة الانطلاق:</strong> محطة النقل الجماعي، الرياض</p>
+                                    <p><strong>الوصول:</strong> محطة العبدلي، عمّان</p>
+                                    <p><strong>الحقائب:</strong> 2 حقيبة كبيرة</p>
+                                    <div className="border-t my-2"></div>
+                                    <p className="text-xs text-amber-500"><strong>تعليمات:</strong> التواجد في موقع الانطلاق قبل ساعة ونصف من وقت الانطلاق.</p>
+                                </div>
+
+                                {/* Right Column: Control & Communication Hub */}
+                                <div className="p-4 border rounded-lg bg-background/30 space-y-4">
+                                     <h3 className="font-bold border-b pb-2 mb-3">مركز التحكم والتواصل</h3>
+
+                                    {/* Critical Updates */}
+                                    <div className="p-3 rounded-lg bg-yellow-900/50 border border-yellow-700">
+                                        <div className="flex items-center gap-2">
+                                            <AlertCircle className="h-5 w-5 text-yellow-400" />
+                                            <h4 className="font-bold text-yellow-300">تحديث على الموعد</h4>
+                                        </div>
+                                        <p className="text-sm mt-2">لا توجد تحديثات جديدة على موعد الرحلة.</p>
+                                    </div>
+                                    
+                                     {/* Chat Placeholder */}
+                                     <div className="space-y-2">
+                                        <h4 className="font-semibold flex items-center gap-2"><MessageSquare className="h-5 w-5"/> الدردشة مع الناقل</h4>
+                                        <div className="h-24 border rounded-md p-2 text-center text-muted-foreground text-sm flex items-center justify-center bg-muted/30">
+                                            سجل الدردشة يظهر هنا
+                                        </div>
+                                        <Textarea placeholder="اكتب رسالتك هنا..." />
+                                        <Button size="sm" className="w-full">إرسال</Button>
+                                    </div>
+
+                                    <div className="border-t pt-4 space-y-2">
+                                         <Button variant="outline" className="w-full"><Phone className="ml-2 h-4 w-4"/> التواصل مع الناقل</Button>
+                                         <Button variant="destructive" className="w-full"><Pencil className="ml-2 h-4 w-4"/> طلب إلغاء الحجز</Button>
+                                    </div>
+                                </div>
+                           </CardContent>
+                        </Card>
+                      ))}
                     </CardContent>
                   </AccordionContent>
                 </Card>
@@ -330,6 +334,5 @@ export default function HistoryPage() {
       </Dialog>
     </AppLayout>
   );
-}
 
     
