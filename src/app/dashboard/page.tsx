@@ -116,6 +116,12 @@ export default function DashboardPage() {
 
 
   useEffect(() => {
+    // New logic: Only start filtering if a destination country is selected
+    if (searchMode === 'all-carriers' && !searchDestinationCountry) {
+        setFilteredTrips(null);
+        return;
+    }
+      
     let trips: Trip[] = [];
     if (searchMode === 'specific-carrier') {
         if (!selectedCarrierName) {
@@ -154,10 +160,9 @@ export default function DashboardPage() {
 
     setFilteredTrips(trips);
 
-  }, [selectedCarrierName, searchOriginCity, searchDestinationCity, searchSeats, date, allTrips, searchMode, searchVehicleType]);
+  }, [selectedCarrierName, searchOriginCountry, searchDestinationCountry, searchOriginCity, searchDestinationCity, searchSeats, date, allTrips, searchMode, searchVehicleType]);
 
-
-  const tripsToDisplay = filteredTrips === null && searchMode === 'all-carriers' ? allTrips : filteredTrips;
+  const tripsToDisplay = filteredTrips;
 
   
   const handleMainActionButtonClick = () => {
@@ -453,7 +458,7 @@ export default function DashboardPage() {
                     </>
                    )}
                    {searchMode === 'all-carriers' && (
-                       <p className="text-lg">{isLoading ? 'جاري التحميل...' : 'لا توجد رحلات مجدولة تطابق بحثك. جرب تغيير فلاتر البحث أو أرسل طلبًا جديدًا.'}</p>
+                       <p className="text-lg">{isLoading ? 'جاري التحميل...' : 'الرجاء اختيار دولة الوصول لبدء البحث عن الرحلات المجدولة.'}</p>
                    )}
                 </div>
               )}
@@ -467,4 +472,5 @@ export default function DashboardPage() {
       />
     </AppLayout>
   );
-}
+
+    
