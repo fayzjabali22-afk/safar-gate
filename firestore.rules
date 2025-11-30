@@ -18,5 +18,9 @@ service cloud.firestore {
       allow read, create: if isOwner(request.resource.data.userId);
       allow update, delete: if isOwner(resource.data.userId);
     }
+
+    match /bookings/{bookingId} {
+      allow read, create: if isSignedIn();
+    }
   }
 }

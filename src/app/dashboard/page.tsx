@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Users, Search, ShipWheel, CalendarIcon } from 'lucide-react';
 import { useState } from 'react';
-import { tripHistory } from '@/lib/data'; 
+import type { Trip } from '@/lib/data';
 import { TripCard } from '@/components/trip-card';
 import Link from 'next/link';
 import { Calendar } from "@/components/ui/calendar"
@@ -30,12 +30,27 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
+import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
+import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
 
 export default function DashboardPage() {
-  const [bookingType, setBookingType] = useState<'carrier' | 'scheduled' | 'date'>('scheduled');
   const [date, setDate] = useState<Date>()
+  const { user } = useUser();
+  const firestore = useFirestore();
+  const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
 
-  const upcomingTrips = tripHistory.filter(trip => trip.status === 'Planned' || trip.status === 'In-Transit');
+  const tripsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collection(firestore, 'trips'));
+  }, [firestore]);
+
+  const { data: upcomingTrips, isLoading } = useCollection<Trip>(tripsQuery);
+
+  const handleBookingRequest = () => {
+    setIsDisclaimerOpen(true);
+  };
+
 
   return (
     <AppLayout>
@@ -139,7 +154,8 @@ export default function DashboardPage() {
             {/* Upcoming Scheduled Trips */}
             <div>
               <h2 className="text-2xl font-bold mb-4">الرحلات المجدولة القادمة</h2>
-              {upcomingTrips.length > 0 ? (
+              {isLoading && <p>Loading trips...</p>}
+              {!isLoading && upcomingTrips && upcomingTrips.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {upcomingTrips.map(trip => (
                     <TripCard key={trip.id} trip={trip} />
@@ -212,8 +228,8 @@ export default function DashboardPage() {
 
                   {/* Action Buttons */}
                   <div className="flex justify-end mt-4">
-                      <Button asChild size="lg">
-                        <Link href="/login">إرسال طلب الحجز</Link>
+                      <Button size="lg" onClick={handleBookingRequest}>
+                        إرسال طلب الحجز
                       </Button>
                   </div>
                 </div>
@@ -222,6 +238,10 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+      <LegalDisclaimerDialog 
+        isOpen={isDisclaimerOpen}
+        onOpenChange={setIsDisclaimerOpen}
+      />
     </AppLayout>
   );
 }
