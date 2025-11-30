@@ -21,7 +21,6 @@ import { Users, Search, ShipWheel, CalendarIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { Trip } from '@/lib/data';
 import { TripCard } from '@/components/trip-card';
-import Link from 'next/link';
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
@@ -42,6 +41,9 @@ export default function DashboardPage() {
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
   const { toast } = useToast();
 
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('');
+  const [seats, setSeats] = useState('1');
   const [quickBookingOrigin, setQuickBookingOrigin] = useState('');
   const [quickBookingDestination, setQuickBookingDestination] = useState('');
   const [quickBookingSeats, setQuickBookingSeats] = useState(1);
@@ -104,8 +106,8 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-0 md:p-4">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="container mx-auto p-0 md:p-4 bg-[#130609] rounded-lg">
+        <div className="flex flex-col lg:flex-row gap-8 p-4">
 
           {/* Main Content: Trip Search and Display */}
           <div className="flex-1 min-w-0">
@@ -122,7 +124,7 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="origin-city">من</Label>
-                      <Select>
+                      <Select onValueChange={setOrigin} value={origin}>
                         <SelectTrigger id="origin-city">
                           <SelectValue placeholder="اختر مدينة الانطلاق" />
                         </SelectTrigger>
@@ -136,7 +138,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="destination-city">إلى</Label>
-                      <Select>
+                      <Select onValueChange={setDestination} value={destination}>
                         <SelectTrigger id="destination-city">
                           <SelectValue placeholder="اختر مدينة الوصول" />
                         </SelectTrigger>
@@ -179,7 +181,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="seats">عدد المقاعد</Label>
-                      <Select>
+                      <Select onValueChange={setSeats} value={seats}>
                         <SelectTrigger id="seats">
                           <SelectValue placeholder="1" />
                         </SelectTrigger>
@@ -251,7 +253,7 @@ export default function DashboardPage() {
                       <Select onValueChange={setQuickBookingDestination} value={quickBookingDestination}>
                         <SelectTrigger id="quick-destination">
                           <SelectValue placeholder="اختر مدينة الوصول" />
-                        </SelectTrigger>
+                        </Trigger>
                         <SelectContent>
                           <SelectItem value="amman">عمّان</SelectItem>
                           <SelectItem value="damascus">دمشق</SelectItem>
