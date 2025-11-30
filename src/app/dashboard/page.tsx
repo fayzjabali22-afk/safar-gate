@@ -165,7 +165,7 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-0 md:p-4 bg-background rounded-lg">
+      <div className="container mx-auto p-0 md:p-4 bg-[#130609] rounded-lg">
         <div className="flex flex-col lg:flex-row gap-8 p-4">
 
           {/* Main Content: Trip Search and Display */}
@@ -244,7 +244,7 @@ export default function DashboardPage() {
                           <SelectTrigger id="destination-city"><SelectValue placeholder="اختر مدينة الوصول" /></SelectTrigger>
                           <SelectContent>
                             {searchDestinationCountry && countries[searchDestinationCountry as keyof typeof countries]?.cities.map(cityKey => (
-                              <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
+                              <SelectItem key={cityKey} value={key}>{cities[cityKey]}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -345,5 +345,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
-    

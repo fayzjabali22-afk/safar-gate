@@ -37,7 +37,7 @@ export function TripCard({ trip }: TripCardProps) {
 
   return (
     <>
-      <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 hover:border-primary/40 border-border/60 bg-card/80 backdrop-blur-sm">
+      <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2" style={{borderColor: '#EDC17C'}}>
         <CardContent className="p-4">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16 border-2 border-accent">
