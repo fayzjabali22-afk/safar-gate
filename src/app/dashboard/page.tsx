@@ -27,7 +27,7 @@ import { User, Calendar, CalendarDays, Search } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { tripHistory } from '@/lib/data'; // Using mock data for now
+import { tripHistory } from '@/lib/data'; 
 import { TripCard } from '@/components/trip-card';
 import Link from 'next/link';
 

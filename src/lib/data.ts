@@ -11,7 +11,7 @@ export type Trip = {
   userId: string;
   origin: string;
   destination: string;
-  departureDate: string;
+  departureDate: string; // ISO 8601 format: 'YYYY-MM-DDTHH:mm:ssZ'
   arrivalDate?: string;
   status: 'Planned' | 'In-Transit' | 'Completed' | 'Cancelled';
   cargoDetails: string;
@@ -52,5 +52,14 @@ export const tripHistory: Trip[] = [
     departureDate: '2024-05-25T09:15:00Z',
     status: 'Planned',
     cargoDetails: 'Building Materials',
+  },
+    {
+    id: 'TRIP004',
+    userId: 'user123',
+    origin: 'Riyadh, SA',
+    destination: 'Dubai, AE',
+    departureDate: '2024-05-20T14:00:00Z',
+    status: 'Planned',
+    cargoDetails: 'Furniture',
   },
 ];
