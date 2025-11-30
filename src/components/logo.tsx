@@ -1,5 +1,4 @@
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
 
 export function Logo({ className }: { className?: string }) {
   return (
@@ -9,12 +8,13 @@ export function Logo({ className }: { className?: string }) {
         className
       )}
     >
-      <Image 
+      <img 
         src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
         alt="Safar Carrier Logo"
         width={140}
         height={40}
         className="object-contain"
+        style={{ width: '140px', height: '40px' }}
       />
     </div>
   );
