@@ -137,7 +137,7 @@ export default function HistoryPage() {
     <AppLayout>
       <div className="bg-[#130609] p-2 md:p-8 rounded-lg space-y-8">
         <Card style={{ backgroundColor: '#EDC17C' }}>
-          <CardHeader>
+          <CardHeader className="p-4">
             <div className="flex justify-between items-start">
               <div className="text-black">
                 <CardTitle>إدارة الحجز</CardTitle>
@@ -243,7 +243,6 @@ export default function HistoryPage() {
                                         <p><strong>القيمة الإجمالية:</strong> 250 ريال</p>
                                         <p><strong>العربون:</strong> 25 ريال (غير مسترد)</p>
                                         <p><strong>المتبقي:</strong> 225 ريال (يدفع عند الانطلاق)</p>
-                                        <div className="border-t my-2"></div>
                                         <p><strong>الركاب:</strong> فايز الحربي (بالغ)</p>
                                         <p><strong>تاريخ الانطلاق:</strong> {new Date(trip.departureDate).toLocaleString('ar-SA', { dateStyle: 'full', timeStyle: 'short' })}</p>
                                         <p><strong>نقطة الانطلاق:</strong> محطة النقل الجماعي، الرياض</p>
@@ -290,7 +289,7 @@ export default function HistoryPage() {
                                                 <Paperclip className="h-5 w-5" />
                                             </Button>
                                             <Input placeholder="اكتب رسالتك هنا..." className="flex-grow bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0" />
-                                            <Button size="icon" variant="default" className="h-10 w-10 shrink-0">
+                                            <Button size="icon" variant="default" className="h-10 w-10 shrink-0 bg-accent hover:bg-accent/90">
                                                 <SendHorizonal className="h-5 w-5" />
                                             </Button>
                                         </div>
@@ -348,6 +347,8 @@ export default function HistoryPage() {
     </AppLayout>
   );
     
+    
+
     
 
     
