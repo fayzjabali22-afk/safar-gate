@@ -79,7 +79,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="sr-only">Toggle navigation menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="bg-background">
+          <SheetContent side="right" style={{ backgroundColor: '#EDC17C' }}>
             <nav className="grid gap-6 text-lg font-medium">
               <Link
                 href="/dashboard"
