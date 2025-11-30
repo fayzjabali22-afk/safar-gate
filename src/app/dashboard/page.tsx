@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Users, Search, ShipWheel, CalendarIcon } from 'lucide-react';
+import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star } from 'lucide-react';
 import { useState, useMemo } from 'react';
 import type { Trip } from '@/lib/data';
 import { TripCard } from '@/components/trip-card';
@@ -33,23 +33,54 @@ import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBl
 import { collection, query, where, Query } from 'firebase/firestore';
 import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
+
+// Mock data for countries and cities
+const countries = {
+  syria: { name: 'سوريا', cities: ['damascus', 'aleppo', 'homs'] },
+  jordan: { name: 'الأردن', cities: ['amman', 'irbid', 'zarqa'] },
+  ksa: { name: 'السعودية', cities: ['riyadh', 'jeddah', 'dammam'] },
+  egypt: { name: 'مصر', cities: ['cairo', 'alexandria', 'giza'] },
+};
+
+const cities: { [key: string]: string } = {
+    damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص',
+    amman: 'عمّان', irbid: 'إربد', zarqa: 'الزرقاء',
+    riyadh: 'الرياض', jeddah: 'جدة', dammam: 'الدمام',
+    cairo: 'القاهرة', alexandria: 'الاسكندرية', giza: 'الجيزة',
+    dubai: 'دبي', kuwait: 'الكويت'
+};
+
 
 export default function DashboardPage() {
   const [date, setDate] = useState<Date>();
   const { user } = useUser();
   const firestore = useFirestore();
+  const router = useRouter();
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
   const { toast } = useToast();
 
-  const [searchOrigin, setSearchOrigin] = useState('');
-  const [searchDestination, setSearchDestination] = useState('');
-  const [searchSeats, setSearchSeats] = useState('1');
-  
+  // Search States
+  const [searchOriginCountry, setSearchOriginCountry] = useState('');
+  const [searchOriginCity, setSearchOriginCity] = useState('');
+  const [searchDestinationCountry, setSearchDestinationCountry] = useState('');
+  const [searchDestinationCity, setSearchDestinationCity] = useState('');
+  const [searchSeats, setSearchSeats] = useState(1);
+  const [searchCarrier, setSearchCarrier] = useState('');
+
+  const [searchMode, setSearchMode] = useState<'specific-carrier' | 'all-carriers' | 'by-rating'>('all-carriers');
+
+  // Quick Booking States
   const [quickBookingOrigin, setQuickBookingOrigin] = useState('');
   const [quickBookingDestination, setQuickBookingDestination] = useState('');
   const [quickBookingSeats, setQuickBookingSeats] = useState(1);
 
-  const [activeFilters, setActiveFilters] = useState<{origin?: string; destination?: string}>({});
+  const [activeFilters, setActiveFilters] = useState<{
+    origin?: string;
+    destination?: string;
+    seats?: number;
+    carrierName?: string;
+  }>({});
 
   const tripsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -63,21 +94,34 @@ export default function DashboardPage() {
     if (activeFilters.destination) {
       constraints.push(where('destination', '==', activeFilters.destination));
     }
+    if (activeFilters.seats && activeFilters.seats > 0) {
+      constraints.push(where('availableSeats', '>=', activeFilters.seats));
+    }
+     if (searchMode === 'specific-carrier' && activeFilters.carrierName) {
+      constraints.push(where('carrierName', '==', activeFilters.carrierName));
+    }
     
     if (constraints.length > 0) {
       return query(q, ...constraints);
     }
 
     return query(q);
-  }, [firestore, user, activeFilters]);
+  }, [firestore, user, activeFilters, searchMode]);
 
   const { data: upcomingTrips, isLoading } = useCollection<Trip>(tripsQuery);
   
   const handleSearch = () => {
-    setActiveFilters({ origin: searchOrigin, destination: searchDestination });
+    const filters: typeof activeFilters = {};
+    if (searchOriginCity) filters.origin = searchOriginCity;
+    if (searchDestinationCity) filters.destination = searchDestinationCity;
+    if (searchSeats) filters.seats = searchSeats;
+    if (searchMode === 'specific-carrier' && searchCarrier) {
+        filters.carrierName = searchCarrier;
+    }
+    setActiveFilters(filters);
   };
 
-  const handleQuickBookingSubmit = () => {
+  const handleQuickBookingSubmit = async () => {
     if (!user || !firestore) {
         toast({
             title: "يرجى تسجيل الدخول",
@@ -96,7 +140,7 @@ export default function DashboardPage() {
     }
 
     const tripsCollection = collection(firestore, 'trips');
-    addDocumentNonBlocking(tripsCollection, {
+    const newDoc = await addDocumentNonBlocking(tripsCollection, {
         userId: user.uid,
         origin: quickBookingOrigin,
         destination: quickBookingDestination,
@@ -107,12 +151,11 @@ export default function DashboardPage() {
 
     toast({
         title: "تم إرسال طلبك بنجاح!",
-        description: "سيقوم الناقلون بمراجعة طلبك وإرسال عروضهم.",
+        description: "سيتم توجيهك الآن لصفحة حجوزاتك لمتابعة طلبك.",
     });
 
-    setQuickBookingOrigin('');
-    setQuickBookingDestination('');
-    setQuickBookingSeats(1);
+    // Redirect user to their bookings page to see the new request
+    router.push('/history');
   };
   
   const handleBookingRequest = () => {
@@ -139,36 +182,77 @@ export default function DashboardPage() {
             <Card className="w-full shadow-lg rounded-lg mb-8 border-border/60 bg-card/80 backdrop-blur-sm">
               <CardContent className="p-6">
                 <div className="grid gap-6">
+
+                  {/* Search Philosophy Buttons */}
+                  <div className="flex justify-center gap-2">
+                     <Button variant={searchMode === 'specific-carrier' ? 'default' : 'outline'} onClick={() => setSearchMode('specific-carrier')}>
+                        <UserSearch className="ml-2 h-4 w-4" /> ناقل محدد
+                     </Button>
+                     <Button variant={searchMode === 'all-carriers' ? 'default' : 'outline'} onClick={() => setSearchMode('all-carriers')}>
+                        <Globe className="ml-2 h-4 w-4" /> كل الناقلين
+                     </Button>
+                      <Button variant={searchMode === 'by-rating' ? 'default' : 'outline'} onClick={() => setSearchMode('by-rating')} disabled>
+                        <Star className="ml-2 h-4 w-4" /> حسب التقييم
+                      </Button>
+                  </div>
+
+                  {/* Specific Carrier Search Input */}
+                  {searchMode === 'specific-carrier' && (
+                    <div className="grid gap-2">
+                      <Label htmlFor="carrier-search">البحث عن ناقل (بالاسم او رقم الهاتف)</Label>
+                      <Input id="carrier-search" placeholder="مثال: شركة النقل السريع" value={searchCarrier} onChange={(e) => setSearchCarrier(e.target.value)} />
+                    </div>
+                  )}
+
                   {/* Origin and Destination */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="grid gap-2">
-                      <Label htmlFor="origin-city">من</Label>
-                      <Select onValueChange={setSearchOrigin} value={searchOrigin}>
-                        <SelectTrigger id="origin-city">
-                          <SelectValue placeholder="اختر مدينة الانطلاق" />
-                        </SelectTrigger>
+                      <Label htmlFor="origin-country">دولة الانطلاق</Label>
+                      <Select onValueChange={setSearchOriginCountry} value={searchOriginCountry}>
+                        <SelectTrigger id="origin-country"><SelectValue placeholder="اختر دولة الانطلاق" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="damascus">دمشق</SelectItem>
-                          <SelectItem value="amman">عمّان</SelectItem>
-                          <SelectItem value="riyadh">الرياض</SelectItem>
-                          <SelectItem value="cairo">القاهرة</SelectItem>
+                          {Object.entries(countries).map(([key, {name}]) => (
+                            <SelectItem key={key} value={key}>{name}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="grid gap-2">
-                      <Label htmlFor="destination-city">إلى</Label>
-                      <Select onValueChange={setSearchDestination} value={searchDestination}>
-                        <SelectTrigger id="destination-city">
-                          <SelectValue placeholder="اختر مدينة الوصول" />
-                        </SelectTrigger>
+                      <Label htmlFor="origin-city">مدينة الانطلاق</Label>
+                      <Select onValueChange={setSearchOriginCity} value={searchOriginCity} disabled={!searchOriginCountry}>
+                        <SelectTrigger id="origin-city"><SelectValue placeholder="اختر مدينة الانطلاق" /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="amman">عمّان</SelectItem>
-                          <SelectItem value="damascus">دمشق</SelectItem>
-                          <SelectItem value="dubai">دبي</SelectItem>
-                          <SelectItem value="kuwait">الكويت</SelectItem>
+                          {searchOriginCountry && countries[searchOriginCountry as keyof typeof countries]?.cities.map(cityKey => (
+                            <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="grid gap-2">
+                        <Label htmlFor="destination-country">دولة الوصول</Label>
+                        <Select onValueChange={setSearchDestinationCountry} value={searchDestinationCountry}>
+                          <SelectTrigger id="destination-country"><SelectValue placeholder="اختر دولة الوصول" /></SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(countries).map(([key, {name}]) => (
+                              <SelectItem key={key} value={key}>{name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="destination-city">مدينة الوصول</Label>
+                        <Select onValueChange={setSearchDestinationCity} value={searchDestinationCity} disabled={!searchDestinationCountry}>
+                          <SelectTrigger id="destination-city"><SelectValue placeholder="اختر مدينة الوصول" /></SelectTrigger>
+                          <SelectContent>
+                            {searchDestinationCountry && countries[searchDestinationCountry as keyof typeof countries]?.cities.map(cityKey => (
+                              <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                   </div>
 
                   {/* Date and Seats */}
@@ -200,7 +284,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="seats">عدد المقاعد</Label>
-                      <Select onValueChange={setSearchSeats} value={searchSeats}>
+                      <Select onValueChange={(val) => setSearchSeats(parseInt(val))} value={String(searchSeats)}>
                         <SelectTrigger id="seats">
                           <SelectValue placeholder="1" />
                         </SelectTrigger>
@@ -216,7 +300,7 @@ export default function DashboardPage() {
                   {/* Action Button */}
                   <Button onClick={handleSearch} size="lg" className="w-full md:w-auto md:col-start-2 justify-self-end mt-2 bg-accent hover:bg-accent/90 text-accent-foreground">
                     <Search className="ml-2 h-5 w-5" />
-                    البحث عن ناقل
+                    البحث عن رحلة
                   </Button>
                 </div>
               </CardContent>
@@ -225,7 +309,7 @@ export default function DashboardPage() {
             {/* Upcoming Scheduled Trips */}
             <div>
               <h2 className="text-2xl font-bold mb-4">الرحلات المجدولة القادمة</h2>
-              {isLoading && <p>Loading trips...</p>}
+              {isLoading && <p>جاري تحميل الرحلات...</p>}
               {!isLoading && user && upcomingTrips && upcomingTrips.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {upcomingTrips.map(trip => (
@@ -236,7 +320,12 @@ export default function DashboardPage() {
                 <div className="text-center text-muted-foreground py-12">
                   <ShipWheel className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
                   <p className="text-lg">{user ? 'لا توجد رحلات تطابق بحثك.' : 'يرجى تسجيل الدخول لعرض الرحلات المجدولة.'}</p>
-                  <p className="text-sm mt-2">{user ? 'جرّب البحث بتاريخ أو وجهة مختلفة.' : 'يمكنك البحث عن رحلة أو نشر طلب حجز.'}</p>
+                   {searchMode === 'specific-carrier' && !isLoading && upcomingTrips?.length === 0 && (
+                     <Button onClick={() => alert('سيتم إرسال طلب لهذا الناقل المحدد')} className="mt-4">
+                        أرسل طلب حجز لهذا الناقل
+                     </Button>
+                   )}
+                  <p className="text-sm mt-2">{user ? 'جرّب البحث بمعايير مختلفة أو أرسل طلب حجز.' : 'يمكنك البحث عن رحلة أو نشر طلب حجز.'}</p>
                 </div>
               )}
             </div>
@@ -244,7 +333,7 @@ export default function DashboardPage() {
 
           {/* Side Panel: Quick Booking */}
           <div className="lg:w-[350px] lg:shrink-0">
-            <Card className="w-full shadow-lg rounded-lg sticky top-8 border-2 border-red-700 bg-card/80 backdrop-blur-sm">
+            <Card className="w-full shadow-lg rounded-lg sticky top-8 border-2 border-accent bg-card/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-2xl font-bold">
                   حجز سريع
@@ -262,8 +351,9 @@ export default function DashboardPage() {
                           <SelectValue placeholder="اختر مدينة الانطلاق" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="damascus">دمشق</SelectItem>
-                          <SelectItem value="amman">عمّان</SelectItem>
+                          {Object.keys(cities).map((cityKey) => (
+                              <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                   </div>
@@ -274,8 +364,9 @@ export default function DashboardPage() {
                           <SelectValue placeholder="اختر مدينة الوصول" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="amman">عمّان</SelectItem>
-                          <SelectItem value="damascus">دمشق</SelectItem>
+                           {Object.keys(cities).map((cityKey) => (
+                              <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                   </div>
@@ -291,10 +382,6 @@ export default function DashboardPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                    </div>
-                    <div className="relative">
-                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                      <Input placeholder="ابحث عن ناقل محدد (اختياري)" className="pr-10 bg-background/50" />
                     </div>
 
                   {/* Action Buttons */}
