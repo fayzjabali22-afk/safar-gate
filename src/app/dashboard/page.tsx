@@ -308,7 +308,7 @@ export default function DashboardPage() {
                   {/* Action Button */}
                   <Button onClick={handleSearchClick} size="lg" className="w-full justify-self-stretch sm:justify-self-end mt-2 bg-accent hover:bg-accent/90 text-accent-foreground">
                     {searchMode === 'all-carriers' ? (
-                        <>إرسال طلب الحجز</>
+                        <>البحث عن مناقص ناقلين</>
                     ) : (
                         <>ارسال</>
                     )}
