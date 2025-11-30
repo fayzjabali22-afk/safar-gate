@@ -3,7 +3,7 @@ import type { Trip } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Clock, DollarSign, MapPin, Users, Calendar, Phone, Car, Tag } from 'lucide-react';
+import { Clock, DollarSign, MapPin, Users, Phone, Car, Tag } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
 
