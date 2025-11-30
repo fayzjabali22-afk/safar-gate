@@ -123,49 +123,36 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let baseTrips: Trip[] = [];
-    let shouldShowTrips = false;
-
+    
     // 1. Determine the base set of trips based on the search mode
     if (searchMode === 'specific-carrier') {
         if (selectedCarrierName) {
             baseTrips = allTrips.filter(trip => trip.carrierName === selectedCarrierName);
-            shouldShowTrips = true; 
+        } else {
+            baseTrips = []; // No trips if no carrier is selected
         }
     } else { // 'all-carriers' mode
         baseTrips = [...allTrips];
-        shouldShowTrips = true; 
     }
 
-    // 2. Apply filters if trips should be shown
-    let filteredTrips = shouldShowTrips ? [...baseTrips] : [];
+    // 2. Apply all filters
+    let filteredTrips = [...baseTrips];
     
-    if (shouldShowTrips) {
-        // Accordion filters: destination and seats
-        if (searchDestinationCity) {
-            filteredTrips = filteredTrips.filter(trip => trip.destination === searchDestinationCity);
-        }
-        if (searchSeats > 0) {
-            filteredTrips = filteredTrips.filter(trip => trip.availableSeats >= searchSeats);
-        }
-        
-        // General filters 
-        if (searchOriginCity) {
-            filteredTrips = filteredTrips.filter(trip => trip.origin === searchOriginCity);
-        }
-        if (date) {
-            filteredTrips = filteredTrips.filter(trip => new Date(trip.departureDate).toDateString() === date.toDateString());
-        }
-        if (searchMode === 'all-carriers' && searchVehicleType !== 'all') {
-          filteredTrips = filteredTrips.filter(trip => trip.vehicleCategory === searchVehicleType);
-        }
+    if (searchOriginCity) {
+        filteredTrips = filteredTrips.filter(trip => trip.origin === searchOriginCity);
     }
-    
-    // Do not show any trips if the main filter condition is not met
-    const primaryFilterMet = searchMode === 'all-carriers' 
-      || (searchMode === 'specific-carrier' && !!selectedCarrierName);
-
-    if (!primaryFilterMet) {
-      filteredTrips = [];
+    if (searchDestinationCity) {
+        filteredTrips = filteredTrips.filter(trip => trip.destination === searchDestinationCity);
+    }
+    if (searchSeats > 0) {
+        filteredTrips = filteredTrips.filter(trip => trip.availableSeats >= searchSeats);
+    }
+    if (date) {
+        filteredTrips = filteredTrips.filter(trip => new Date(trip.departureDate).toDateString() === date.toDateString());
+    }
+    // Apply vehicle type filter ONLY in 'all-carriers' mode
+    if (searchMode === 'all-carriers' && searchVehicleType !== 'all') {
+      filteredTrips = filteredTrips.filter(trip => trip.vehicleCategory === searchVehicleType);
     }
     
     // 3. Group the final filtered trips by date
@@ -261,6 +248,7 @@ export default function DashboardPage() {
 
   const showFilterMessage = searchMode === 'specific-carrier' && selectedCarrierName && Object.keys(groupedAndFilteredTrips).length > 0;
   const showAllCarriersMessage = searchMode === 'all-carriers' && Object.keys(groupedAndFilteredTrips).length > 0;
+  const showNoResultsMessage = Object.keys(groupedAndFilteredTrips).length === 0;
 
   const sortedTripDates = Object.keys(groupedAndFilteredTrips);
 
@@ -496,22 +484,23 @@ export default function DashboardPage() {
                     })}
                 </Accordion>
               ) : (
-                <div className="text-center text-muted-foreground py-12">
-                  <ShipWheel className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                   {searchMode === 'specific-carrier' && (
-                    <>
-                        <p className="text-lg">
+                 showNoResultsMessage && (
+                    <div className="text-center text-muted-foreground py-12">
+                      <ShipWheel className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                      {searchMode === 'specific-carrier' ? (
+                        <>
+                          <p className="text-lg">
                             {isLoading ? 'جاري التحميل...' : (selectedCarrierName ? 'لا توجد رحلات مجدولة تطابق بحثك لهذا الناقل.' : 'الرجاء البحث عن ناقل لعرض رحلاته المجدولة.')}
-                        </p>
-                        <p className="text-sm mt-2">
-                           {selectedCarrierName ? 'جرّب تغيير فلاتر البحث أو أرسل طلبًا جديدًا لهذا الناقل.' : 'يمكنك أيضًا التبديل إلى وضع "كل الناقلين" لإرسال طلب للجميع.'}
-                        </p>
-                    </>
-                   )}
-                   {searchMode === 'all-carriers' && (
-                       <p className="text-lg">{isLoading ? 'جاري التحميل...' : 'لا توجد رحلات مجدولة تطابق بحثك. جرّب تغيير فلاتر البحث.'}</p>
-                   )}
-                </div>
+                          </p>
+                          <p className="text-sm mt-2">
+                            {selectedCarrierName ? 'جرّب تغيير فلاتر البحث أو أرسل طلبًا جديدًا لهذا الناقل.' : 'يمكنك أيضًا التبديل إلى وضع "كل الناقلين" لإرسال طلب للجميع.'}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-lg">{isLoading ? 'جاري التحميل...' : 'لا توجد رحلات مجدولة تطابق بحثك. جرّب تغيير فلاتر البحث أو أكمل بياناتك لإرسال طلب.'}</p>
+                      )}
+                    </div>
+                 )
               )}
             </div>
           </div>
@@ -524,3 +513,4 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+
