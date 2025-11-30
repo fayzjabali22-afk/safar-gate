@@ -54,7 +54,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 z-50 flex h-16 items-center border-b bg-white px-4 text-gray-800 md:px-6">
+      <header className="sticky top-0 z-50 flex h-16 items-center border-b bg-[#EDC17C] px-4 text-black md:px-6">
         {/* Mobile: Left side (Menu) */}
         <div className="flex items-center md:hidden">
           <Sheet>
