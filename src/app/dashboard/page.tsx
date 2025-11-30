@@ -157,7 +157,7 @@ export default function DashboardPage() {
 
           {/* Side Panel: Quick Booking */}
           <div className="lg:w-[350px] lg:shrink-0">
-            <Card className="w-full shadow-lg rounded-lg sticky top-8 border-border/60 bg-card/80 backdrop-blur-sm">
+            <Card className="w-full shadow-lg rounded-lg sticky top-8 border-2 border-red-700 bg-card/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-2xl font-bold">
                   حجز سريع
