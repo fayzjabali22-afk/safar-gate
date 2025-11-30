@@ -17,14 +17,23 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Users, Search, ShipWheel } from 'lucide-react';
+import { Users, Search, ShipWheel, CalendarIcon } from 'lucide-react';
 import { useState } from 'react';
 import { tripHistory } from '@/lib/data'; 
 import { TripCard } from '@/components/trip-card';
 import Link from 'next/link';
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { format } from "date-fns"
 
 export default function DashboardPage() {
   const [bookingType, setBookingType] = useState<'carrier' | 'scheduled' | 'date'>('scheduled');
+  const [date, setDate] = useState<Date>()
 
   const upcomingTrips = tripHistory.filter(trip => trip.status === 'Planned' || trip.status === 'In-Transit');
 
@@ -80,7 +89,28 @@ export default function DashboardPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="travel-date">تاريخ السفر</Label>
-                      <Input id="travel-date" type="date" className="bg-background/50" />
+                       <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal bg-background/50",
+                              !date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4 text-green-400" />
+                            {date ? format(date, "PPP") : <span>اختر تاريخاً</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={date}
+                            onSelect={setDate}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="seats">عدد المقاعد</Label>
