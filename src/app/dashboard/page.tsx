@@ -85,10 +85,10 @@ export default function DashboardPage() {
   const tripsQuery = useMemoFirebase(() => {
     if (!firestore || !user || searchMode !== 'specific-carrier' || !searchCarrier) return null;
 
+    // Simplified query to avoid composite index requirement
     return query(
         collection(firestore, 'trips'),
-        where('carrierName', '==', searchCarrier),
-        where('status', '!=', 'Awaiting-Offers')
+        where('carrierName', '==', searchCarrier)
     );
   }, [firestore, user, searchMode, searchCarrier]);
 
@@ -100,7 +100,8 @@ export default function DashboardPage() {
         return;
     }
 
-    let trips = [...upcomingTrips];
+    // Filter out 'Awaiting-Offers' status on the client-side
+    let trips = upcomingTrips.filter(trip => trip.status !== 'Awaiting-Offers');
 
     // Filter by origin
     if (searchOriginCity) {
