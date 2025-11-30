@@ -66,6 +66,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
+          <div className="p-4">
+            <img src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" alt="Safar Carrier Logo" style={{ width: '140px', margin: 'auto' }} />
+          </div>
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
