@@ -66,7 +66,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <img 
             src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
             alt="Safar Carrier Logo" 
-            style={{ height: '95px', width: '140px' }} 
+            style={{ height: '110px', width: '145px' }} 
           />
           <span className="sr-only">Safar Carrier</span>
         </Link>
@@ -92,7 +92,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <img 
                   src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
                   alt="Safar Carrier Logo" 
-                  style={{ height: '95px', width: '140px' }} 
+                  style={{ height: '110px', width: '145px' }} 
                 />
                 <span className="sr-only">Safar Carrier</span>
               </Link>
