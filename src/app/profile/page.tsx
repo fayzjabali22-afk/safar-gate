@@ -1,3 +1,4 @@
+
 'use client';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -23,7 +24,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore, useMemoFirebase, useDoc, setDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useMemoFirebase, useDoc, setDocumentNonBlocking, useAuth } from '@/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { deleteUser } from 'firebase/auth';
@@ -44,8 +45,11 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 export default function ProfilePage() {
   const { toast } = useToast();
   const { user } = useUser();
+  const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -92,86 +96,152 @@ export default function ProfilePage() {
     });
   }
 
+    const handleDeleteAccount = async () => {
+    if (!user || !auth) {
+        toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم العثور على المستخدم.' });
+        return;
+    }
+    try {
+      await deleteUser(user);
+      toast({ title: 'تم حذف الحساب بنجاح', description: 'نأمل أن نراك مرة أخرى قريبًا.' });
+      router.push('/signup');
+    } catch (error: any) {
+        console.error("Delete account error:", error);
+        toast({
+            variant: 'destructive',
+            title: 'فشل حذف الحساب',
+            description: 'هذه العملية تتطلب إعادة تسجيل دخول حديثة. الرجاء تسجيل الخروج ثم الدخول مرة أخرى والمحاولة مجددًا.',
+        });
+    } finally {
+        setIsDeleteConfirmOpen(false);
+    }
+  };
+
   return (
+    <>
     <AppLayout>
-      <Card className="max-w-2xl mx-auto shadow-lg">
-        <CardHeader>
-          <CardTitle className="font-headline">إعدادات الملف الشخصي</CardTitle>
-          <CardDescription>
-            قم بإدارة معلومات حسابك وتفضيلاتك.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <div className="flex items-center space-x-6 rtl:space-x-reverse">
-                <Avatar className="h-20 w-20">
-                  {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || ''} />}
-                  <AvatarFallback>
-                    {userProfile?.firstName ? userProfile.firstName.charAt(0) : user?.email?.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <Button variant="outline" type="button">تغيير الصورة</Button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="max-w-2xl mx-auto space-y-8">
+        <Card className="shadow-lg">
+            <CardHeader>
+            <CardTitle className="font-headline">إعدادات الملف الشخصي</CardTitle>
+            <CardDescription>
+                قم بإدارة معلومات حسابك وتفضيلاتك.
+            </CardDescription>
+            </CardHeader>
+            <CardContent>
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                <div className="flex items-center space-x-6 rtl:space-x-reverse">
+                    <Avatar className="h-20 w-20">
+                    {user?.photoURL && <AvatarImage src={user.photoURL} alt={user.displayName || ''} />}
+                    <AvatarFallback>
+                        {userProfile?.firstName ? userProfile.firstName.charAt(0) : user?.email?.charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                    </Avatar>
+                    <Button variant="outline" type="button">تغيير الصورة</Button>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField
+                    control={form.control}
+                    name="firstName"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>الاسم الأول</FormLabel>
+                        <FormControl>
+                            <Input placeholder="اسمك الأول" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                    <FormField
+                    control={form.control}
+                    name="lastName"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>الاسم الأخير</FormLabel>
+                        <FormControl>
+                            <Input placeholder="اسمك الأخير" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                    />
+                </div>
                 <FormField
-                  control={form.control}
-                  name="firstName"
-                  render={({ field }) => (
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
                     <FormItem>
-                      <FormLabel>الاسم الأول</FormLabel>
-                      <FormControl>
-                        <Input placeholder="اسمك الأول" {...field} />
-                      </FormControl>
-                      <FormMessage />
+                        <FormLabel>البريد الإلكتروني</FormLabel>
+                        <FormControl>
+                        <Input type="email" placeholder="بريدك الإلكتروني" {...field} disabled />
+                        </FormControl>
+                        <FormMessage />
                     </FormItem>
-                  )}
+                    )}
                 />
-                 <FormField
-                  control={form.control}
-                  name="lastName"
-                  render={({ field }) => (
+                <FormField
+                    control={form.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
                     <FormItem>
-                      <FormLabel>الاسم الأخير</FormLabel>
-                      <FormControl>
-                        <Input placeholder="اسمك الأخير" {...field} />
-                      </FormControl>
-                      <FormMessage />
+                        <FormLabel>رقم الهاتف</FormLabel>
+                        <FormControl>
+                        <Input type="tel" placeholder="رقم هاتفك" {...field} />
+                        </FormControl>
+                        <FormMessage />
                     </FormItem>
-                  )}
+                    )}
                 />
-              </div>
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>البريد الإلكتروني</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="بريدك الإلكتروني" {...field} disabled />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-               <FormField
-                control={form.control}
-                name="phoneNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>رقم الهاتف</FormLabel>
-                    <FormControl>
-                      <Input type="tel" placeholder="رقم هاتفك" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit">حفظ التغييرات</Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                <Button type="submit">حفظ التغييرات</Button>
+                </form>
+            </Form>
+            </CardContent>
+        </Card>
+
+        <Card className="border-destructive shadow-lg">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-destructive">
+                    <ShieldAlert />
+                    منطقة الخطر
+                </CardTitle>
+                <CardDescription>
+                    هذه الإجراءات دائمة ولا يمكن التراجع عنها. يرجى المتابعة بحذر.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p>بمجرد حذف حسابك، ستفقد كل بياناتك الشخصية وسجل الحجوزات بشكل نهائي.</p>
+            </CardContent>
+            <CardFooter>
+                 <Button variant="destructive" onClick={() => setIsDeleteConfirmOpen(true)}>
+                    <Trash2 className="ml-2 h-4 w-4" />
+                    حذف الحساب بشكل نهائي
+                </Button>
+            </CardFooter>
+        </Card>
+      </div>
     </AppLayout>
+
+    <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent dir="rtl">
+            <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                    <ShieldAlert className="h-6 w-6 text-red-500" />
+                    هل أنت متأكد من حذف حسابك؟
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                    هذا الإجراء سيقوم بحذف حسابك بشكل نهائي. لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع بياناتك الشخصية وحجوزاتك وسجل رحلاتك.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                    نعم، قم بحذف حسابي
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

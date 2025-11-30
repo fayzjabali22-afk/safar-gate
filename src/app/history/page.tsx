@@ -128,11 +128,11 @@ export default function HistoryPage() {
     </div>
   );
 
-  const TripList = ({ trips, onActionClick, actionLabel }: { trips: Trip[] | null, onActionClick: (trip: Trip) => void, actionLabel: string }) => (
-    <>
-      {(!trips || trips.length === 0) ? (
-        <p className="text-center text-muted-foreground py-4">لا توجد بيانات لعرضها.</p>
-      ) : (
+  const TripList = ({ trips, onActionClick, actionLabel, noDataMessage }: { trips: Trip[] | null, onActionClick: (trip: Trip) => void, actionLabel: string, noDataMessage: string }) => {
+    if (isLoadingAwaiting || isLoadingConfirmed) return renderSkeleton();
+    if (!trips || trips.length === 0) return <p className="text-center text-muted-foreground py-4">{noDataMessage}</p>;
+    
+    return (
         <div className="md:hidden space-y-4">
           {trips.map((trip) => (
             <Card key={trip.id} className="w-full">
@@ -153,46 +153,77 @@ export default function HistoryPage() {
             </Card>
           ))}
         </div>
-      )}
-    </>
-  );
+    );
+  };
 
-  const TripTable = ({ trips, onActionClick, actionLabel }: { trips: Trip[] | null, onActionClick: (trip: Trip) => void, actionLabel: string }) => (
-      <div className="hidden md:block border rounded-lg">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>معرّف الطلب</TableHead>
-              <TableHead>الانطلاق</TableHead>
-              <TableHead>الوجهة</TableHead>
-              <TableHead>تاريخ المغادرة</TableHead>
-              <TableHead>الحالة</TableHead>
-              <TableHead>الإجراء</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(!trips || trips.length === 0) ? (
-                 <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                       لا توجد بيانات لعرضها.
-                    </TableCell>
+  const TripTable = ({ trips, onActionClick, actionLabel, noDataMessage }: { trips: Trip[] | null, onActionClick: (trip: Trip) => void, actionLabel: string, noDataMessage: string }) => {
+    if (isLoadingAwaiting || isLoadingConfirmed) {
+        return (
+            <div className="hidden md:block border rounded-lg">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>معرّف الطلب</TableHead>
+                            <TableHead>الانطلاق</TableHead>
+                            <TableHead>الوجهة</TableHead>
+                            <TableHead>تاريخ المغادرة</TableHead>
+                            <TableHead>الحالة</TableHead>
+                            <TableHead>الإجراء</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {[...Array(2)].map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                                <TableCell><Skeleton className="h-6 w-24 rounded-full" /></TableCell>
+                                <TableCell><Skeleton className="h-8 w-28" /></TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
+        );
+    }
+    return (
+        <div className="hidden md:block border rounded-lg">
+            <Table>
+            <TableHeader>
+                <TableRow>
+                <TableHead>معرّف الطلب</TableHead>
+                <TableHead>الانطلاق</TableHead>
+                <TableHead>الوجهة</TableHead>
+                <TableHead>تاريخ المغادرة</TableHead>
+                <TableHead>الحالة</TableHead>
+                <TableHead>الإجراء</TableHead>
                 </TableRow>
-            ) : (
-              trips.map((trip) => (
-                <TableRow key={trip.id}>
-                  <TableCell className="font-medium">{trip.id.substring(0, 7).toUpperCase()}</TableCell>
-                  <TableCell>{trip.origin}</TableCell>
-                  <TableCell>{trip.destination}</TableCell>
-                  <TableCell>{new Date(trip.departureDate).toLocaleDateString()}</TableCell>
-                  <TableCell><Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge></TableCell>
-                  <TableCell><Button variant="outline" size="sm" onClick={() => onActionClick(trip)}>{actionLabel}</Button></TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-  );
+            </TableHeader>
+            <TableBody>
+                {!trips || trips.length === 0 ? (
+                    <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                           {noDataMessage}
+                        </TableCell>
+                    </TableRow>
+                ) : (
+                trips.map((trip) => (
+                    <TableRow key={trip.id}>
+                    <TableCell className="font-medium">{trip.id.substring(0, 7).toUpperCase()}</TableCell>
+                    <TableCell>{trip.origin}</TableCell>
+                    <TableCell>{trip.destination}</TableCell>
+                    <TableCell>{new Date(trip.departureDate).toLocaleDateString()}</TableCell>
+                    <TableCell><Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge></TableCell>
+                    <TableCell><Button variant="outline" size="sm" onClick={() => onActionClick(trip)}>{actionLabel}</Button></TableCell>
+                    </TableRow>
+                ))
+                )}
+            </TableBody>
+            </Table>
+        </div>
+    );
+  };
 
 
   if (isUserLoading) return <AppLayout>{renderSkeleton()}</AppLayout>;
@@ -242,14 +273,8 @@ export default function HistoryPage() {
               <AccordionContent>
                 <CardContent>
                   <CardDescription className="mb-4">هنا تظهر طلباتك التي قمت بنشرها وتنتظر عروضاً من الناقلين.</CardDescription>
-                  {isLoadingAwaiting ? renderSkeleton() : (!awaitingTrips || awaitingTrips.length === 0) ? (
-                    <p className="text-center text-muted-foreground py-4">ليس لديك طلبات تبحث عن ناقل.</p>
-                  ) : (
-                    <>
-                      <TripList trips={awaitingTrips} onActionClick={handleOpenOffers} actionLabel="استعراض العروض" />
-                      <TripTable trips={awaitingTrips} onActionClick={handleOpenOffers} actionLabel="استعراض العروض" />
-                    </>
-                  )}
+                  <TripList trips={awaitingTrips} onActionClick={handleOpenOffers} actionLabel="استعراض العروض" noDataMessage="ليس لديك طلبات تبحث عن ناقل." />
+                  <TripTable trips={awaitingTrips} onActionClick={handleOpenOffers} actionLabel="استعراض العروض" noDataMessage="ليس لديك طلبات تبحث عن ناقل." />
                 </CardContent>
               </AccordionContent>
             </Card>
@@ -263,14 +288,8 @@ export default function HistoryPage() {
               <AccordionContent>
                 <CardContent>
                   <CardDescription className="mb-4">تابع رحلاتك التي قمت بحجزها بالفعل وأي تحديثات عليها.</CardDescription>
-                  {isLoadingConfirmed ? renderSkeleton() : (!confirmedTrips || confirmedTrips.length === 0) ? (
-                    <p className="text-center text-muted-foreground py-4">ليس لديك حجوزات مؤكدة حاليًا.</p>
-                  ) : (
-                    <>
-                      <TripList trips={confirmedTrips} onActionClick={handleOpenTicket} actionLabel="متابعة الرحلة" />
-                      <TripTable trips={confirmedTrips} onActionClick={handleOpenTicket} actionLabel="متابعة الرحلة" />
-                    </>
-                  )}
+                  <TripList trips={confirmedTrips} onActionClick={handleOpenTicket} actionLabel="متابعة الرحلة" noDataMessage="ليس لديك حجوزات مؤكدة حاليًا." />
+                  <TripTable trips={confirmedTrips} onActionClick={handleOpenTicket} actionLabel="متابعة الرحلة" noDataMessage="ليس لديك حجوزات مؤكدة حاليًا." />
                 </CardContent>
               </AccordionContent>
             </Card>
