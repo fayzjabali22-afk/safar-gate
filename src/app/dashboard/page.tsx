@@ -18,7 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import type { Trip } from '@/lib/data';
 import { TripCard } from '@/components/trip-card';
 import { Calendar } from "@/components/ui/calendar"
@@ -30,7 +30,7 @@ import {
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
-import { collection, query, where, Query } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -101,11 +101,10 @@ export default function DashboardPage() {
       constraints.push(where('carrierName', '==', activeFilters.carrierName));
     }
     
-    if (constraints.length > 0) {
-      return query(q, ...constraints);
-    }
-
-    return query(q);
+    // Always apply a filter for status to not show 'Awaiting-Offers'
+    constraints.push(where('status', '!=', 'Awaiting-Offers'));
+    
+    return query(q, ...constraints);
   }, [firestore, user, activeFilters, searchMode]);
 
   const { data: upcomingTrips, isLoading } = useCollection<Trip>(tripsQuery);
@@ -140,22 +139,21 @@ export default function DashboardPage() {
     }
 
     const tripsCollection = collection(firestore, 'trips');
-    const newDoc = await addDocumentNonBlocking(tripsCollection, {
+    addDocumentNonBlocking(tripsCollection, {
         userId: user.uid,
         origin: quickBookingOrigin,
         destination: quickBookingDestination,
         passengers: quickBookingSeats,
         status: 'Awaiting-Offers',
         departureDate: new Date().toISOString(), // Placeholder date
+    }).then(() => {
+        toast({
+            title: "تم إرسال طلبك بنجاح!",
+            description: "سيتم توجيهك الآن لصفحة حجوزاتك لمتابعة طلبك.",
+        });
+        // Redirect user to their bookings page to see the new request
+        router.push('/history');
     });
-
-    toast({
-        title: "تم إرسال طلبك بنجاح!",
-        description: "سيتم توجيهك الآن لصفحة حجوزاتك لمتابعة طلبك.",
-    });
-
-    // Redirect user to their bookings page to see the new request
-    router.push('/history');
   };
   
   const handleBookingRequest = () => {
@@ -168,33 +166,35 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-0 md:p-4 bg-[#130609] rounded-lg">
+      <div className="container mx-auto p-0 md:p-4 bg-background rounded-lg">
         <div className="flex flex-col lg:flex-row gap-8 p-4">
 
           {/* Main Content: Trip Search and Display */}
           <div className="flex-1 min-w-0">
-            <header className="mb-8">
+            <header className="mb-8 text-center lg:text-right">
               <h1 className="text-2xl font-bold tracking-tight text-foreground">أهلاً بك، أين وجهتك التالية؟</h1>
               <p className="text-muted-foreground mt-2">ابحث عن رحلتك القادمة أو استعرض الرحلات المجدولة بسهولة.</p>
             </header>
 
             {/* Search Form Card */}
             <Card className="w-full shadow-lg rounded-lg mb-8 border-border/60 bg-card/80 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="grid gap-6">
+              <CardContent className="p-4 md:p-6">
+                <div className="grid grid-cols-1 gap-4">
 
                   {/* Search Philosophy Buttons */}
-                  <div className="flex justify-center gap-2">
-                     <Button variant={searchMode === 'specific-carrier' ? 'default' : 'outline'} onClick={() => setSearchMode('specific-carrier')}>
+                  <div className="grid grid-cols-3 gap-2">
+                     <Button variant={searchMode === 'specific-carrier' ? 'default' : 'outline'} onClick={() => setSearchMode('specific-carrier')} className="w-full">
                         <UserSearch className="ml-2 h-4 w-4" /> ناقل محدد
                      </Button>
-                     <Button variant={searchMode === 'all-carriers' ? 'default' : 'outline'} onClick={() => setSearchMode('all-carriers')}>
+                     <Button variant={searchMode === 'all-carriers' ? 'default' : 'outline'} onClick={() => setSearchMode('all-carriers')} className="w-full">
                         <Globe className="ml-2 h-4 w-4" /> كل الناقلين
                      </Button>
-                      <Button variant={searchMode === 'by-rating' ? 'default' : 'outline'} onClick={() => setSearchMode('by-rating')} disabled>
-                        <Star className="ml-2 h-4 w-4" /> حسب التقييم
+                      <Button variant={searchMode === 'by-rating' ? 'default' : 'outline'} onClick={() => setSearchMode('by-rating')} disabled className="w-full">
+                        <Star className="ml-2 h-4 w-4" /> بالتقييم
                       </Button>
                   </div>
+                  
+                  <div className="border-t border-border/60 my-2"></div>
 
                   {/* Specific Carrier Search Input */}
                   {searchMode === 'specific-carrier' && (
@@ -205,7 +205,7 @@ export default function DashboardPage() {
                   )}
 
                   {/* Origin and Destination */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="origin-country">دولة الانطلاق</Label>
                       <Select onValueChange={setSearchOriginCountry} value={searchOriginCountry}>
@@ -230,7 +230,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                      <div className="grid gap-2">
                         <Label htmlFor="destination-country">دولة الوصول</Label>
                         <Select onValueChange={setSearchDestinationCountry} value={searchDestinationCountry}>
@@ -256,7 +256,7 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Date and Seats */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="travel-date">تاريخ السفر</Label>
                        <Popover>
@@ -298,7 +298,7 @@ export default function DashboardPage() {
                   </div>
 
                   {/* Action Button */}
-                  <Button onClick={handleSearch} size="lg" className="w-full md:w-auto md:col-start-2 justify-self-end mt-2 bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <Button onClick={handleSearch} size="lg" className="w-full justify-self-stretch sm:justify-self-end mt-2 bg-accent hover:bg-accent/90 text-accent-foreground">
                     <Search className="ml-2 h-5 w-5" />
                     البحث عن رحلة
                   </Button>
@@ -307,7 +307,7 @@ export default function DashboardPage() {
             </Card>
             
             {/* Upcoming Scheduled Trips */}
-            <div>
+            <div className="mt-12">
               <h2 className="text-2xl font-bold mb-4">الرحلات المجدولة القادمة</h2>
               {isLoading && <p>جاري تحميل الرحلات...</p>}
               {!isLoading && user && upcomingTrips && upcomingTrips.length > 0 ? (
@@ -332,8 +332,8 @@ export default function DashboardPage() {
           </div>
 
           {/* Side Panel: Quick Booking */}
-          <div className="lg:w-[350px] lg:shrink-0">
-            <Card className="w-full shadow-lg rounded-lg sticky top-8 border-2 border-accent bg-card/80 backdrop-blur-sm">
+          <div className="lg:w-[350px] lg:shrink-0 lg:sticky lg:top-8">
+            <Card className="w-full shadow-lg rounded-lg border-2 border-accent bg-card/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-2xl font-bold">
                   حجز سريع
@@ -342,8 +342,8 @@ export default function DashboardPage() {
                   أرسل طلبك مباشرة إلى أفضل الناقلين.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid gap-6">
+              <CardContent className="p-4 md:p-6">
+                <div className="grid gap-4">
                   <div className="grid gap-2">
                     <Label htmlFor="quick-origin">من</Label>
                     <Select onValueChange={setQuickBookingOrigin} value={quickBookingOrigin}>
