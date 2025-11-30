@@ -83,7 +83,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <span className="sr-only">Toggle navigation menu</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" style={{ backgroundColor: '#EDC17C' }}>
+          <SheetContent side="right" style={{ backgroundColor: '#EDC17C', border: '2px solid #8B0000' }}>
             <nav className="grid gap-6 text-lg font-medium">
               <Link
                 href="/dashboard"
@@ -100,7 +100,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`hover:text-foreground ${pathname === item.href ? 'text-foreground' : 'text-muted-foreground'}`}
+                  className={`font-bold text-black hover:text-gray-700 ${pathname === item.href ? 'underline' : ''}`}
                 >
                   {item.label}
                 </Link>
