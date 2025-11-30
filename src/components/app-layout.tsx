@@ -20,10 +20,13 @@ import {
   useMemoFirebase,
   useCollection,
   setDocumentNonBlocking,
+  useAuth,
 } from '@/firebase';
 import { doc, collection, query, where } from 'firebase/firestore';
 import type { Notification } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
+import { signOut } from 'firebase/auth';
+import { useToast } from '@/hooks/use-toast';
 
 const menuItems = [
   {
@@ -48,7 +51,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useUser();
+  const auth = useAuth();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -74,6 +79,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     // Navigate if there's a link
     if (notification.link) {
         router.push(notification.link);
+    }
+  };
+
+  const handleSignOut = async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+      toast({
+        title: 'تم تسجيل الخروج بنجاح',
+      });
+      router.push('/login');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'خطأ في تسجيل الخروج',
+        description: 'حدث خطأ ما، يرجى المحاولة مرة أخرى.',
+      });
     }
   };
 
@@ -205,11 +227,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                    <Link href="/login">
-                    <LogOut className="ml-2 h-4 w-4" />
-                    <span>تسجيل الخروج</span>
-                    </Link>
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="ml-2 h-4 w-4" />
+                  <span>تسجيل الخروج</span>
                 </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -254,11 +274,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                    <Link href="/login">
-                    <LogOut className="ml-2 h-4 w-4" />
-                    <span>تسجيل الخروج</span>
-                    </Link>
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="ml-2 h-4 w-4" />
+                  <span>تسجيل الخروج</span>
                 </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -287,3 +305,5 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
+    

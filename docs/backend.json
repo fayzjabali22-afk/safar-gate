@@ -35,6 +35,19 @@
         "email"
       ]
     },
+    "CarrierProfile": {
+      "title": "CarrierProfile",
+      "type": "object",
+      "description": "Represents a carrier's profile in the system.",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "contactEmail": { "type": "string", "format": "email" },
+        "phoneNumber": { "type": "string" },
+        "averageRating": { "type": "number" }
+      },
+      "required": ["id", "name", "contactEmail"]
+    },
     "Trip": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Trip",
@@ -48,6 +61,10 @@
         "userId": {
           "type": "string",
           "description": "ID of the user who created the trip."
+        },
+        "carrierId": {
+          "type": "string",
+          "description": "ID of the carrier providing the trip."
         },
         "origin": {
           "type": "string",
@@ -159,7 +176,7 @@
             },
             "type": {
                 "type": "string",
-                "enum": ["new_offer", "booking_confirmed", "trip_update", "payment_reminder"],
+                "enum": ["new_offer", "booking_confirmed", "trip_update", "payment_reminder", "rating_request"],
                 "description": "The type of the notification."
             },
             "isRead": {
@@ -177,6 +194,21 @@
             }
         },
         "required": ["id", "userId", "title", "message", "type", "isRead", "createdAt"]
+    },
+    "Rating": {
+      "title": "Rating",
+      "type": "object",
+      "description": "Represents a rating given by a user to a carrier for a trip.",
+      "properties": {
+        "id": { "type": "string" },
+        "tripId": { "type": "string" },
+        "carrierId": { "type": "string" },
+        "userId": { "type": "string" },
+        "ratingValue": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "tripId", "carrierId", "userId", "ratingValue", "createdAt"]
     }
   },
   "auth": {
@@ -202,6 +234,14 @@
               "description": "The unique identifier for the user."
             }
           ]
+        }
+      },
+      {
+        "path": "/carriers/{carrierId}",
+        "definition": {
+          "entityName": "CarrierProfile",
+          "schema": { "$ref": "#/backend/entities/CarrierProfile" },
+          "description": "Stores public profiles for carriers."
         }
       },
       {
@@ -255,7 +295,17 @@
             }
           ]
         }
+      },
+      {
+        "path": "/ratings/{ratingId}",
+        "definition": {
+          "entityName": "Rating",
+          "schema": { "$ref": "#/backend/entities/Rating" },
+          "description": "Stores ratings for trips provided by carriers."
+        }
       }
     ]
   }
 }
+
+    
