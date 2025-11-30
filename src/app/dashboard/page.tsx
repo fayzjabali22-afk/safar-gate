@@ -42,6 +42,7 @@ import { collection, query } from 'firebase/firestore';
 import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { Badge } from '@/components/ui/badge';
 
 // Mock data for countries and cities
 const countries: { [key: string]: { name: string; cities: string[] } } = {
@@ -130,17 +131,17 @@ export default function DashboardPage() {
         trips = allTrips.filter(trip => trip.carrierName === selectedCarrierName);
     } else { // 'all-carriers' mode
         trips = [...allTrips]; // Start with all trips
-        if (searchVehicleType !== 'all') {
-          trips = trips.filter(trip => trip.vehicleCategory === searchVehicleType);
-        }
     }
 
-    // New filtering logic for the accordion view: ONLY destination and seats
+    // Filter for both modes
     if (searchDestinationCity) {
         trips = trips.filter(trip => trip.destination === searchDestinationCity);
     }
     if (searchSeats > 0) {
         trips = trips.filter(trip => trip.availableSeats >= searchSeats);
+    }
+    if (searchMode === 'all-carriers' && searchVehicleType !== 'all') {
+      trips = trips.filter(trip => trip.vehicleCategory === searchVehicleType);
     }
     
     // Grouping by date
@@ -162,10 +163,16 @@ export default function DashboardPage() {
 
     setGroupedAndFilteredTrips(sortedGroupedTrips);
     
-    if (sortedDates.length > 0) {
+    // Only show trips if a destination is selected in 'all-carriers' mode, or a carrier is selected in 'specific-carrier' mode.
+    const shouldShowTrips = (searchMode === 'all-carriers' && searchDestinationCity) || (searchMode === 'specific-carrier' && selectedCarrierName);
+
+    if (shouldShowTrips && sortedDates.length > 0) {
         setOpenAccordion(sortedDates[0]); // Open the first date by default
     } else {
         setOpenAccordion(undefined);
+        if(!searchDestinationCity && searchMode === 'all-carriers'){
+            setGroupedAndFilteredTrips({});
+        }
     }
 
   }, [searchDestinationCity, searchSeats, allTrips, searchMode, selectedCarrierName, searchVehicleType]);
