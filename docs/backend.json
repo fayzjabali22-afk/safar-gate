@@ -69,12 +69,16 @@
         },
         "status": {
           "type": "string",
-          "enum": ["Planned", "In-Transit", "Completed", "Cancelled"],
+          "enum": ["Planned", "In-Transit", "Completed", "Cancelled", "Awaiting-Offers"],
           "description": "The current status of the trip."
         },
         "cargoDetails": {
             "type": "string",
             "description": "Details about the cargo being transported."
+        },
+        "passengers": {
+            "type": "number",
+            "description": "Number of passengers for the trip."
         }
       },
       "required": [
@@ -83,6 +87,52 @@
         "origin",
         "destination",
         "departureDate",
+        "status",
+        "passengers"
+      ]
+    },
+    "Booking": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Booking",
+      "type": "object",
+      "description": "Represents a booking made by a user for a specific trip.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the booking."
+        },
+        "tripId": {
+          "type": "string",
+          "description": "ID of the associated trip."
+        },
+        "userId": {
+          "type": "string",
+          "description": "ID of the user who made the booking."
+        },
+        "carrierId": {
+          "type": "string",
+          "description": "ID of the carrier providing the trip."
+        },
+        "seats": {
+          "type": "number",
+          "description": "Number of seats booked."
+        },
+        "status": {
+            "type": "string",
+            "enum": ["Confirmed", "Pending-Payment", "Cancelled", "Completed"],
+            "description": "The status of the booking."
+        },
+        "totalPrice": {
+            "type": "number",
+            "description": "Total price for the booking."
+        }
+      },
+      "required": [
+        "id",
+        "tripId",
+        "userId",
+        "carrierId",
+        "seats",
         "status"
       ]
     }
@@ -124,6 +174,22 @@
             {
               "name": "tripId",
               "description": "The unique identifier for the trip."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/bookings/{bookingId}",
+        "definition": {
+          "entityName": "Booking",
+          "schema": {
+            "$ref": "#/backend/entities/Booking"
+          },
+          "description": "Stores booking details, linking users to trips.",
+          "params": [
+            {
+              "name": "bookingId",
+              "description": "The unique identifier for the booking."
             }
           ]
         }

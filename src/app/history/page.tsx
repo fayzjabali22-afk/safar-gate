@@ -10,40 +10,85 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-
-const trips = [
-  {
-    id: 'TRIP001',
-    origin: 'Riyadh, SA',
-    destination: 'Dubai, AE',
-    departure: '2024-05-20',
-    status: 'Completed',
-  },
-  {
-    id: 'TRIP002',
-    origin: 'Jeddah, SA',
-    destination: 'Cairo, EG',
-    departure: '2024-05-22',
-    status: 'In-Transit',
-  },
-  {
-    id: 'TRIP003',
-    origin: 'Dammam, SA',
-    destination: 'Kuwait City, KW',
-    departure: '2024-05-25',
-    status: 'Planned',
-  },
-    {
-    id: 'TRIP004',
-    origin: 'Riyadh, SA',
-    destination: 'Manama, BH',
-    departure: '2024-05-18',
-    status: 'Cancelled',
-  },
-];
-
+import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { Trip } from '@/lib/data';
 
 export default function HistoryPage() {
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/login');
+    }
+  }, [user, isUserLoading, router]);
+
+  const tripsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'trips'), where('userId', '==', user.uid));
+  }, [firestore, user]);
+
+  const { data: trips, isLoading } = useCollection<Trip>(tripsQuery);
+
+  const renderSkeleton = () => (
+    <div className="space-y-4">
+      {[...Array(3)].map((_, i) => (
+        <Card key={i}>
+          <CardContent className="p-4 grid gap-3">
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-6 w-20" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-4 w-40" />
+            </div>
+            <Skeleton className="h-4 w-32 pt-2" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+
+  if (isUserLoading || isLoading) {
+    return (
+      <AppLayout>
+        <Card>
+          <CardHeader>
+            <CardTitle>My Bookings</CardTitle>
+            <CardDescription>View and manage your current and past trip bookings.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {renderSkeleton()}
+          </CardContent>
+        </Card>
+      </AppLayout>
+    );
+  }
+
+  if (!trips || trips.length === 0) {
+    return (
+        <AppLayout>
+            <Card>
+                <CardHeader>
+                    <CardTitle>My Bookings</CardTitle>
+                    <CardDescription>View and manage your current and past trip bookings.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-center py-12">
+                        <p className="text-lg text-muted-foreground">You have no bookings yet.</p>
+                    </div>
+                </CardContent>
+            </Card>
+        </AppLayout>
+    )
+  }
+
   return (
     <AppLayout>
       <Card>
@@ -67,10 +112,10 @@ export default function HistoryPage() {
               <TableBody>
                 {trips.map((trip) => (
                   <TableRow key={trip.id}>
-                    <TableCell className="font-medium">{trip.id}</TableCell>
+                    <TableCell className="font-medium">{trip.id.substring(0,7).toUpperCase()}</TableCell>
                     <TableCell>{trip.origin}</TableCell>
                     <TableCell>{trip.destination}</TableCell>
-                    <TableCell>{trip.departure}</TableCell>
+                    <TableCell>{new Date(trip.departureDate).toLocaleDateString()}</TableCell>
                     <TableCell>
                       <Badge variant={
                         trip.status === 'Completed' ? 'default' :
@@ -90,7 +135,7 @@ export default function HistoryPage() {
               <Card key={trip.id} className="w-full">
                 <CardContent className="p-4 grid gap-2">
                     <div className="flex justify-between items-center">
-                        <span className="font-medium text-lg">{trip.id}</span>
+                        <span className="font-medium text-lg">{trip.id.substring(0,7).toUpperCase()}</span>
                         <Badge variant={
                           trip.status === 'Completed' ? 'default' :
                           trip.status === 'In-Transit' ? 'secondary' :
@@ -103,7 +148,7 @@ export default function HistoryPage() {
                         <p>To: {trip.destination}</p>
                     </div>
                     <div className="text-sm pt-2">
-                        <p>Departure: {trip.departure}</p>
+                        <p>Departure: {new Date(trip.departureDate).toLocaleDateString()}</p>
                     </div>
                 </CardContent>
               </Card>
