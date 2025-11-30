@@ -30,163 +30,166 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-0 md:p-4 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content: Trip Search and Display */}
-        <div className="lg:col-span-2">
-          <header className="mb-8">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground">أهلاً بك، أين وجهتك التالية؟</h1>
-            <p className="text-muted-foreground mt-2">ابحث عن رحلتك القادمة أو استعرض الرحلات المجدولة بسهولة.</p>
-          </header>
+      <div className="container mx-auto p-0 md:p-4">
+        <div className="flex flex-col lg:flex-row gap-8">
 
-          {/* Search Form Card */}
-          <Card className="w-full shadow-lg rounded-lg mb-8 border-border/60 bg-card/80 backdrop-blur-sm">
-            <CardContent className="p-6">
-              <div className="grid gap-6">
-                {/* Origin and Destination */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="origin-city">من</Label>
-                    <Select>
-                      <SelectTrigger id="origin-city">
-                        <SelectValue placeholder="اختر مدينة الانطلاق" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="damascus">دمشق</SelectItem>
-                        <SelectItem value="amman">عمّان</SelectItem>
-                        <SelectItem value="riyadh">الرياض</SelectItem>
-                        <SelectItem value="cairo">القاهرة</SelectItem>
-                      </SelectContent>
-                    </Select>
+          {/* Main Content: Trip Search and Display */}
+          <div className="flex-1 min-w-0">
+            <header className="mb-8">
+              <h1 className="text-4xl font-bold tracking-tight text-foreground">أهلاً بك، أين وجهتك التالية؟</h1>
+              <p className="text-muted-foreground mt-2">ابحث عن رحلتك القادمة أو استعرض الرحلات المجدولة بسهولة.</p>
+            </header>
+
+            {/* Search Form Card */}
+            <Card className="w-full shadow-lg rounded-lg mb-8 border-border/60 bg-card/80 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="grid gap-6">
+                  {/* Origin and Destination */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="origin-city">من</Label>
+                      <Select>
+                        <SelectTrigger id="origin-city">
+                          <SelectValue placeholder="اختر مدينة الانطلاق" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="damascus">دمشق</SelectItem>
+                          <SelectItem value="amman">عمّان</SelectItem>
+                          <SelectItem value="riyadh">الرياض</SelectItem>
+                          <SelectItem value="cairo">القاهرة</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="destination-city">إلى</Label>
+                      <Select>
+                        <SelectTrigger id="destination-city">
+                          <SelectValue placeholder="اختر مدينة الوصول" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="amman">عمّان</SelectItem>
+                          <SelectItem value="damascus">دمشق</SelectItem>
+                          <SelectItem value="dubai">دبي</SelectItem>
+                          <SelectItem value="kuwait">الكويت</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="destination-city">إلى</Label>
-                    <Select>
-                      <SelectTrigger id="destination-city">
-                        <SelectValue placeholder="اختر مدينة الوصول" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="amman">عمّان</SelectItem>
-                        <SelectItem value="damascus">دمشق</SelectItem>
-                        <SelectItem value="dubai">دبي</SelectItem>
-                         <SelectItem value="kuwait">الكويت</SelectItem>
-                      </SelectContent>
-                    </Select>
+
+                  {/* Date and Seats */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="travel-date">تاريخ السفر</Label>
+                      <Input id="travel-date" type="date" className="bg-background/50" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="seats">عدد المقاعد</Label>
+                      <Select>
+                        <SelectTrigger id="seats">
+                          <SelectValue placeholder="1" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
+                            <SelectItem key={num} value={String(num)}>{num}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
+
+                  {/* Action Button */}
+                  <Button size="lg" className="w-full md:w-auto md:col-start-2 justify-self-end mt-2 bg-accent hover:bg-accent/90 text-accent-foreground">
+                    <Search className="ml-2 h-5 w-5" />
+                    ابحث عن رحلة
+                  </Button>
                 </div>
-
-                {/* Date and Seats */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="travel-date">تاريخ السفر</Label>
-                    <Input id="travel-date" type="date" className="bg-background/50" />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="seats">عدد المقاعد</Label>
-                    <Select>
-                      <SelectTrigger id="seats">
-                        <SelectValue placeholder="1" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
-                          <SelectItem key={num} value={String(num)}>{num}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              </CardContent>
+            </Card>
+            
+            {/* Upcoming Scheduled Trips */}
+            <div>
+              <h2 className="text-2xl font-bold mb-4">الرحلات المجدولة القادمة</h2>
+              {upcomingTrips.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {upcomingTrips.map(trip => (
+                    <TripCard key={trip.id} trip={trip} />
+                  ))}
                 </div>
-
-                {/* Action Button */}
-                <Button size="lg" className="w-full md:w-auto md:col-start-2 justify-self-end mt-2 bg-accent hover:bg-accent/90 text-accent-foreground">
-                  <Search className="ml-2 h-5 w-5" />
-                  ابحث عن رحلة
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Upcoming Scheduled Trips */}
-          <div>
-            <h2 className="text-2xl font-bold mb-4">الرحلات المجدولة القادمة</h2>
-            {upcomingTrips.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {upcomingTrips.map(trip => (
-                  <TripCard key={trip.id} trip={trip} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center text-muted-foreground py-12">
-                 <ShipWheel className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-                <p className="text-lg">لا توجد رحلات مجدولة في الوقت الحالي.</p>
-                <p className="text-sm mt-2">جرّب البحث بتاريخ أو وجهة مختلفة.</p>
-              </div>
-            )}
+              ) : (
+                <div className="text-center text-muted-foreground py-12">
+                  <ShipWheel className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <p className="text-lg">لا توجد رحلات مجدولة في الوقت الحالي.</p>
+                  <p className="text-sm mt-2">جرّب البحث بتاريخ أو وجهة مختلفة.</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Side Panel: Quick Booking */}
-        <div className="lg:col-span-1">
-           <Card className="w-full shadow-lg rounded-lg sticky top-8 border-border/60 bg-card/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-2xl font-bold">
-                حجز سريع
-              </CardTitle>
-              <CardDescription>
-                أرسل طلبك مباشرة إلى أفضل الناقلين.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-6">
-                 <div className="grid gap-2">
-                  <Label htmlFor="quick-origin">من</Label>
-                   <Select>
-                      <SelectTrigger id="quick-origin">
-                        <SelectValue placeholder="اختر مدينة الانطلاق" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="damascus">دمشق</SelectItem>
-                        <SelectItem value="amman">عمّان</SelectItem>
-                      </SelectContent>
-                    </Select>
-                </div>
-                 <div className="grid gap-2">
-                  <Label htmlFor="quick-destination">إلى</Label>
+          {/* Side Panel: Quick Booking */}
+          <div className="lg:w-[350px] lg:shrink-0">
+            <Card className="w-full shadow-lg rounded-lg sticky top-8 border-border/60 bg-card/80 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-2xl font-bold">
+                  حجز سريع
+                </CardTitle>
+                <CardDescription>
+                  أرسل طلبك مباشرة إلى أفضل الناقلين.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-6">
+                  <div className="grid gap-2">
+                    <Label htmlFor="quick-origin">من</Label>
                     <Select>
-                      <SelectTrigger id="quick-destination">
-                        <SelectValue placeholder="اختر مدينة الوصول" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="amman">عمّان</SelectItem>
-                         <SelectItem value="damascus">دمشق</SelectItem>
-                      </SelectContent>
-                    </Select>
-                </div>
-                 <div className="grid gap-2">
-                    <Label htmlFor="quick-seats">عدد المقاعد</Label>
-                    <Select>
-                      <SelectTrigger id="quick-seats">
-                        <SelectValue placeholder="اختر عدد المقاعد" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
-                          <SelectItem key={num} value={String(num)}>{num}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                        <SelectTrigger id="quick-origin">
+                          <SelectValue placeholder="اختر مدينة الانطلاق" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="damascus">دمشق</SelectItem>
+                          <SelectItem value="amman">عمّان</SelectItem>
+                        </SelectContent>
+                      </Select>
                   </div>
-                  <div className="relative">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input placeholder="ابحث عن ناقل محدد (اختياري)" className="pr-10 bg-background/50" />
+                  <div className="grid gap-2">
+                    <Label htmlFor="quick-destination">إلى</Label>
+                      <Select>
+                        <SelectTrigger id="quick-destination">
+                          <SelectValue placeholder="اختر مدينة الوصول" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="amman">عمّان</SelectItem>
+                          <SelectItem value="damascus">دمشق</SelectItem>
+                        </SelectContent>
+                      </Select>
                   </div>
+                  <div className="grid gap-2">
+                      <Label htmlFor="quick-seats">عدد المقاعد</Label>
+                      <Select>
+                        <SelectTrigger id="quick-seats">
+                          <SelectValue placeholder="اختر عدد المقاعد" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
+                            <SelectItem key={num} value={String(num)}>{num}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="relative">
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input placeholder="ابحث عن ناقل محدد (اختياري)" className="pr-10 bg-background/50" />
+                    </div>
 
-                {/* Action Buttons */}
-                <div className="flex justify-end mt-4">
-                    <Button asChild size="lg">
-                      <Link href="/login">إرسال طلب الحجز</Link>
-                    </Button>
+                  {/* Action Buttons */}
+                  <div className="flex justify-end mt-4">
+                      <Button asChild size="lg">
+                        <Link href="/login">إرسال طلب الحجز</Link>
+                      </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </AppLayout>
