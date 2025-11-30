@@ -384,7 +384,7 @@ export default function DashboardPage() {
                   
                   {showFilterMessage && (
                     <div className="mt-2 text-center text-sm text-accent bg-accent/10 p-2 rounded-md border border-accent/30">
-                        تم العثور على الناقل. رحلاته المجدولة معروضة أدناه. يمكنك الآن تصفية النتائج أو إرسال طلب حجز مباشر له.
+                        {`هناك رحلاته المجدولة لـ ${selectedCarrierName} معروضة أدناه. يمكنك الآن تصفية النتائج أو تكملة ادخال بياناتك ثم إرسال طلب جديد.`}
                     </div>
                   )}
 
