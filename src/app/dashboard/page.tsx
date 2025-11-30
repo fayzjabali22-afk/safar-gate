@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import type { Trip } from '@/lib/data';
+import { tripHistory } from '@/lib/data'; // Import mock data
 import { TripCard } from '@/components/trip-card';
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -60,6 +61,10 @@ export default function DashboardPage() {
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
   const { toast } = useToast();
 
+  // Use mock data directly
+  const allTrips = tripHistory;
+  const isLoading = false; // Data is available locally
+
   // Search States
   const [searchOriginCountry, setSearchOriginCountry] = useState('');
   const [searchOriginCity, setSearchOriginCity] = useState('');
@@ -82,15 +87,8 @@ export default function DashboardPage() {
     setSearchDestinationCity('');
   }, [searchDestinationCountry]);
 
-  const tripsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    return query(collection(firestore, 'trips'));
-  }, [firestore]);
-
-  const { data: allTrips, isLoading } = useCollection<Trip>(tripsQuery);
-  
   const handleCarrierSearch = () => {
-    if (!carrierSearchInput || !allTrips) {
+    if (!carrierSearchInput) {
         toast({ title: 'الرجاء إدخال اسم الناقل أو رقم هاتفه', variant: 'destructive' });
         return;
     }
@@ -99,11 +97,10 @@ export default function DashboardPage() {
     const searchInputNormalized = normalizePhoneNumber(carrierSearchInput);
 
     const foundTrip = allTrips.find(trip => {
-        const nameMatch = trip.carrierName.includes(carrierSearchInput);
+        const nameMatch = trip.carrierName.toLowerCase().includes(carrierSearchInput.toLowerCase());
         const phoneMatch = trip.carrierPhoneNumber && normalizePhoneNumber(trip.carrierPhoneNumber).includes(searchInputNormalized);
         return nameMatch || phoneMatch;
     });
-
 
     if (foundTrip) {
         setSelectedCarrierName(foundTrip.carrierName);
@@ -117,9 +114,8 @@ export default function DashboardPage() {
 
 
   useEffect(() => {
-    // This effect handles the live filtering of trips AFTER a carrier has been selected.
     if (searchMode !== 'specific-carrier' || !selectedCarrierName || !allTrips) {
-      setFilteredTrips(null);
+      setFilteredTrips(null); // Clear trips if no carrier is selected
       return;
     }
 
@@ -279,6 +275,7 @@ export default function DashboardPage() {
                                 setCarrierSearchInput(e.target.value);
                                 if (selectedCarrierName) {
                                     setSelectedCarrierName(null); // Reset if user types again
+                                    setFilteredTrips(null);
                                 }
                             }}
                             className={cn(selectedCarrierName ? 'bg-green-100/10 border-green-500' : '')}
@@ -440,3 +437,5 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+
+    
