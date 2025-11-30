@@ -18,7 +18,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Trip } from '@/lib/data';
 import { TripCard } from '@/components/trip-card';
 import { Calendar } from "@/components/ui/calendar"
@@ -36,7 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
 // Mock data for countries and cities
-const countries = {
+const countries: { [key: string]: { name: string; cities: string[] } } = {
   syria: { name: 'سوريا', cities: ['damascus', 'aleppo', 'homs'] },
   jordan: { name: 'الأردن', cities: ['amman', 'irbid', 'zarqa'] },
   ksa: { name: 'السعودية', cities: ['riyadh', 'jeddah', 'dammam'] },
@@ -76,6 +76,16 @@ export default function DashboardPage() {
     seats?: number;
     carrierName?: string;
   }>({});
+  
+  // Reset city when country changes
+  useEffect(() => {
+    setSearchOriginCity('');
+  }, [searchOriginCountry]);
+
+  useEffect(() => {
+    setSearchDestinationCity('');
+  }, [searchDestinationCountry]);
+
 
   const tripsQuery = useMemoFirebase(() => {
     if (!firestore || !user || searchMode === 'all-carriers') return null;
@@ -181,7 +191,7 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-1 gap-4">
 
                   {/* Search Philosophy Buttons */}
-                  <div className="grid grid-cols-2 gap-2">
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                      <Button variant={searchMode === 'specific-carrier' ? 'default' : 'outline'} onClick={() => setSearchMode('specific-carrier')} className="w-full text-xs sm:text-sm">
                         <UserSearch className="ml-2 h-4 w-4" /> ناقل محدد
                      </Button>
@@ -232,8 +242,10 @@ export default function DashboardPage() {
                         <Select onValueChange={setSearchDestinationCountry} value={searchDestinationCountry}>
                           <SelectTrigger id="destination-country"><SelectValue placeholder="اختر دولة الوصول" /></SelectTrigger>
                           <SelectContent>
-                            {Object.entries(countries).map(([key, {name}]) => (
-                              <SelectItem key={key} value={key}>{name}</SelectItem>
+                            {Object.entries(countries)
+                                .filter(([key]) => key !== searchOriginCountry)
+                                .map(([key, {name}]) => (
+                                  <SelectItem key={key} value={key}>{name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -321,16 +333,11 @@ export default function DashboardPage() {
                    {searchMode === 'specific-carrier' && (
                     <>
                         <p className="text-lg">{user ? 'لا توجد رحلات تطابق بحثك.' : 'يرجى تسجيل الدخول لعرض الرحلات المجدولة.'}</p>
-                        {!isLoading && upcomingTrips?.length === 0 && (
-                            <Button onClick={() => alert('سيتم إرسال طلب لهذا الناقل المحدد')} className="mt-4">
-                                أرسل طلب حجز لهذا الناقل
-                            </Button>
-                        )}
-                        <p className="text-sm mt-2">{user ? 'جرّب البحث بمعايير مختلفة أو أرسل طلب حجز.' : 'يمكنك البحث عن رحلة أو نشر طلب حجز.'}</p>
+                        <p className="text-sm mt-2">{user ? 'جرّب البحث بمعايير مختلفة أو بدّل إلى وضع "كل الناقلين" لإرسال طلب.' : 'يمكنك البحث عن رحلة أو نشر طلب حجز.'}</p>
                     </>
                    )}
                    {searchMode === 'all-carriers' && (
-                       <p className="text-lg">أرسل طلبك مباشرة إلى أفضل الناقلين.</p>
+                       <p className="text-lg">املأ بيانات رحلتك ثم اضغط "إرسال طلب الحجز" ليصل لجميع الناقلين.</p>
                    )}
                 </div>
               )}
