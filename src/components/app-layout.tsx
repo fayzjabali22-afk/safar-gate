@@ -2,11 +2,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Ticket,
   LogOut,
-  MapPin,
   Settings,
-  User,
   Menu,
 } from 'lucide-react';
 import {
@@ -31,17 +28,14 @@ const menuItems = [
   {
     href: '/dashboard',
     label: 'لوحة التحكم',
-    icon: MapPin,
   },
   {
     href: '/history',
     label: 'حجوزاتي',
-    icon: Ticket,
   },
   {
     href: '/profile',
     label: 'ملفي الشخصي',
-    icon: User,
   },
 ];
 
@@ -59,36 +53,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 z-50">
-        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 text-lg font-semibold md:text-base"
-          >
-            <img 
-              src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
-              alt="Safar Carrier Logo" 
-              style={{ height: '80px', width: '140px' }} 
-            />
-            <span className="sr-only">Safar Carrier</span>
-          </Link>
-          {menuItems.map((item) => (
-             <Link
-              key={item.label}
-              href={item.href}
-              className={`transition-colors hover:text-foreground ${pathname === item.href ? 'text-foreground' : 'text-muted-foreground'}`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 z-50">
+        {/* Main Header Content */}
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2 text-lg font-semibold"
+        >
+          <img 
+            src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
+            alt="Safar Carrier Logo" 
+            style={{ height: '95px', width: '140px' }} 
+          />
+          <span className="sr-only">Safar Carrier</span>
+        </Link>
         
+        {/* Mobile Menu */}
         <Sheet>
           <SheetTrigger asChild>
             <Button
               variant="outline"
               size="icon"
-              className="shrink-0 md:hidden"
+              className="shrink-0 md:hidden ml-auto"
             >
               <Menu className="h-5 w-5" />
               <span className="sr-only">Toggle navigation menu</span>
@@ -98,12 +83,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <nav className="grid gap-6 text-lg font-medium">
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 text-lg font-semibold"
+                className="flex items-center gap-2 text-lg font-semibold mb-4"
               >
                 <img 
                   src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
                   alt="Safar Carrier Logo" 
-                  style={{ height: '80px', width: '140px' }} 
+                  style={{ height: '95px', width: '140px' }} 
                 />
                 <span className="sr-only">Safar Carrier</span>
               </Link>
@@ -119,9 +104,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </nav>
           </SheetContent>
         </Sheet>
-
-        <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-            <div className="ml-auto flex-1 sm:flex-initial" />
+        
+        {/* Desktop User Menu */}
+        <div className="hidden md:flex items-center gap-4 ml-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -153,6 +138,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </DropdownMenu>
         </div>
       </header>
+
+      {/* Secondary Navigation Header */}
+      <nav className="sticky top-16 hidden md:flex h-12 items-center justify-center gap-8 border-b bg-card/80 backdrop-blur-sm px-6 z-40">
+        {menuItems.map((item) => (
+            <Link
+            key={item.label}
+            href={item.href}
+            className={`text-sm font-medium transition-colors hover:text-primary ${pathname === item.href ? 'text-primary' : 'text-muted-foreground'}`}
+            >
+            {item.label}
+            </Link>
+        ))}
+      </nav>
+
       <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
         {children}
       </main>
