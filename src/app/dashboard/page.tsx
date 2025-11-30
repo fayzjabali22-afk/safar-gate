@@ -244,7 +244,7 @@ export default function DashboardPage() {
                           <SelectTrigger id="destination-city"><SelectValue placeholder="اختر مدينة الوصول" /></SelectTrigger>
                           <SelectContent>
                             {searchDestinationCountry && countries[searchDestinationCountry as keyof typeof countries]?.cities.map(cityKey => (
-                              <SelectItem key={cityKey} value={key}>{cities[cityKey]}</SelectItem>
+                              <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
