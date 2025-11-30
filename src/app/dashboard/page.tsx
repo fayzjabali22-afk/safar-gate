@@ -29,6 +29,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
@@ -53,6 +59,7 @@ const cities: { [key: string]: string } = {
     dubai: 'دبي', kuwait: 'الكويت'
 };
 
+type GroupedTrips = { [date: string]: Trip[] };
 
 export default function DashboardPage() {
   const [date, setDate] = useState<Date>();
@@ -62,11 +69,9 @@ export default function DashboardPage() {
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
   const { toast } = useToast();
 
-  // Use mock data directly
   const allTrips = tripHistory;
-  const isLoading = false; // Data is available locally
+  const isLoading = false; 
 
-  // Search States
   const [searchOriginCountry, setSearchOriginCountry] = useState('');
   const [searchOriginCity, setSearchOriginCity] = useState('');
   const [searchDestinationCountry, setSearchDestinationCountry] = useState('');
@@ -75,12 +80,11 @@ export default function DashboardPage() {
   const [carrierSearchInput, setCarrierSearchInput] = useState('');
   const [selectedCarrierName, setSelectedCarrierName] = useState<string | null>(null);
   const [searchVehicleType, setSearchVehicleType] = useState('all');
-
   const [searchMode, setSearchMode] = useState<'specific-carrier' | 'all-carriers'>('specific-carrier');
 
-  const [filteredTrips, setFilteredTrips] = useState<Trip[] | null>(null);
+  const [groupedAndFilteredTrips, setGroupedAndFilteredTrips] = useState<GroupedTrips>({});
+  const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
   
-  // Reset city when country changes
   useEffect(() => {
     setSearchOriginCity('');
   }, [searchOriginCountry]);
@@ -106,7 +110,7 @@ export default function DashboardPage() {
 
     if (foundTrip) {
         setSelectedCarrierName(foundTrip.carrierName);
-        setCarrierSearchInput(foundTrip.carrierName); // Update input to show the name
+        setCarrierSearchInput(foundTrip.carrierName); 
         toast({ title: 'تم العثور على الناقل', description: `يتم الآن عرض رحلات: ${foundTrip.carrierName}` });
     } else {
         setSelectedCarrierName(null);
@@ -119,51 +123,58 @@ export default function DashboardPage() {
     let trips: Trip[] = [];
     if (searchMode === 'specific-carrier') {
         if (!selectedCarrierName) {
-            setFilteredTrips(null); // Clear trips if no carrier is selected
+            setGroupedAndFilteredTrips({});
+            setOpenAccordion(undefined);
             return;
         }
         trips = allTrips.filter(trip => trip.carrierName === selectedCarrierName);
     } else { // 'all-carriers' mode
         trips = [...allTrips]; // Start with all trips
-        // Filter by vehicle type
         if (searchVehicleType !== 'all') {
           trips = trips.filter(trip => trip.vehicleCategory === searchVehicleType);
         }
     }
 
-    // Common filters for both modes
-    if (searchOriginCity) {
-        trips = trips.filter(trip => trip.origin === searchOriginCity);
-    }
+    // New filtering logic for the accordion view: ONLY destination and seats
     if (searchDestinationCity) {
         trips = trips.filter(trip => trip.destination === searchDestinationCity);
     }
     if (searchSeats > 0) {
         trips = trips.filter(trip => trip.availableSeats >= searchSeats);
     }
-    if (date) {
-        const selectedDate = new Date(date.setHours(0,0,0,0));
-        trips = trips.filter(trip => {
-            const tripDate = new Date(new Date(trip.departureDate).setHours(0,0,0,0));
-            return tripDate.getTime() === selectedDate.getTime();
-        });
+    
+    // Grouping by date
+    const grouped = trips.reduce((acc: GroupedTrips, trip) => {
+        const tripDate = new Date(trip.departureDate).toISOString().split('T')[0]; // YYYY-MM-DD
+        if (!acc[tripDate]) {
+            acc[tripDate] = [];
+        }
+        acc[tripDate].push(trip);
+        return acc;
+    }, {});
+    
+    // Sort dates
+    const sortedDates = Object.keys(grouped).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    const sortedGroupedTrips: GroupedTrips = {};
+    sortedDates.forEach(date => {
+        sortedGroupedTrips[date] = grouped[date];
+    });
+
+    setGroupedAndFilteredTrips(sortedGroupedTrips);
+    
+    if (sortedDates.length > 0) {
+        setOpenAccordion(sortedDates[0]); // Open the first date by default
+    } else {
+        setOpenAccordion(undefined);
     }
 
-    // Sort results
-    trips.sort((a, b) => new Date(a.departureDate).getTime() - new Date(b.departureDate).getTime());
+  }, [searchDestinationCity, searchSeats, allTrips, searchMode, selectedCarrierName, searchVehicleType]);
 
-    setFilteredTrips(trips);
 
-  }, [selectedCarrierName, searchOriginCountry, searchDestinationCountry, searchOriginCity, searchDestinationCity, searchSeats, date, allTrips, searchMode, searchVehicleType]);
-
-  const tripsToDisplay = filteredTrips;
-
-  
   const handleMainActionButtonClick = () => {
     if (searchMode === 'all-carriers') {
       handleBookingRequest();
     } else {
-      // This button is for submitting a NEW trip request to the SELECTED carrier.
       if (!selectedCarrierName) {
         toast({
           title: "الرجاء تحديد ناقل أولاً",
@@ -176,7 +187,6 @@ export default function DashboardPage() {
           title: "جاري إرسال الطلب...",
           description: `سيتم إرسال طلبك إلى ${selectedCarrierName}.`,
       });
-      // Placeholder for sending a direct request to a carrier
     }
   };
 
@@ -211,7 +221,6 @@ export default function DashboardPage() {
             title: "تم إرسال طلبك بنجاح!",
             description: "سيتم توجيهك الآن لصفحة حجوزاتك لمتابعة طلبك.",
         });
-        // Redirect user to their bookings page to see the new request
         router.push('/history');
     });
   };
@@ -226,6 +235,8 @@ export default function DashboardPage() {
 
   const showFilterMessage = searchMode === 'specific-carrier' && selectedCarrierName;
   const showAllCarriersMessage = searchMode === 'all-carriers';
+
+  const sortedTripDates = Object.keys(groupedAndFilteredTrips);
 
 
   return (
@@ -269,8 +280,7 @@ export default function DashboardPage() {
                             onChange={(e) => {
                                 setCarrierSearchInput(e.target.value);
                                 if (selectedCarrierName) {
-                                    setSelectedCarrierName(null); // Reset if user types again
-                                    setFilteredTrips(null);
+                                    setSelectedCarrierName(null); 
                                 }
                             }}
                             className={cn(selectedCarrierName ? 'bg-green-100/10 border-green-500' : '')}
@@ -306,7 +316,7 @@ export default function DashboardPage() {
                           </div>
                         </RadioGroup>
                       </div>
-                       <div className="border-t border-border/60 my-2"></div>
+                       <div className="border-t border-blue-500/30 my-2"></div>
                     </div>
                   )}
 
@@ -427,17 +437,38 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
             
-            {/* Upcoming Scheduled Trips */}
+            {/* Upcoming Scheduled Trips - Accordion View */}
             <div className="mt-12">
               <h2 className="text-2xl font-bold mb-4">الرحلات المجدولة القادمة</h2>
               {isLoading && <p>جاري تحميل الرحلات...</p>}
               
-              {!isLoading && tripsToDisplay && tripsToDisplay.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {tripsToDisplay.map(trip => (
-                    <TripCard key={trip.id} trip={trip} />
-                  ))}
-                </div>
+              {!isLoading && sortedTripDates.length > 0 ? (
+                <Accordion type="single" collapsible defaultValue={openAccordion} value={openAccordion} onValueChange={setOpenAccordion}>
+                    {sortedTripDates.map(dateKey => {
+                        const tripsForDate = groupedAndFilteredTrips[dateKey];
+                        const dateObj = new Date(dateKey);
+                        const dayName = dateObj.toLocaleDateString('ar-SA', { weekday: 'long' });
+                        const formattedDate = dateObj.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
+
+                        return (
+                            <AccordionItem value={dateKey} key={dateKey}>
+                                <AccordionTrigger>
+                                    <div className="flex justify-between w-full">
+                                        <span>{`${dayName}، ${formattedDate}`}</span>
+                                        <Badge variant="outline">{`${tripsForDate.length} رحلات`}</Badge>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                                        {tripsForDate.map(trip => (
+                                            <TripCard key={trip.id} trip={trip} />
+                                        ))}
+                                    </div>
+                                </AccordionContent>
+                            </AccordionItem>
+                        )
+                    })}
+                </Accordion>
               ) : (
                 <div className="text-center text-muted-foreground py-12">
                   <ShipWheel className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
@@ -466,5 +497,4 @@ export default function DashboardPage() {
       />
     </AppLayout>
   );
-
-    
+}
