@@ -83,25 +83,35 @@ export default function DashboardPage() {
 
 
   const tripsQuery = useMemoFirebase(() => {
-    if (!firestore || !user || searchMode !== 'specific-carrier' || !searchCarrier) return null;
-
-    // Simplified query to avoid composite index requirement
+    if (!firestore) return null;
+    // Fetch all trips that are not 'Awaiting-Offers'
     return query(
         collection(firestore, 'trips'),
-        where('carrierName', '==', searchCarrier)
+        where('status', '!=', 'Awaiting-Offers')
     );
-  }, [firestore, user, searchMode, searchCarrier]);
+  }, [firestore]);
 
-  const { data: upcomingTrips, isLoading } = useCollection<Trip>(tripsQuery);
+  const { data: allTrips, isLoading } = useCollection<Trip>(tripsQuery);
 
   useEffect(() => {
-    if (searchMode !== 'specific-carrier' || !upcomingTrips) {
-        setFilteredTrips(null); // Clear filtered trips if not in specific carrier mode or no data
+    if (searchMode !== 'specific-carrier' || !allTrips) {
+        setFilteredTrips(null);
         return;
     }
 
-    // Filter out 'Awaiting-Offers' status on the client-side
-    let trips = upcomingTrips.filter(trip => trip.status !== 'Awaiting-Offers');
+    let trips = [...allTrips];
+
+    // Filter by carrier name or phone
+    if (searchCarrier) {
+        trips = trips.filter(trip => 
+            trip.carrierName.includes(searchCarrier) || 
+            (trip.carrierPhoneNumber && trip.carrierPhoneNumber.includes(searchCarrier))
+        );
+    } else {
+        // If no carrier is specified, don't show any trips for "specific-carrier" mode
+        setFilteredTrips([]);
+        return;
+    }
 
     // Filter by origin
     if (searchOriginCity) {
@@ -144,7 +154,7 @@ export default function DashboardPage() {
 
     setFilteredTrips(trips);
 
-  }, [searchOriginCity, searchDestinationCity, searchSeats, date, upcomingTrips, searchMode]);
+  }, [searchCarrier, searchOriginCity, searchDestinationCity, searchSeats, date, allTrips, searchMode]);
 
   const tripsToDisplay = searchMode === 'specific-carrier' ? filteredTrips : [];
   
@@ -206,7 +216,7 @@ export default function DashboardPage() {
     handleBookingRequestSubmit();
   };
 
-  const showFilterMessage = searchMode === 'specific-carrier' && searchCarrier && upcomingTrips && upcomingTrips.length > 0;
+  const showFilterMessage = searchMode === 'specific-carrier' && searchCarrier && allTrips && allTrips.length > 0;
 
   return (
     <AppLayout>
@@ -241,7 +251,7 @@ export default function DashboardPage() {
                   {searchMode === 'specific-carrier' && (
                     <div className="grid gap-2">
                       <Label htmlFor="carrier-search">البحث عن ناقل (بالاسم او رقم الهاتف)</Label>
-                      <Input id="carrier-search" placeholder="مثال: شركة النقل السريع" value={searchCarrier} onChange={(e) => setSearchCarrier(e.target.value)} />
+                      <Input id="carrier-search" placeholder="مثال: شركة النقل السريع أو +966501234567" value={searchCarrier} onChange={(e) => setSearchCarrier(e.target.value)} />
                     </div>
                   )}
 
@@ -364,7 +374,7 @@ export default function DashboardPage() {
               <h2 className="text-2xl font-bold mb-4">الرحلات المجدولة القادمة</h2>
               {(isLoading && searchMode === 'specific-carrier') && <p>جاري تحميل رحلات الناقل...</p>}
               
-              {!isLoading && user && tripsToDisplay && tripsToDisplay.length > 0 ? (
+              {!isLoading && searchMode === 'specific-carrier' && tripsToDisplay && tripsToDisplay.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {tripsToDisplay.map(trip => (
                     <TripCard key={trip.id} trip={trip} />
@@ -376,7 +386,7 @@ export default function DashboardPage() {
                    {searchMode === 'specific-carrier' && (
                     <>
                         <p className="text-lg">
-                            {isLoading ? 'جاري التحميل...' : (searchCarrier ? 'لا توجد رحلات مجدولة تطابق بحثك لهذا الناقل.' : 'الرجاء إدخال اسم الناقل لعرض رحلاته.')}
+                            {isLoading ? 'جاري التحميل...' : (searchCarrier ? 'لا توجد رحلات مجدولة تطابق بحثك لهذا الناقل.' : 'الرجاء إدخال اسم الناقل أو رقم هاتفه لعرض رحلاته.')}
                         </p>
                         <p className="text-sm mt-2">
                            {searchCarrier ? 'جرّب تغيير فلاتر البحث أو أرسل طلبًا جديدًا لهذا الناقل.' : 'يمكنك أيضًا التبديل إلى وضع "كل الناقلين" لإرسال طلب للجميع.'}
@@ -399,5 +409,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
-    
