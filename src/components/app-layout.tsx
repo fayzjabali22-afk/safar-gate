@@ -58,22 +58,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
       <header className="sticky top-0 flex h-16 items-center justify-between border-b bg-white px-4 text-gray-800 md:px-6 z-50">
-        {/* Main Header Content */}
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-2 text-lg font-semibold"
-        >
-          <img 
-            src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
-            alt="Safar Carrier Logo" 
-            style={{ height: '110px', width: '145px' }} 
-          />
-          <span className="sr-only">Safar Carrier</span>
-        </Link>
-        
-        {/* Desktop User Menu & Mobile Menu Wrapper */}
         <div className="flex items-center gap-4">
-          {/* Desktop User Menu */}
+          {/* Desktop User Menu - Moved to the left (for LTR) / right (for RTL) */}
           <div className="hidden md:flex items-center gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -111,14 +97,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
               </DropdownMenu>
           </div>
-
+        </div>
+        
+        {/* Main Header Content */}
+        <Link
+          href="/dashboard"
+          className="flex items-center gap-2 text-lg font-semibold md:absolute md:left-1/2 md:-translate-x-1/2"
+        >
+          <img 
+            src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
+            alt="Safar Carrier Logo" 
+            style={{ height: '110px', width: '145px' }} 
+          />
+          <span className="sr-only">Safar Carrier</span>
+        </Link>
+        
+        {/* Mobile Menu Wrapper */}
+        <div className="flex items-center gap-4 md:hidden">
           {/* Mobile Menu */}
           <Sheet>
             <SheetTrigger asChild>
               <Button
                 variant="outline"
                 size="icon"
-                className="shrink-0 md:hidden h-8 w-8"
+                className="shrink-0 h-8 w-8"
               >
                 <Menu className="h-4 w-4 text-green-400" />
                 <span className="sr-only">Toggle navigation menu</span>
