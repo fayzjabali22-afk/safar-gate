@@ -75,7 +75,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               size="icon"
               className="shrink-0 md:hidden ml-auto"
             >
-              <Menu className="h-5 w-5" />
+              <Menu className="h-5 w-5 text-green-400" />
               <span className="sr-only">Toggle navigation menu</span>
             </Button>
           </SheetTrigger>
