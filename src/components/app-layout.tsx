@@ -7,18 +7,8 @@ import {
   MapPin,
   Settings,
   User,
+  Menu,
 } from 'lucide-react';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarInset,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,9 +17,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Logo } from './logo';
 import { useUser, useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
@@ -64,37 +58,70 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: userProfile } = useDoc(userProfileRef);
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <div className="p-4 flex justify-center items-center h-[60px] lg:h-[60px]">
-            <img src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" alt="Safar Carrier Logo" style={{ height: 'auto', width: '100px' }} />
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {menuItems.map((item) => (
-              <SidebarMenuItem key={item.label}>
-                <Link href={item.href}>
-                  <SidebarMenuButton
-                    isActive={pathname === item.href}
-                    tooltip={{ children: item.label }}
-                  >
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-4 md:px-6 z-50">
+        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 text-lg font-semibold md:text-base"
+          >
+            <img 
+              src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
+              alt="Safar Carrier Logo" 
+              style={{ height: '80px', width: '140px' }} 
+            />
+            <span className="sr-only">Safar Carrier</span>
+          </Link>
+          {menuItems.map((item) => (
+             <Link
+              key={item.label}
+              href={item.href}
+              className={`transition-colors hover:text-foreground ${pathname === item.href ? 'text-foreground' : 'text-muted-foreground'}`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 md:hidden"
+            >
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle navigation menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="right" className="bg-background">
+            <nav className="grid gap-6 text-lg font-medium">
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 text-lg font-semibold"
+              >
+                <img 
+                  src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" 
+                  alt="Safar Carrier Logo" 
+                  style={{ height: '80px', width: '140px' }} 
+                />
+                <span className="sr-only">Safar Carrier</span>
+              </Link>
+              {menuItems.map((item) => (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`hover:text-foreground ${pathname === item.href ? 'text-foreground' : 'text-muted-foreground'}`}
+                >
+                  {item.label}
                 </Link>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex h-14 items-center justify-between gap-4 border-b border-border/60 bg-card/50 px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30 backdrop-blur-sm">
-            <SidebarTrigger className="md:hidden" />
-            <div className="flex-1">
-             {/* Future Header Content can go here */}
-            </div>
+              ))}
+            </nav>
+          </SheetContent>
+        </Sheet>
+
+        <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+            <div className="ml-auto flex-1 sm:flex-initial" />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
@@ -124,9 +151,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-        </header>
-        <main className="flex-1 overflow-auto p-4 lg:p-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+        </div>
+      </header>
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        {children}
+      </main>
+    </div>
   );
 }
