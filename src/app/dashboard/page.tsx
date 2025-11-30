@@ -310,7 +310,7 @@ export default function DashboardPage() {
                     {searchMode === 'all-carriers' ? (
                         <>إرسال طلب الحجز</>
                     ) : (
-                        <><Search className="ml-2 h-5 w-5" /> البحث عن رحلة</>
+                        <>ارسال</>
                     )}
                   </Button>
                 </div>
