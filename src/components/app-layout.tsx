@@ -36,17 +36,17 @@ import { doc } from 'firebase/firestore';
 const menuItems = [
   {
     href: '/dashboard',
-    label: 'Dashboard',
+    label: 'لوحة التحكم',
     icon: MapPin,
   },
   {
     href: '/history',
-    label: 'My Bookings',
+    label: 'حجوزاتي',
     icon: Ticket,
   },
   {
     href: '/profile',
-    label: 'Profile',
+    label: 'ملفي الشخصي',
     icon: User,
   },
 ];
@@ -67,8 +67,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
-          <div className="p-4">
-            {/* The logo was here */}
+          <div className="p-4 flex justify-center items-center h-[60px] lg:h-[60px]">
+            <img src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" alt="Safar Carrier Logo" style={{ height: 'auto', width: '100px' }} />
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -90,36 +90,36 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-14 items-center justify-between gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
+        <header className="flex h-14 items-center justify-between gap-4 border-b border-border/60 bg-card/50 px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30 backdrop-blur-sm">
             <SidebarTrigger className="md:hidden" />
-            <div className="flex-1 text-center">
-              <img src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png" alt="Safar Carrier Logo" style={{ height: '95px', width: '140px', display: 'inline-block' }} />
+            <div className="flex-1">
+             {/* Future Header Content can go here */}
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar>
                     {user?.photoURL && <AvatarImage src={user.photoURL} alt={userProfile?.firstName || ''} />}
-                    <AvatarFallback>
+                    <AvatarFallback className="bg-primary/20 text-primary">
                       {userProfile?.firstName ? userProfile.firstName.charAt(0) : user?.email?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuLabel>{userProfile?.firstName ? `Hi, ${userProfile.firstName}`: 'My Account'}</DropdownMenuLabel>
+                <DropdownMenuLabel>{userProfile?.firstName ? `مرحباً، ${userProfile.firstName}`: 'حسابي'}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/profile">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
+                    <Settings className="ml-2 h-4 w-4" />
+                    <span>الإعدادات</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/login">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>Logout</span>
+                    <LogOut className="ml-2 h-4 w-4" />
+                    <span>تسجيل الخروج</span>
                   </Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>

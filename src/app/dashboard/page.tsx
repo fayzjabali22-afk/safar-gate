@@ -15,189 +15,179 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { User, Calendar, CalendarDays, Search } from 'lucide-react';
+import { Users, Search, ShipWheel } from 'lucide-react';
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
 import { tripHistory } from '@/lib/data'; 
 import { TripCard } from '@/components/trip-card';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { arEG } from 'date-fns/locale';
 
 export default function DashboardPage() {
   const [bookingType, setBookingType] = useState<'carrier' | 'scheduled' | 'date'>('scheduled');
 
-  const scheduledTripsByDate = tripHistory.reduce((acc, trip) => {
-    const tripDate = new Date(trip.departureDate);
-    // Use date-fns for consistent date formatting
-    const dateKey = format(tripDate, 'yyyy-MM-dd');
-    
-    if (!acc[dateKey]) {
-      acc[dateKey] = {
-        displayDate: format(tripDate, 'EEEE, d MMMM yyyy', { locale: arEG }),
-        trips: []
-      };
-    }
-    acc[dateKey].trips.push(trip);
-    return acc;
-  }, {} as Record<string, { displayDate: string, trips: typeof tripHistory }>);
+  const upcomingTrips = tripHistory.filter(trip => trip.status === 'Planned' || trip.status === 'In-Transit');
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-0 md:p-4">
-        <Card className="w-full shadow-lg rounded-none md:rounded-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold">
-              ابدأ رحلتك
-            </CardTitle>
-            <CardDescription>
-              اختر وجهتك وحدد تفاصيل رحلتك بسهولة.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6">
-              {/* Origin and Destination */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="origin-country">من</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر دولة الانطلاق" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="syria">سوريا</SelectItem>
-                      <SelectItem value="jordan">الأردن</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر مدينة الانطلاق" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="damascus">دمشق</SelectItem>
-                      <SelectItem value="amman">عمّان</SelectItem>
-                    </SelectContent>
-                  </Select>
+      <div className="container mx-auto p-0 md:p-4 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content: Trip Search and Display */}
+        <div className="lg:col-span-2">
+          <header className="mb-8">
+            <h1 className="text-4xl font-bold tracking-tight text-foreground">أهلاً بك، أين وجهتك التالية؟</h1>
+            <p className="text-muted-foreground mt-2">ابحث عن رحلتك القادمة أو استعرض الرحلات المجدولة بسهولة.</p>
+          </header>
+
+          {/* Search Form Card */}
+          <Card className="w-full shadow-lg rounded-lg mb-8 border-border/60 bg-card/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="grid gap-6">
+                {/* Origin and Destination */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="origin-city">من</Label>
+                    <Select>
+                      <SelectTrigger id="origin-city">
+                        <SelectValue placeholder="اختر مدينة الانطلاق" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="damascus">دمشق</SelectItem>
+                        <SelectItem value="amman">عمّان</SelectItem>
+                        <SelectItem value="riyadh">الرياض</SelectItem>
+                        <SelectItem value="cairo">القاهرة</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="destination-city">إلى</Label>
+                    <Select>
+                      <SelectTrigger id="destination-city">
+                        <SelectValue placeholder="اختر مدينة الوصول" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="amman">عمّان</SelectItem>
+                        <SelectItem value="damascus">دمشق</SelectItem>
+                        <SelectItem value="dubai">دبي</SelectItem>
+                         <SelectItem value="kuwait">الكويت</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="destination-country">إلى</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر دولة الوصول" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="jordan">الأردن</SelectItem>
-                      <SelectItem value="syria">سوريا</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر مدينة الوصول" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="amman">عمّان</SelectItem>
-                       <SelectItem value="damascus">دمشق</SelectItem>
-                    </SelectContent>
-                  </Select>
+
+                {/* Date and Seats */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="travel-date">تاريخ السفر</Label>
+                    <Input id="travel-date" type="date" className="bg-background/50" />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="seats">عدد المقاعد</Label>
+                    <Select>
+                      <SelectTrigger id="seats">
+                        <SelectValue placeholder="1" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
+                          <SelectItem key={num} value={String(num)}>{num}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
 
-              {/* Seats */}
-              <div className="grid gap-2">
-                <Label htmlFor="seats">عدد المقاعد</Label>
-                <Select>
-                  <SelectTrigger id="seats">
-                    <SelectValue placeholder="اختر عدد المقاعد" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
-                      <SelectItem key={num} value={String(num)}>{num}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Booking Philosophy */}
-              <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted p-1">
-                 <Button variant={bookingType === 'carrier' ? 'default' : 'ghost'} onClick={() => setBookingType('carrier')} className={cn("flex-col h-auto p-2 text-xs", bookingType === 'carrier' && "bg-primary text-primary-foreground")}>
-                    <User className="w-5 h-5 mb-1" />
-                    <span>ناقل محدد</span>
-                </Button>
-                <Button variant={bookingType === 'scheduled' ? 'default' : 'ghost'} onClick={() => setBookingType('scheduled')} className={cn("flex-col h-auto p-2 text-xs", bookingType === 'scheduled' && "bg-primary text-primary-foreground")}>
-                    <CalendarDays className="w-5 h-5 mb-1" />
-                    <span>رحلات مجدولة</span>
-                </Button>
-                 <Button variant={bookingType === 'date' ? 'default' : 'ghost'} onClick={() => setBookingType('date')} className={cn("flex-col h-auto p-2 text-xs", bookingType === 'date' && "bg-primary text-primary-foreground")}>
-                    <Calendar className="w-5 h-5 mb-1" />
-                    <span>بتاريخ محدد</span>
+                {/* Action Button */}
+                <Button size="lg" className="w-full md:w-auto md:col-start-2 justify-self-end mt-2 bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <Search className="ml-2 h-5 w-5" />
+                  ابحث عن رحلة
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+          
+          {/* Upcoming Scheduled Trips */}
+          <div>
+            <h2 className="text-2xl font-bold mb-4">الرحلات المجدولة القادمة</h2>
+            {upcomingTrips.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {upcomingTrips.map(trip => (
+                  <TripCard key={trip.id} trip={trip} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-muted-foreground py-12">
+                 <ShipWheel className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+                <p className="text-lg">لا توجد رحلات مجدولة في الوقت الحالي.</p>
+                <p className="text-sm mt-2">جرّب البحث بتاريخ أو وجهة مختلفة.</p>
+              </div>
+            )}
+          </div>
+        </div>
 
-              {/* Conditional UI */}
-              <div className="mt-4">
-                {bookingType === 'carrier' && (
+        {/* Side Panel: Quick Booking */}
+        <div className="lg:col-span-1">
+           <Card className="w-full shadow-lg rounded-lg sticky top-8 border-border/60 bg-card/80 backdrop-blur-sm">
+            <CardHeader>
+              <CardTitle className="text-2xl font-bold">
+                حجز سريع
+              </CardTitle>
+              <CardDescription>
+                أرسل طلبك مباشرة إلى أفضل الناقلين.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-6">
+                 <div className="grid gap-2">
+                  <Label htmlFor="quick-origin">من</Label>
+                   <Select>
+                      <SelectTrigger id="quick-origin">
+                        <SelectValue placeholder="اختر مدينة الانطلاق" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="damascus">دمشق</SelectItem>
+                        <SelectItem value="amman">عمّان</SelectItem>
+                      </SelectContent>
+                    </Select>
+                </div>
+                 <div className="grid gap-2">
+                  <Label htmlFor="quick-destination">إلى</Label>
+                    <Select>
+                      <SelectTrigger id="quick-destination">
+                        <SelectValue placeholder="اختر مدينة الوصول" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="amman">عمّان</SelectItem>
+                         <SelectItem value="damascus">دمشق</SelectItem>
+                      </SelectContent>
+                    </Select>
+                </div>
+                 <div className="grid gap-2">
+                    <Label htmlFor="quick-seats">عدد المقاعد</Label>
+                    <Select>
+                      <SelectTrigger id="quick-seats">
+                        <SelectValue placeholder="اختر عدد المقاعد" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
+                          <SelectItem key={num} value={String(num)}>{num}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input placeholder="ابحث عن ناقل بالاسم أو رقم الهاتف..." className="pl-10" />
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                    <Input placeholder="ابحث عن ناقل محدد (اختياري)" className="pr-10 bg-background/50" />
                   </div>
-                )}
-                
-                {bookingType === 'date' && (
-                   <div className="grid gap-2">
-                    <Label htmlFor="specific-date">اختر تاريخ السفر</Label>
-                    <Input id="specific-date" type="date" />
-                  </div>
-                )}
 
-                {bookingType === 'scheduled' && (
-                  <Accordion type="single" collapsible className="w-full">
-                    {Object.keys(scheduledTripsByDate).length > 0 ? (
-                      Object.entries(scheduledTripsByDate).map(([dateKey, { displayDate, trips }], index) => (
-                        <AccordionItem value={`item-${index}`} key={dateKey}>
-                          <AccordionTrigger>
-                            <div className="flex items-center justify-between w-full">
-                              <span>{displayDate}</span>
-                              <Badge variant="secondary">{trips.length} رحلات</Badge>
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent>
-                             <div className="space-y-4 p-2">
-                                {trips.map(trip => (
-                                  <TripCard key={trip.id} trip={trip} />
-                                ))}
-                             </div>
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))
-                    ) : (
-                       <div className="text-center text-muted-foreground py-8">
-                          <p>لا توجد رحلات مجدولة في هذا التاريخ.</p>
-                          <p className="text-sm mt-2">يمكنك إكمال الحجز لنشر طلبك للناقلين.</p>
-                       </div>
-                    )}
-                  </Accordion>
-                )}
+                {/* Action Buttons */}
+                <div className="flex justify-end mt-4">
+                    <Button asChild size="lg">
+                      <Link href="/login">إرسال طلب الحجز</Link>
+                    </Button>
+                </div>
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex justify-between mt-4">
-                  <Button variant="outline">إلغاء العملية</Button>
-                  <Button asChild>
-                    <Link href="/login">تكملة الحجز</Link>
-                  </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </AppLayout>
   );
