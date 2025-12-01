@@ -96,6 +96,14 @@
         "passengers": {
             "type": "number",
             "description": "Number of passengers for the trip."
+        },
+        "acceptedOfferId": {
+          "type": "string",
+          "description": "The ID of the offer that the user has accepted."
+        },
+        "currentBookingId": {
+            "type": "string",
+            "description": "The ID of the current booking associated with this trip."
         }
       },
       "required": [
@@ -195,7 +203,7 @@
             },
             "type": {
                 "type": "string",
-                "enum": ["new_offer", "booking_confirmed", "trip_update", "payment_reminder", "rating_request"],
+                "enum": ["new_offer", "booking_confirmed", "trip_update", "payment_reminder", "rating_request", "new_booking_request"],
                 "description": "The type of the notification."
             },
             "isRead": {
@@ -344,4 +352,5 @@
     ]
   }
 }
+
     

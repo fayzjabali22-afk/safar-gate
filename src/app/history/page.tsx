@@ -26,17 +26,16 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useUser, useFirestore, useCollection, useMemoFirebase, setDocumentNonBlocking, updateDocumentNonBlocking, addDocumentNonBlocking, useDoc } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Notification, Offer, Booking } from '@/lib/data';
-import { collection, query, where, doc, writeBatch, updateDoc, deleteDoc } from 'firebase/firestore';
-import { Bell, CheckCircle, PackageOpen, Ship, Hourglass, XCircle } from 'lucide-react';
+import { collection, query, where, doc, writeBatch, deleteDoc, getDoc } from 'firebase/firestore';
+import { Bell, CheckCircle, PackageOpen, Ship, Hourglass, XCircle, Info, Loader2 } from 'lucide-react';
 import { OfferCard } from '@/components/offer-card';
 import { useToast } from '@/hooks/use-toast';
 import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
-import { mockOffers } from '@/lib/data';
 
 const statusMap: Record<string, string> = {
     'Awaiting-Offers': 'بانتظار العروض',
@@ -70,10 +69,17 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
 
     const offersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, `trips/${trip.id}/offers`), where('status', '==', 'Pending'));
+        return query(collection(firestore, `trips/${trip.id}/offers`));
     }, [firestore, trip.id]);
 
     const { data: offers, isLoading: isLoadingOffers } = useCollection<Offer>(offersQuery);
+
+    const bookingQuery = useMemoFirebase(() => {
+        if (!firestore || !trip.currentBookingId) return null;
+        return doc(firestore, 'bookings', trip.currentBookingId);
+    }, [firestore, trip.currentBookingId]);
+    
+    const { data: booking, isLoading: isLoadingBooking } = useDoc<Booking>(bookingQuery);
     
     const handleAcceptClick = (offer: Offer) => {
         setSelectedOffer(offer);
@@ -84,28 +90,124 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
         setIsDisclaimerOpen(false);
         if (!firestore || !user || !selectedOffer || !trip.passengers) return;
 
-        toast({
-            title: "تم استلام طلبك بنجاح",
-            description: "سيتم إعلام الناقل بطلبك وبانتظار تأكيد المقاعد.",
+        const batch = writeBatch(firestore);
+
+        // 1. Create a new booking document
+        const newBookingRef = doc(collection(firestore, 'bookings'));
+        const newBooking: Booking = {
+            id: newBookingRef.id,
+            tripId: trip.id,
+            userId: user.uid,
+            carrierId: selectedOffer.carrierId,
+            seats: trip.passengers,
+            status: 'Pending-Carrier-Confirmation',
+            totalPrice: selectedOffer.price,
+        };
+        batch.set(newBookingRef, newBooking);
+
+        // 2. Update the trip with the new booking and accepted offer IDs
+        const tripRef = doc(firestore, 'trips', trip.id);
+        batch.update(tripRef, { 
+            currentBookingId: newBookingRef.id,
+            acceptedOfferId: selectedOffer.id
         });
 
-        // The logic for creating a booking and updating the trip is temporarily removed
-        // to simplify and ensure the offer display works correctly.
+        // 3. Update the offer status to 'Accepted'
+        const offerRef = doc(firestore, `trips/${trip.id}/offers`, selectedOffer.id);
+        batch.update(offerRef, { status: 'Accepted' });
+
+        // 4. Create a notification for the carrier
+        const notificationRef = doc(collection(firestore, `users/${selectedOffer.carrierId}/notifications`));
+        const newNotification = {
+            id: notificationRef.id,
+            userId: selectedOffer.carrierId,
+            title: "طلب حجز جديد!",
+            message: `المسافر ${user.displayName || user.email} يرغب بحجز ${trip.passengers} مقاعد في رحلتك من ${cities[trip.origin]} إلى ${cities[trip.destination]}.`,
+            type: "new_booking_request",
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            link: `/carrier/bookings/${newBookingRef.id}` // A potential link for the carrier
+        };
+        batch.set(notificationRef, newNotification);
+
+        try {
+            await batch.commit();
+            // The UI will automatically update to the waiting screen because `trip.currentBookingId` is now set.
+        } catch (error) {
+            console.error("Error accepting offer: ", error);
+            toast({
+                title: "خطأ",
+                description: "حدث خطأ أثناء قبول العرض. الرجاء المحاولة مرة أخرى.",
+                variant: "destructive"
+            });
+        }
+    };
+    
+    const handleCancelPendingBooking = async () => {
+        if (!firestore || !booking || !trip.acceptedOfferId) return;
+
+        toast({ title: "جاري إلغاء الطلب..." });
+
+        const batch = writeBatch(firestore);
+
+        // 1. Delete the booking document
+        const bookingRef = doc(firestore, 'bookings', booking.id);
+        batch.delete(bookingRef);
+
+        // 2. Revert the offer status to 'Pending'
+        const offerRef = doc(firestore, `trips/${trip.id}/offers`, trip.acceptedOfferId);
+        batch.update(offerRef, { status: 'Pending' });
+
+        // 3. Clear booking/offer info from the trip
+        const tripRef = doc(firestore, 'trips', trip.id);
+        batch.update(tripRef, { currentBookingId: null, acceptedOfferId: null });
+
+        try {
+            await batch.commit();
+            toast({
+                title: "تم إلغاء الطلب",
+                description: "يمكنك الآن اختيار عرض آخر."
+            });
+        } catch (error) {
+            console.error("Error cancelling booking: ", error);
+            toast({
+                title: "خطأ في الإلغاء",
+                description: "لم نتمكن من إلغاء الطلب. الرجاء المحاولة مرة أخرى.",
+                variant: "destructive"
+            });
+        }
     };
 
-    if (isLoadingOffers) {
+    if (isLoadingOffers || isLoadingBooking) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                <Skeleton className="h-48 w-full" />
-                <Skeleton className="h-48 w-full" />
+            <div className="flex justify-center items-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
     }
     
-    // STATE: Displaying offers
-    const finalOffers = (offers && offers.length > 0) ? offers.filter(o => o.status === 'Pending') : mockOffers.filter(o => o.tripId === trip.id && o.status === 'Pending');
+    // STATE 2: A booking has been created and is awaiting carrier confirmation
+    if (booking && booking.status === 'Pending-Carrier-Confirmation') {
+        return (
+            <div className="text-center p-8 space-y-4 bg-background">
+                <Hourglass className="mx-auto h-12 w-12 text-accent" />
+                <h3 className="text-xl font-bold text-foreground">سفريات بانتظار تأكيد المقاعد من الناقل</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                    فور موافقة الناقل وفتح شاشة الحجز، سيصلك إشعار فوري لتتمكن من إكمال الحجز بسهولة. يحرص فريق سفريات على تنظيم العملية وعدم تراكم الحجوزات لدى الناقل.
+                </p>
+                <p className="text-sm text-accent font-semibold">قوم بمتابعة اعملك دقائق ويصلك الاشعار</p>
+                <Button variant="destructive" onClick={handleCancelPendingBooking} className="mt-4">
+                    <XCircle className="ml-2 h-4 w-4" />
+                    إلغاء الطلب
+                </Button>
+            </div>
+        );
+    }
 
-    if (finalOffers.length === 0) {
+    // STATE 1: No accepted booking yet, show offers
+    const pendingOffers = offers?.filter(o => o.status === 'Pending') || [];
+
+    if (pendingOffers.length === 0) {
         return <p className="text-center text-muted-foreground p-8">لم يصلك أي عروض بعد، أو تم قبول عرض بالفعل. عليك الانتظار.</p>;
     }
 
@@ -114,7 +216,7 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
             <div className="p-0 md:p-0 space-y-4">
                 <p className="text-center text-accent font-semibold px-4 pt-4">انتظر، قد تصلك عروض أفضل.</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-                    {finalOffers.map(offer => (
+                    {pendingOffers.map(offer => (
                         <OfferCard key={offer.id} offer={offer} trip={trip} onAccept={() => handleAcceptClick(offer)} />
                     ))}
                 </div>
@@ -314,3 +416,5 @@ export default function HistoryPage() {
     </AppLayout>
   );
 }
+
+    
