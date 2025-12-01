@@ -38,6 +38,7 @@ export async function initiateEmailSignUp(
     const user = userCredential.user;
 
     // Send verification email with action code settings
+    // This email will contain the legal disclaimer and the activation link.
     await sendEmailVerification(user, actionCodeSettings);
 
     // After user is created in Auth, create their profile document in Firestore
@@ -45,6 +46,7 @@ export async function initiateEmailSignUp(
     await setDoc(userRef, profileData, { merge: true });
     
     // IMPORTANT: We sign the user out to force them to verify their email
+    // This is a key part of the new flow.
     await authInstance.signOut();
 
     return true;
