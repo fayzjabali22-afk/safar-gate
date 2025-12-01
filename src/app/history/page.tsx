@@ -60,23 +60,6 @@ const cities: { [key: string]: string } = {
 };
 
 
-const WaitingScreen = ({ onCancel }: { onCancel: () => void }) => {
-    return (
-        <div className="text-center p-8 space-y-4 bg-background">
-            <Hourglass className="mx-auto h-12 w-12 text-accent" />
-            <h3 className="text-xl font-bold text-foreground">سفريات بانتظار تأكيد المقاعد من الناقل</h3>
-            <p className="text-muted-foreground max-w-md mx-auto">
-                فور موافقة الناقل وفتح شاشة الحجز، سيصلك إشعار فوري لتتمكن من إكمال الحجز بسهولة. يحرص فريق سفريات على تنظيم العملية وعدم تراكم الحجوزات لدى الناقل.
-            </p>
-            <p className="text-sm text-accent font-semibold">قوم بمتابعة اعملك دقائق ويصلك الاشعار</p>
-            <Button variant="destructive" onClick={onCancel} className="mt-4">
-                <XCircle className="ml-2 h-4 w-4" />
-                إلغاء الطلب
-            </Button>
-        </div>
-    );
-};
-
 const TripBookingManager = ({ trip }: { trip: Trip; }) => {
     const { toast } = useToast();
     const firestore = useFirestore();
@@ -84,32 +67,12 @@ const TripBookingManager = ({ trip }: { trip: Trip; }) => {
     const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
     const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
     
-    // This state determines what to show: 'offers' or 'waiting'
-    const [viewMode, setViewMode] = useState<'offers' | 'waiting'>('offers');
-
     const offersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
         return query(collection(firestore, `trips/${trip.id}/offers`));
     }, [firestore, trip.id]);
 
     const { data: offers, isLoading: isLoadingOffers } = useCollection<Offer>(offersQuery);
-
-    const bookingQuery = useMemoFirebase(() => {
-        if (!firestore || !trip.currentBookingId) return null;
-        return doc(firestore, 'bookings', trip.currentBookingId);
-    }, [firestore, trip.currentBookingId]);
-    
-    const { data: booking, isLoading: isLoadingBooking } = useDoc<Booking>(bookingQuery);
-    
-    // Effect to set the initial view mode based on Firestore data
-    useEffect(() => {
-        if (booking && booking.status === 'Pending-Carrier-Confirmation') {
-            setViewMode('waiting');
-        } else {
-            setViewMode('offers');
-        }
-    }, [booking]);
-
 
     const handleAcceptClick = (offer: Offer) => {
         setSelectedOffer(offer);
@@ -120,97 +83,16 @@ const TripBookingManager = ({ trip }: { trip: Trip; }) => {
         setIsDisclaimerOpen(false);
         if (!firestore || !user || !selectedOffer || !trip.passengers) return;
 
-        const batch = writeBatch(firestore);
-
-        // 1. Create a new booking document
-        const newBookingRef = doc(collection(firestore, 'bookings'));
-        const newBooking: Booking = {
-            id: newBookingRef.id,
-            tripId: trip.id,
-            userId: user.uid,
-            carrierId: selectedOffer.carrierId,
-            seats: trip.passengers,
-            status: 'Pending-Carrier-Confirmation',
-            totalPrice: selectedOffer.price,
-        };
-        batch.set(newBookingRef, newBooking);
-
-        // 2. Update the trip with the new booking and accepted offer IDs
-        const tripRef = doc(firestore, 'trips', trip.id);
-        batch.update(tripRef, { 
-            currentBookingId: newBookingRef.id,
-            acceptedOfferId: selectedOffer.id
+        toast({
+            title: "تم قبول العرض",
+            description: "جاري تأكيد الحجز...",
         });
 
-        // 3. Update the offer status to 'Accepted'
-        const offerRef = doc(firestore, `trips/${trip.id}/offers`, selectedOffer.id);
-        batch.update(offerRef, { status: 'Accepted' });
-
-        // 4. Create a notification for the carrier
-        const notificationRef = doc(collection(firestore, `users/${selectedOffer.carrierId}/notifications`));
-        const newNotification = {
-            id: notificationRef.id,
-            userId: selectedOffer.carrierId,
-            title: "طلب حجز جديد!",
-            message: `المسافر ${user.displayName || user.email} يرغب بحجز ${trip.passengers} مقاعد في رحلتك من ${cities[trip.origin]} إلى ${cities[trip.destination]}.`,
-            type: "new_booking_request",
-            isRead: false,
-            createdAt: new Date().toISOString(),
-            link: `/carrier/bookings/${newBookingRef.id}` // A potential link for the carrier
-        };
-        batch.set(notificationRef, newNotification);
-
-        try {
-            await batch.commit();
-            // After successful commit, change the view to the waiting screen
-            setViewMode('waiting');
-        } catch (error) {
-            console.error("Error accepting offer: ", error);
-            toast({
-                title: "خطأ",
-                description: "حدث خطأ أثناء قبول العرض. الرجاء المحاولة مرة أخرى.",
-                variant: "destructive"
-            });
-        }
-    };
-    
-    const handleCancelPendingBooking = async () => {
-        if (!firestore || !booking || !trip.acceptedOfferId) return;
-
-        toast({ title: "جاري إلغاء الطلب..." });
-
-        const batch = writeBatch(firestore);
-
-        // 1. Delete the booking document
-        const bookingRef = doc(firestore, 'bookings', booking.id);
-        batch.delete(bookingRef);
-
-        // 2. Revert the offer status to 'Pending'
-        const offerRef = doc(firestore, `trips/${trip.id}/offers`, trip.acceptedOfferId);
-        batch.update(offerRef, { status: 'Pending' });
-
-        // 3. Clear booking/offer info from the trip
-        const tripRef = doc(firestore, 'trips', trip.id);
-        batch.update(tripRef, { currentBookingId: null, acceptedOfferId: null });
-
-        try {
-            await batch.commit();
-            setViewMode('offers'); // Switch back to offers view
-            toast({
-                title: "تم إلغاء الطلب",
-                description: "يمكنك الآن اختيار عرض آخر."
-            });
-        } catch (error) {
-            console.error("Error cancelling booking: ", error);
-            toast({
-                title: "خطأ في الإلغاء",
-                description: "لم نتمكن من إلغاء الطلب. الرجاء المحاولة مرة أخرى.",
-                variant: "destructive"
-            });
-        }
+        // Simplified logic: Just toast for now.
+        // In the future, this is where booking creation would happen.
     };
 
-    if (isLoadingOffers || isLoadingBooking) {
+    if (isLoadingOffers) {
         return (
             <div className="flex justify-center items-center p-8">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -218,11 +100,6 @@ const TripBookingManager = ({ trip }: { trip: Trip; }) => {
         );
     }
     
-    if (viewMode === 'waiting') {
-        return <WaitingScreen onCancel={handleCancelPendingBooking} />;
-    }
-
-    // Default view is 'offers'
     const pendingOffers = offers?.filter(o => o.status === 'Pending') || [];
     
     if (pendingOffers.length === 0) {
@@ -434,3 +311,5 @@ export default function HistoryPage() {
     </AppLayout>
   );
 }
+
+    
