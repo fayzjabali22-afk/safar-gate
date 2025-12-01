@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Offer, CarrierProfile, Trip } from '@/lib/data';
@@ -10,6 +9,8 @@ import { HandCoins, MessageCircle, Star, ThumbsUp } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from './ui/skeleton';
+import { useState } from 'react';
+import { LegalDisclaimerDialog } from './legal-disclaimer-dialog';
 
 interface OfferCardProps {
   offer: Offer;
@@ -54,32 +55,53 @@ const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
 
 export function OfferCard({ offer, trip, onAccept }: OfferCardProps) {
   const { toast } = useToast();
+  const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
+  
+  const handleAcceptClick = () => {
+    // Instead of directly calling onAccept, we now open the legal disclaimer first.
+    setIsDisclaimerOpen(true);
+  };
+
+  const handleDisclaimerContinue = () => {
+    // This is called when the user accepts the legal disclaimer.
+    // Now we can proceed with the original logic.
+    onAccept(offer, trip);
+    setIsDisclaimerOpen(false); // Close the disclaimer dialog
+  };
   
   return (
-    <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2 border-border/60 flex flex-col justify-between bg-card/70">
-        <CardHeader>
-            <CarrierInfo carrierId={offer.carrierId} />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex justify-center items-baseline gap-2 text-3xl font-bold text-accent">
-              <HandCoins className="h-8 w-8" />
-              <span>{offer.price}</span>
-              <span className="text-lg font-normal text-muted-foreground">JOD</span>
-          </div>
+    <>
+        <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2 border-border/60 flex flex-col justify-between bg-card/70">
+            <CardHeader>
+                <CarrierInfo carrierId={offer.carrierId} />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-center items-baseline gap-2 text-3xl font-bold text-accent">
+                  <HandCoins className="h-8 w-8" />
+                  <span>{offer.price}</span>
+                  <span className="text-lg font-normal text-muted-foreground">JOD</span>
+              </div>
 
-          {offer.notes && (
-            <div className="text-sm text-muted-foreground p-3 bg-background/50 rounded-md border border-dashed border-border">
-                <p className='flex gap-2'><MessageCircle className="h-4 w-4 mt-0.5" /> <strong>ملاحظات الناقل:</strong></p>
-                <p>{offer.notes}</p>
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="flex p-2 bg-background/30">
-            <Button size="lg" className="w-full bg-green-600 hover:bg-green-700" onClick={() => onAccept(offer, trip)}>
-                <ThumbsUp className="ml-2 h-4 w-4" />
-                قبول وتأكيد الحجز
-            </Button>
-        </CardFooter>
-    </Card>
+              {offer.notes && (
+                <div className="text-sm text-muted-foreground p-3 bg-background/50 rounded-md border border-dashed border-border">
+                    <p className='flex gap-2'><MessageCircle className="h-4 w-4 mt-0.5" /> <strong>ملاحظات الناقل:</strong></p>
+                    <p>{offer.notes}</p>
+                </div>
+              )}
+            </CardContent>
+            <CardFooter className="flex p-2 bg-background/30">
+                <Button size="lg" className="w-full bg-green-600 hover:bg-green-700" onClick={handleAcceptClick}>
+                    <ThumbsUp className="ml-2 h-4 w-4" />
+                    قبول وتأكيد الحجز
+                </Button>
+            </CardFooter>
+        </Card>
+
+        <LegalDisclaimerDialog 
+            isOpen={isDisclaimerOpen}
+            onOpenChange={setIsDisclaimerOpen}
+            onContinue={handleDisclaimerContinue}
+        />
+    </>
   );
 }

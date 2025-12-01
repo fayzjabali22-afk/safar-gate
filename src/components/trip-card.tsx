@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Trip } from '@/lib/data';
@@ -8,9 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Clock, Users, Car } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useState, useEffect } from 'react';
-import { LegalDisclaimerDialog } from './legal-disclaimer-dialog';
-import { useUser } from '@/firebase';
-import { useToast } from '@/hooks/use-toast';
+import { TripDetailsDialog } from './trip-details-dialog'; // Import the new component
 
 interface TripCardProps {
   trip: Trip;
@@ -18,10 +15,8 @@ interface TripCardProps {
 
 export function TripCard({ trip }: TripCardProps) {
   const carrierImage = PlaceHolderImages.find((img) => img.id === 'user-avatar');
-  const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
   const [departureTime, setDepartureTime] = useState('');
-  const { user } = useUser();
-  const { toast } = useToast();
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
     // Format the time on the client-side to avoid hydration mismatch
@@ -35,24 +30,8 @@ export function TripCard({ trip }: TripCardProps) {
   }, [trip.departureDate]);
 
 
-  const handleBookingClick = () => {
-    if (!user) {
-        setIsDisclaimerOpen(true);
-        return;
-    }
-     if (user && !user.emailVerified) {
-        toast({
-            variant: "destructive",
-            title: "الحساب غير مفعل",
-            description: "الرجاء تفعيل حسابك أولاً لتتمكن من الحجز.",
-        });
-        return;
-    }
-    // If user is logged in and verified, proceed to booking (future implementation)
-    toast({
-        title: 'قيد الإنشاء',
-        description: 'سيتم قريباً تفعيل الحجز المباشر من هنا.',
-    });
+  const handleDetailsClick = () => {
+    setIsDetailsOpen(true);
   };
 
   return (
@@ -62,7 +41,7 @@ export function TripCard({ trip }: TripCardProps) {
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16 border-2 border-accent">
               {carrierImage && <AvatarImage src={carrierImage.imageUrl} alt={trip.carrierName} />}
-              <AvatarFallback>{trip.carrierName.charAt(0)}</AvatarFallback>
+              <AvatarFallback>{trip.carrierName?.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex-grow space-y-1">
               <p className="font-bold text-lg text-foreground">{trip.carrierName}</p>
@@ -91,16 +70,17 @@ export function TripCard({ trip }: TripCardProps) {
                   <span>50</span>
                   <span className="text-sm font-normal">JOD</span>
               </div>
-              <Button size="sm" onClick={handleBookingClick}>
-                حجز وتفاصيل
+              <Button size="sm" onClick={handleDetailsClick}>
+                تفاصيل وحجز
               </Button>
           </div>
         </CardContent>
       </Card>
 
-      <LegalDisclaimerDialog 
-        isOpen={isDisclaimerOpen}
-        onOpenChange={setIsDisclaimerOpen}
+      <TripDetailsDialog
+        isOpen={isDetailsOpen}
+        onOpenChange={setIsDetailsOpen}
+        trip={trip}
       />
     </>
   );

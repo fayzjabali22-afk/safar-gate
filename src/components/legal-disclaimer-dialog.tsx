@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -16,15 +15,16 @@ import { useRouter } from 'next/navigation';
 interface LegalDisclaimerDialogProps {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
+    onContinue: () => void; // A function to call when user clicks "Continue"
 }
 
-export function LegalDisclaimerDialog({ isOpen, onOpenChange }: LegalDisclaimerDialogProps) {
+export function LegalDisclaimerDialog({ isOpen, onOpenChange, onContinue }: LegalDisclaimerDialogProps) {
     const router = useRouter();
 
-    const handleContinue = () => {
-        // Here we would handle the next step after the user agrees.
-        // For now, we'll redirect to the login page as per the flow.
-        router.push('/login');
+    const handleConfirm = () => {
+        // We no longer handle redirection here.
+        // We just call the onContinue prop passed from the parent component.
+        onContinue();
     };
 
   return (
@@ -42,7 +42,7 @@ export function LegalDisclaimerDialog({ isOpen, onOpenChange }: LegalDisclaimerD
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>إلغاء</AlertDialogCancel>
-          <AlertDialogAction onClick={handleContinue}>متابعة</AlertDialogAction>
+          <AlertDialogAction onClick={handleConfirm}>متابعة</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
