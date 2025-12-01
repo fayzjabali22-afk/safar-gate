@@ -1,4 +1,3 @@
-
 'use client';
 import {
   Auth,
@@ -49,11 +48,19 @@ export async function initiateEmailSignUp(
     // IMPORTANT: We sign the user out to force them to verify their email
     await authInstance.signOut();
 
+    toast({
+        title: 'الخطوة الأخيرة!',
+        description: 'تم إرسال رسالة تحقق إلى بريدك الإلكتروني لتفعيل حسابك.',
+        duration: 5000,
+    });
+
     return true;
   } catch (error: any) {
     let description = "حدث خطأ غير متوقع أثناء إنشاء الحساب.";
     if (error.code === 'auth/email-already-in-use') {
         description = "هذا البريد الإلكتروني مسجل بالفعل.";
+    } else if (error.code === 'auth/weak-password') {
+        description = "كلمة المرور ضعيفة جدا. يجب أن تتكون من 6 أحرف على الأقل."
     }
     toast({
         variant: "destructive",
