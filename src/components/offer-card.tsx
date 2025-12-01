@@ -15,7 +15,7 @@ import { LegalDisclaimerDialog } from './legal-disclaimer-dialog';
 interface OfferCardProps {
   offer: Offer;
   trip: Trip;
-  onAccept: (offer: Offer, trip: Trip) => void;
+  onAccept: () => void;
 }
 
 const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
@@ -43,7 +43,7 @@ const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
               <AvatarFallback>{carrier?.name?.charAt(0) || 'C'}</AvatarFallback>
             </Avatar>
             <div>
-                <p className="font-bold text-md text-foreground">{carrier?.name || 'ناقل غير معروف'}</p>
+                <p className="font-bold text-md" style={{color: '#13060A'}}>{carrier?.name || 'ناقل غير معروف'}</p>
                 <div className="flex items-center text-xs text-muted-foreground gap-1">
                     <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
                     <span>{carrier?.averageRating || 'جديد'}</span>
@@ -54,30 +54,14 @@ const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
 }
 
 export function OfferCard({ offer, trip, onAccept }: OfferCardProps) {
-  const { toast } = useToast();
-  const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
   
   const handleAcceptClick = () => {
     // Instead of directly calling onAccept, we now open the legal disclaimer first.
-    setIsDisclaimerOpen(true);
-  };
-
-  const handleDisclaimerContinue = () => {
-    // This is the final step in this flow for now.
-    // It confirms the whole path is working.
-    setIsDisclaimerOpen(false);
-    toast({
-        title: "تم الإقرار.",
-        description: "سيتم الآن فتح بطاقة الحجز...",
-    });
-    // In a future step, we will navigate to the unified booking screen from here.
-    // For now, we can still call the original onAccept for UI simulation if needed,
-    // or replace it entirely once the booking screen is ready.
-    // onAccept(offer, trip); 
+    onAccept();
   };
   
   return (
-    <>
+    
         <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2 border-border/60 flex flex-col justify-between" style={{backgroundColor: '#13060A'}}>
             <CardHeader>
                 <CarrierInfo carrierId={offer.carrierId} />
@@ -104,11 +88,6 @@ export function OfferCard({ offer, trip, onAccept }: OfferCardProps) {
             </CardFooter>
         </Card>
 
-        <LegalDisclaimerDialog 
-            isOpen={isDisclaimerOpen}
-            onOpenChange={setIsDisclaimerOpen}
-            onContinue={handleDisclaimerContinue}
-        />
-    </>
+    
   );
 }

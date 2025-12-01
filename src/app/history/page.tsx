@@ -35,6 +35,7 @@ import { collection, query, where, doc, getDocs } from 'firebase/firestore';
 import { Bell, CheckCircle, PackageOpen, Ship } from 'lucide-react';
 import { OfferCard } from '@/components/offer-card';
 import { useToast } from '@/hooks/use-toast';
+import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
 
 const statusMap: Record<string, string> = {
     'Awaiting-Offers': 'بانتظار العروض',
@@ -50,10 +51,30 @@ const statusVariantMap: Record<string, "default" | "secondary" | "destructive" |
     'Cancelled': 'destructive',
 }
 
-const TripOffers = ({ trip, onOfferAccepted }: { trip: Trip; onOfferAccepted: (acceptedOffer: Offer, trip: Trip) => void }) => {
+const TripOffers = ({ trip }: { trip: Trip; }) => {
+    const { toast } = useToast();
+    const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
+    const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+    
     // MOCK DATA USAGE: Using mockOffers instead of fetching from Firestore
     const offers = mockOffers.filter(offer => offer.tripId === trip.id && offer.status === 'Pending');
     const isLoading = false; // Mock data is never loading
+
+    const handleAcceptClick = (offer: Offer) => {
+        setSelectedOffer(offer);
+        setIsDisclaimerOpen(true);
+    };
+
+    const handleDisclaimerContinue = () => {
+        setIsDisclaimerOpen(false);
+        // This is the final step in this flow for now.
+        // It confirms the whole path is working.
+        toast({
+            title: "تم الإقرار.",
+            description: "سيتم الآن فتح بطاقة الحجز...",
+        });
+        // In a future step, we will navigate to the unified booking screen from here.
+    };
 
     if (isLoading) {
         return (
@@ -64,21 +85,28 @@ const TripOffers = ({ trip, onOfferAccepted }: { trip: Trip; onOfferAccepted: (a
         );
     }
     
-    // Case 1: No offers received yet
     if (!offers || offers.length === 0) {
         return <p className="text-center text-muted-foreground p-8">لم يصلك أي عروض بعد، عليك الانتظار.</p>;
     }
 
-    // Case 2: Offers have been received
     return (
-        <div className="p-4 space-y-4">
-            <p className="text-center text-accent font-semibold">انتظر، قد تصلك عروض أفضل.</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {offers.map(offer => (
-                    <OfferCard key={offer.id} offer={offer} trip={trip} onAccept={onOfferAccepted} />
-                ))}
+        <>
+            <div className="p-4 space-y-4">
+                <p className="text-center text-accent font-semibold">انتظر، قد تصلك عروض أفضل.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {offers.map(offer => (
+                        <OfferCard key={offer.id} offer={offer} trip={trip} onAccept={() => handleAcceptClick(offer)} />
+                    ))}
+                </div>
             </div>
-        </div>
+            {selectedOffer && (
+                 <LegalDisclaimerDialog 
+                    isOpen={isDisclaimerOpen}
+                    onOpenChange={setIsDisclaimerOpen}
+                    onContinue={handleDisclaimerContinue}
+                />
+            )}
+        </>
     );
 };
 
@@ -87,11 +115,9 @@ export default function HistoryPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
-  const { toast } = useToast();
   
   const [openAccordion, setOpenAccordion] = useState<string[]>([]);
   
-  // This state will now manage the trips shown in the UI
   const [displayedTrips, setDisplayedTrips] = useState(tripHistory);
 
   const awaitingTrips = displayedTrips.filter(t => t.status === 'Awaiting-Offers');
@@ -120,41 +146,6 @@ export default function HistoryPage() {
     setOpenAccordion(openItems);
 
   }, [hasAwaitingOffers, hasConfirmedTrips, isLoadingAwaiting, isLoadingConfirmed]);
-
-
-  const handleAcceptOffer = (acceptedOffer: Offer, trip: Trip) => {
-    // This function is for UI simulation purposes.
-    // The actual logic is now starting inside OfferCard.tsx with the legal disclaimer.
-    // We keep this function for now to demonstrate the UI change.
-    
-    toast({ title: 'جاري قبول العرض...', description: 'لحظات من فضلك.' });
-
-    // Simulate backend delay
-    setTimeout(() => {
-        const carrier = mockCarriers.find(c => c.id === acceptedOffer.carrierId);
-        
-        // --- UI UPDATE ---
-        setDisplayedTrips(prevTrips => {
-            return prevTrips.map(t => {
-                if (t.id === trip.id) {
-                    return { 
-                        ...t, 
-                        status: 'Planned', 
-                        carrierId: acceptedOffer.carrierId,
-                        carrierName: carrier?.name || 'اسم الناقل غير متوفر'
-                    };
-                }
-                return t;
-            });
-        });
-
-        toast({
-            title: 'تم قبول العرض بنجاح!',
-            description: `تم تأكيد حجزك مع ${carrier?.name}.`,
-        });
-        
-    }, 1500);
-  };
 
 
   const renderSkeleton = () => (
@@ -237,7 +228,7 @@ export default function HistoryPage() {
                                             </div>
                                         </AccordionTrigger>
                                         <AccordionContent>
-                                            <TripOffers trip={trip} onOfferAccepted={handleAcceptOffer} />
+                                            <TripOffers trip={trip} />
                                         </AccordionContent>
                                     </Card>
                                 </AccordionItem>
