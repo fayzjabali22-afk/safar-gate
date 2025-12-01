@@ -174,7 +174,6 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
     }
     
     // STATE 2: Waiting for carrier confirmation
-    // THIS IS THE CRITICAL FIX: Only show this state if a booking exists AND its status is Pending.
     if (trip.currentBookingId && booking?.status === 'Pending-Carrier-Confirmation') {
         return (
              <div className="text-center p-8 bg-background/30">
@@ -192,7 +191,8 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
     }
 
     // STATE 1: Displaying offers
-    const finalOffers = offers && offers.length > 0 ? offers : mockOffers.filter(o => o.tripId === trip.id);
+    // If there are no live offers, fall back to mock offers for the specific trip.
+    const finalOffers = (offers && offers.length > 0) ? offers : mockOffers.filter(o => o.tripId === trip.id);
 
     if (finalOffers.length === 0) {
         return <p className="text-center text-muted-foreground p-8">لم يصلك أي عروض بعد، عليك الانتظار.</p>;
