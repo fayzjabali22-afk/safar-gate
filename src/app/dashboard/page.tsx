@@ -32,10 +32,9 @@ import { cn } from "@/lib/utils"
 import { format } from "date-fns"
 import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, doc, addDoc, writeBatch, getDocs, getDoc } from 'firebase/firestore';
-import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
+import { AuthRedirectDialog } from '@/components/auth-redirect-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { tripHistory, mockOffers } from '@/lib/data';
 
 
 // Mock data for countries and cities
@@ -60,7 +59,7 @@ export default function DashboardPage() {
   const { user } = useUser();
   const firestore = useFirestore();
   const router = useRouter();
-  const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const [searchOriginCountry, setSearchOriginCountry] = useState('');
@@ -107,7 +106,7 @@ export default function DashboardPage() {
   const handleBookingRequest = () => {
       // Step 1: Check for user login
       if (!user) {
-          setIsDisclaimerOpen(true);
+          setIsAuthDialogOpen(true);
           return;
       }
 
@@ -322,10 +321,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-      <LegalDisclaimerDialog 
-        isOpen={isDisclaimerOpen}
-        onOpenChange={setIsDisclaimerOpen}
-        onContinue={handleBookingRequest}
+      <AuthRedirectDialog 
+        isOpen={isAuthDialogOpen}
+        onOpenChange={setIsAuthDialogOpen}
       />
     </AppLayout>
   );

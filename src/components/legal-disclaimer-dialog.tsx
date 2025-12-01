@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -10,20 +11,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useRouter } from 'next/navigation';
 
 interface LegalDisclaimerDialogProps {
     isOpen: boolean;
     onOpenChange: (isOpen: boolean) => void;
-    onContinue: () => void; // A function to call when user clicks "Continue"
+    onContinue: () => void;
 }
 
 export function LegalDisclaimerDialog({ isOpen, onOpenChange, onContinue }: LegalDisclaimerDialogProps) {
-    const router = useRouter();
 
     const handleConfirm = () => {
-        // We no longer handle redirection here.
-        // We just call the onContinue prop passed from the parent component.
         onContinue();
     };
 
