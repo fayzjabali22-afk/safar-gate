@@ -10,8 +10,8 @@ export const firebaseConfig = {
 
 // Action code settings for email verification link
 export const actionCodeSettings = {
-  // URL to redirect back to. The domain (www.example.com)
-  // must be whitelisted in the Firebase Console.
+  // URL to redirect back to. The domain must be whitelisted in the Firebase Console.
+  // After verification, the user will be redirected to the history page.
   url: `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:9002'}/history`,
   // This must be true.
   handleCodeInApp: true,

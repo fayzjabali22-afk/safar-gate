@@ -35,7 +35,6 @@ import { collection, query, where, doc, writeBatch, getDoc, serverTimestamp } fr
 import { Bell, CheckCircle, PackageOpen, Ship, Hourglass, XCircle, Info, Loader2 } from 'lucide-react';
 import { OfferCard } from '@/components/offer-card';
 import { useToast } from '@/hooks/use-toast';
-import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
 import { mockOffers } from '@/lib/data';
 
 
@@ -123,8 +122,6 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
     const { toast } = useToast();
     const firestore = useFirestore();
     const { user } = useUser();
-    const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
-    const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
 
     const offersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -140,19 +137,9 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
 
     const { data: booking, isLoading: isLoadingBooking } = useDoc<Booking>(bookingRef);
 
-    const handleAcceptClick = (offer: Offer) => {
-        if (!user) {
-            toast({ title: "الرجاء تسجيل الدخول أولاً", variant: "destructive" });
-            return;
-        }
-        setSelectedOffer(offer);
-        setIsDisclaimerOpen(true);
-    };
+    const handleAcceptOffer = async (selectedOffer: Offer) => {
+        if (!firestore || !user) return;
 
-    const handleDisclaimerContinue = async () => {
-        if (!firestore || !user || !selectedOffer) return;
-
-        setIsDisclaimerOpen(false);
         const batch = writeBatch(firestore);
 
         // 1. Create a new Booking document with 'Pending-Carrier-Confirmation' status
@@ -223,20 +210,13 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
                 ) : availableOffers.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {availableOffers.map(offer => (
-                            <OfferCard key={offer.id} offer={offer} trip={trip} onAccept={() => handleAcceptClick(offer)} />
+                            <OfferCard key={offer.id} offer={offer} trip={trip} onAccept={() => handleAcceptOffer(offer)} />
                         ))}
                     </div>
                 ) : (
                     <p className="text-center text-muted-foreground p-8">لم تصلك أي عروض بعد لهذا الطلب. يمكنك الانتظار أو إلغاء الطلب.</p>
                 )}
             </div>
-            {selectedOffer && (
-                 <LegalDisclaimerDialog
-                    isOpen={isDisclaimerOpen}
-                    onOpenChange={setIsDisclaimerOpen}
-                    onContinue={handleDisclaimerContinue}
-                />
-            )}
         </>
     );
 };

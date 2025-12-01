@@ -80,9 +80,14 @@ export default function DashboardPage() {
 
   
   const handleBookingRequestSubmit = async () => {
+      // This function will now be called AFTER successful login.
+      // We re-check for user and firestore just in case.
       if (!firestore || !user) {
-        // This should not happen if the logic flow is correct, but it's a good safeguard.
-        setIsAuthDialogOpen(true);
+        toast({
+            variant: "destructive",
+            title: "خطأ",
+            description: "لا يمكن إرسال الطلب. الرجاء المحاولة مرة أخرى.",
+        });
         return;
       }
       
@@ -104,7 +109,7 @@ export default function DashboardPage() {
           passengers: searchSeats,
           status: 'Awaiting-Offers',
           departureDate: date ? date.toISOString() : new Date().toISOString(),
-          ...(searchMode === 'specific-carrier' && { privateCarrierId: 'carrier01' }), // Replace with actual selected carrier
+          // ...(searchMode === 'specific-carrier' && { privateCarrierId: 'carrier01' }), // Replace with actual selected carrier
       };
       
       addDocumentNonBlocking(tripsCollection, newTripData).then(() => {
@@ -117,13 +122,9 @@ export default function DashboardPage() {
   };
   
   const handleBookingRequest = () => {
-    // If user is already logged in, proceed to submit.
-    // Otherwise, the dialog will be opened.
-    if (user) {
-        handleBookingRequestSubmit();
-    } else {
-        setIsAuthDialogOpen(true);
-    }
+    // ALWAYS open the auth dialog. The dialog itself will handle
+    // what to do if the user is already logged in.
+    setIsAuthDialogOpen(true);
   };
 
 
