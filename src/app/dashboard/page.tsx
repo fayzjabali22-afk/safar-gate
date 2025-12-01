@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import type { Trip } from '@/lib/data';
@@ -62,41 +63,6 @@ export default function DashboardPage() {
   const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
   const { toast } = useToast();
 
-  // Seed mock data for testing purposes
-  useEffect(() => {
-    if (firestore && user) {
-        const seedData = async () => {
-            const awaitingTripId = 'TRIP-AWAITING-001';
-            const tripRef = doc(firestore, 'trips', awaitingTripId);
-            const tripSnap = await getDoc(tripRef);
-
-            // Only seed if the specific "Awaiting-Offers" trip doesn't exist.
-            if (!tripSnap.exists()) {
-                const batch = writeBatch(firestore);
-
-                // Add the main trip that is awaiting offers
-                const tripAwaitingOffers = tripHistory.find(t => t.id === awaitingTripId);
-                if (tripAwaitingOffers) {
-                    const newTrip = { ...tripAwaitingOffers, userId: user.uid };
-                    batch.set(tripRef, newTrip);
-                }
-
-                // Add the mock offers for that trip
-                const offersForTrip = mockOffers.filter(o => o.tripId === awaitingTripId);
-                offersForTrip.forEach(offer => {
-                    const offerRef = doc(collection(firestore, `trips/${awaitingTripId}/offers`));
-                    batch.set(offerRef, { ...offer, id: offerRef.id }); // Assign new ID
-                });
-
-                await batch.commit();
-                console.log("Mock data seeded for user:", user.uid);
-            }
-        };
-        seedData();
-    }
-  }, [firestore, user]);
-
-
   const [searchOriginCountry, setSearchOriginCountry] = useState('');
   const [searchOriginCity, setSearchOriginCity] = useState('');
   const [searchDestinationCountry, setSearchDestinationCountry] = useState('');
@@ -118,16 +84,15 @@ export default function DashboardPage() {
       if (!firestore || !user) return;
       const tripsCollection = collection(firestore, 'trips');
       
-      const newTripData: Trip = {
+      const newTripData: Omit<Trip, 'id'> = {
           userId: user.uid,
           origin: searchOriginCity,
           destination: searchDestinationCity,
           passengers: searchSeats,
           status: 'Awaiting-Offers',
           departureDate: date ? date.toISOString() : new Date().toISOString(),
-          // In a real app, you'd generate a unique ID on the server,
-          // but for this client-side mock, we'll let Firestore do it.
-          id: '', 
+          // if searchMode is specific-carrier, add the carrierId
+          ...(searchMode === 'specific-carrier' && { privateCarrierId: 'carrier01' }), // Replace with actual selected carrier
       };
       
       addDocumentNonBlocking(tripsCollection, newTripData).then(() => {
@@ -165,6 +130,11 @@ export default function DashboardPage() {
           });
           return;
       }
+      
+      if (searchMode === 'specific-carrier' ) {
+          // Add validation for selecting a carrier if needed
+      }
+
 
       // Step 4: Submit the request
       handleBookingRequestSubmit();
@@ -180,69 +150,114 @@ export default function DashboardPage() {
           <div className="w-full max-w-2xl">
             <header className="mb-8 text-center">
               <h1 className="text-2xl font-bold tracking-tight text-foreground">أين وجهتك التالية؟</h1>
-              <p className="text-muted-foreground mt-2">املأ تفاصيل رحلتك واحصل على أفضل العروض من الناقلين.</p>
+              <p className="text-muted-foreground mt-2">املأ تفاصيل رحلتك واحصل على أفضل العروض أو أرسل طلبًا مباشرًا لناقلك المفضل.</p>
             </header>
 
             {/* Request Form Card */}
             <Card className="w-full shadow-lg rounded-lg border-border/60 bg-card/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle>إنشاء طلب رحلة جديد</CardTitle>
-                <CardDescription>سيتم إرسال طلبك إلى الناقلين المسجلين لدينا.</CardDescription>
+                <CardDescription>ابدأ باختيار طريقة البحث عن رحلتك.</CardDescription>
               </CardHeader>
               <CardContent className="p-4 md:p-6">
-                <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-1 gap-6">
 
-                  {/* Origin and Destination */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="origin-country">دولة الانطلاق</Label>
-                      <Select onValueChange={setSearchOriginCountry} value={searchOriginCountry}>
-                        <SelectTrigger id="origin-country"><SelectValue placeholder="اختر دولة الانطلاق" /></SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(countries).map(([key, {name}]) => (
-                            <SelectItem key={key} value={key}>{name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  {/* Step 1: Search Mode Selection */}
+                    <div className="grid gap-3">
+                        <Label className="text-base">الخطوة الأولى: اختر طريقة الطلب</Label>
+                        <RadioGroup
+                            defaultValue="all-carriers"
+                            className="grid grid-cols-2 gap-4"
+                            onValueChange={(value) => setSearchMode(value as 'specific-carrier' | 'all-carriers')}
+                        >
+                            <div>
+                                <RadioGroupItem value="all-carriers" id="all-carriers" className="peer sr-only" />
+                                <Label
+                                htmlFor="all-carriers"
+                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                                >
+                                <Globe className="mb-3 h-6 w-6" />
+                                طلب عروض من كل الناقلين
+                                </Label>
+                            </div>
+                            <div>
+                                <RadioGroupItem value="specific-carrier" id="specific-carrier" className="peer sr-only" />
+                                <Label
+                                htmlFor="specific-carrier"
+                                className="flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                                >
+                                <UserSearch className="mb-3 h-6 w-6" />
+                                طلب من ناقل محدد
+                                </Label>
+                            </div>
+                        </RadioGroup>
                     </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="origin-city">مدينة الانطلاق</Label>
-                      <Select onValueChange={setSearchOriginCity} value={searchOriginCity} disabled={!searchOriginCountry}>
-                        <SelectTrigger id="origin-city"><SelectValue placeholder="اختر مدينة الانطلاق" /></SelectTrigger>
-                        <SelectContent>
-                          {searchOriginCountry && countries[searchOriginCountry as keyof typeof countries]?.cities.map(cityKey => (
-                            <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     <div className="grid gap-2">
-                        <Label htmlFor="destination-country">دولة الوصول</Label>
-                        <Select onValueChange={setSearchDestinationCountry} value={searchDestinationCountry}>
-                          <SelectTrigger id="destination-country"><SelectValue placeholder="اختر دولة الوصول" /></SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(countries)
-                                .filter(([key]) => key !== searchOriginCountry)
-                                .map(([key, {name}]) => (
-                                  <SelectItem key={key} value={key}>{name}</SelectItem>
+                    {searchMode === 'specific-carrier' && (
+                        <div className="grid gap-2 animate-in fade-in-50">
+                            <Label htmlFor="carrier-search">ابحث عن ناقلك المفضل بالاسم أو رقم الهاتف</Label>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input id="carrier-search" placeholder="مثال: شركة النقل السريع..." className="pl-10" />
+                            </div>
+                        </div>
+                    )}
+
+
+                  {/* Step 2: Trip Details */}
+                  <div className="grid gap-3">
+                    <Label className="text-base">الخطوة الثانية: أدخل تفاصيل رحلتك</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                        <Label htmlFor="origin-country">دولة الانطلاق</Label>
+                        <Select onValueChange={setSearchOriginCountry} value={searchOriginCountry}>
+                            <SelectTrigger id="origin-country"><SelectValue placeholder="اختر دولة الانطلاق" /></SelectTrigger>
+                            <SelectContent>
+                            {Object.entries(countries).map(([key, {name}]) => (
+                                <SelectItem key={key} value={key}>{name}</SelectItem>
                             ))}
-                          </SelectContent>
+                            </SelectContent>
                         </Select>
-                      </div>
-                      <div className="grid gap-2">
-                        <Label htmlFor="destination-city">مدينة الوصول</Label>
-                        <Select onValueChange={setSearchDestinationCity} value={searchDestinationCity} disabled={!searchDestinationCountry}>
-                          <SelectTrigger id="destination-city"><SelectValue placeholder="اختر مدينة الوصول" /></SelectTrigger>
-                          <SelectContent>
-                            {searchDestinationCountry && countries[searchDestinationCountry as keyof typeof countries]?.cities.map(cityKey => (
-                              <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
+                        </div>
+                        <div className="grid gap-2">
+                        <Label htmlFor="origin-city">مدينة الانطلاق</Label>
+                        <Select onValueChange={setSearchOriginCity} value={searchOriginCity} disabled={!searchOriginCountry}>
+                            <SelectTrigger id="origin-city"><SelectValue placeholder="اختر مدينة الانطلاق" /></SelectTrigger>
+                            <SelectContent>
+                            {searchOriginCountry && countries[searchOriginCountry as keyof typeof countries]?.cities.map(cityKey => (
+                                <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
                             ))}
-                          </SelectContent>
+                            </SelectContent>
                         </Select>
-                      </div>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                            <Label htmlFor="destination-country">دولة الوصول</Label>
+                            <Select onValueChange={setSearchDestinationCountry} value={searchDestinationCountry}>
+                            <SelectTrigger id="destination-country"><SelectValue placeholder="اختر دولة الوصول" /></SelectTrigger>
+                            <SelectContent>
+                                {Object.entries(countries)
+                                    .filter(([key]) => key !== searchOriginCountry)
+                                    .map(([key, {name}]) => (
+                                    <SelectItem key={key} value={key}>{name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="destination-city">مدينة الوصول</Label>
+                            <Select onValueChange={setSearchDestinationCity} value={searchDestinationCity} disabled={!searchDestinationCountry}>
+                            <SelectTrigger id="destination-city"><SelectValue placeholder="اختر مدينة الوصول" /></SelectTrigger>
+                            <SelectContent>
+                                {searchDestinationCountry && countries[searchDestinationCountry as keyof typeof countries]?.cities.map(cityKey => (
+                                <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                   </div>
 
                   {/* Date and Seats */}
@@ -289,8 +304,17 @@ export default function DashboardPage() {
                   
                   {/* Action Button */}
                   <Button onClick={handleBookingRequest} size="lg" className="w-full mt-4 bg-accent hover:bg-accent/90 text-accent-foreground">
-                    <Globe className="ml-2 h-4 w-4" />
-                    إرسال طلب للحصول على عروض
+                     {searchMode === 'all-carriers' ? (
+                        <>
+                            <Globe className="ml-2 h-4 w-4" />
+                            إرسال طلب للحصول على عروض
+                        </>
+                    ) : (
+                        <>
+                            <UserSearch className="ml-2 h-4 w-4" />
+                            إرسال طلب مباشر للناقل
+                        </>
+                    )}
                   </Button>
                 </div>
               </CardContent>
