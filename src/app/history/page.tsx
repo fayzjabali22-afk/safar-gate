@@ -60,12 +60,32 @@ const cities: { [key: string]: string } = {
 };
 
 
-const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
+const WaitingScreen = ({ onCancel }: { onCancel: () => void }) => {
+    return (
+        <div className="text-center p-8 space-y-4 bg-background">
+            <Hourglass className="mx-auto h-12 w-12 text-accent" />
+            <h3 className="text-xl font-bold text-foreground">سفريات بانتظار تأكيد المقاعد من الناقل</h3>
+            <p className="text-muted-foreground max-w-md mx-auto">
+                فور موافقة الناقل وفتح شاشة الحجز، سيصلك إشعار فوري لتتمكن من إكمال الحجز بسهولة. يحرص فريق سفريات على تنظيم العملية وعدم تراكم الحجوزات لدى الناقل.
+            </p>
+            <p className="text-sm text-accent font-semibold">قوم بمتابعة اعملك دقائق ويصلك الاشعار</p>
+            <Button variant="destructive" onClick={onCancel} className="mt-4">
+                <XCircle className="ml-2 h-4 w-4" />
+                إلغاء الطلب
+            </Button>
+        </div>
+    );
+};
+
+const TripBookingManager = ({ trip }: { trip: Trip; }) => {
     const { toast } = useToast();
     const firestore = useFirestore();
     const { user } = useUser();
     const [isDisclaimerOpen, setIsDisclaimerOpen] = useState(false);
     const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
+    
+    // This state determines what to show: 'offers' or 'waiting'
+    const [viewMode, setViewMode] = useState<'offers' | 'waiting'>('offers');
 
     const offersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -81,6 +101,16 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
     
     const { data: booking, isLoading: isLoadingBooking } = useDoc<Booking>(bookingQuery);
     
+    // Effect to set the initial view mode based on Firestore data
+    useEffect(() => {
+        if (booking && booking.status === 'Pending-Carrier-Confirmation') {
+            setViewMode('waiting');
+        } else {
+            setViewMode('offers');
+        }
+    }, [booking]);
+
+
     const handleAcceptClick = (offer: Offer) => {
         setSelectedOffer(offer);
         setIsDisclaimerOpen(true);
@@ -132,7 +162,8 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
 
         try {
             await batch.commit();
-            // The UI will automatically update to the waiting screen because `trip.currentBookingId` is now set.
+            // After successful commit, change the view to the waiting screen
+            setViewMode('waiting');
         } catch (error) {
             console.error("Error accepting offer: ", error);
             toast({
@@ -164,6 +195,7 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
 
         try {
             await batch.commit();
+            setViewMode('offers'); // Switch back to offers view
             toast({
                 title: "تم إلغاء الطلب",
                 description: "يمكنك الآن اختيار عرض آخر."
@@ -186,27 +218,13 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
         );
     }
     
-    // STATE 2: A booking has been created and is awaiting carrier confirmation
-    if (booking && booking.status === 'Pending-Carrier-Confirmation') {
-        return (
-            <div className="text-center p-8 space-y-4 bg-background">
-                <Hourglass className="mx-auto h-12 w-12 text-accent" />
-                <h3 className="text-xl font-bold text-foreground">سفريات بانتظار تأكيد المقاعد من الناقل</h3>
-                <p className="text-muted-foreground max-w-md mx-auto">
-                    فور موافقة الناقل وفتح شاشة الحجز، سيصلك إشعار فوري لتتمكن من إكمال الحجز بسهولة. يحرص فريق سفريات على تنظيم العملية وعدم تراكم الحجوزات لدى الناقل.
-                </p>
-                <p className="text-sm text-accent font-semibold">قوم بمتابعة اعملك دقائق ويصلك الاشعار</p>
-                <Button variant="destructive" onClick={handleCancelPendingBooking} className="mt-4">
-                    <XCircle className="ml-2 h-4 w-4" />
-                    إلغاء الطلب
-                </Button>
-            </div>
-        );
+    if (viewMode === 'waiting') {
+        return <WaitingScreen onCancel={handleCancelPendingBooking} />;
     }
 
-    // STATE 1: No accepted booking yet, show offers
+    // Default view is 'offers'
     const pendingOffers = offers?.filter(o => o.status === 'Pending') || [];
-
+    
     if (pendingOffers.length === 0) {
         return <p className="text-center text-muted-foreground p-8">لم يصلك أي عروض بعد، أو تم قبول عرض بالفعل. عليك الانتظار.</p>;
     }
@@ -351,7 +369,7 @@ export default function HistoryPage() {
                                             </div>
                                         </AccordionTrigger>
                                         <AccordionContent className="p-0">
-                                            <BookingStatusManager trip={trip} />
+                                            <TripBookingManager trip={trip} />
                                         </AccordionContent>
                                     </Card>
                                 </AccordionItem>
@@ -416,5 +434,3 @@ export default function HistoryPage() {
     </AppLayout>
   );
 }
-
-    
