@@ -71,7 +71,8 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
 
     const offersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, `trips/${trip.id}/offers`));
+        // Fetch offers that are pending for this trip
+        return query(collection(firestore, `trips/${trip.id}/offers`), where("status", "==", "Pending"));
     }, [firestore, trip.id]);
 
     const { data: offers, isLoading: isLoadingOffers } = useCollection<Offer>(offersQuery);
@@ -84,42 +85,38 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
         setSelectedOffer(offer);
         setIsDisclaimerOpen(true);
     };
-    
-    const handleDisclaimerContinue = async () => {
-        setIsDisclaimerOpen(false);
-        if (!firestore || !user || !selectedOffer || !trip.passengers) return;
 
+    const handleDisclaimerContinue = async () => {
+        if (!firestore || !user || !selectedOffer) return;
+
+        setIsDisclaimerOpen(false);
         toast({
-            title: "تم قبول عرضك.",
-            description: "هذه رسالة مؤقتة. سيتم بناء شاشة الانتظار في الخطوة التالية.",
+            title: "تم قبول عرضك بنجاح!",
+            description: "هذه رسالة مؤقتة. في الخطوة التالية، سيتم بناء شاشة الانتظار.",
         });
     };
 
-    if (isLoadingOffers) {
-        return (
-            <div className="flex justify-center items-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
-    }
-    
     const availableOffers = offers && offers.length > 0 ? offers : mockOffers.filter(o => o.tripId === trip.id);
-
-    if (availableOffers.length === 0) {
-        return <p className="text-center text-muted-foreground p-8">لم تصلك أي عروض بعد لهذا الطلب. يمكنك الانتظار أو إلغاء الطلب.</p>;
-    }
 
     return (
         <>
             <div className="p-4 space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {availableOffers.map(offer => (
-                        <OfferCard key={offer.id} offer={offer} trip={trip} onAccept={() => handleAcceptClick(offer)} />
-                    ))}
-                </div>
+                {isLoadingOffers ? (
+                    <div className="flex justify-center items-center p-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                ) : availableOffers.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {availableOffers.map(offer => (
+                            <OfferCard key={offer.id} offer={offer} trip={trip} onAccept={() => handleAcceptClick(offer)} />
+                        ))}
+                    </div>
+                ) : (
+                    <p className="text-center text-muted-foreground p-8">لم تصلك أي عروض بعد لهذا الطلب. يمكنك الانتظار أو إلغاء الطلب.</p>
+                )}
             </div>
             {selectedOffer && (
-                 <LegalDisclaimerDialog 
+                 <LegalDisclaimerDialog
                     isOpen={isDisclaimerOpen}
                     onOpenChange={setIsDisclaimerOpen}
                     onContinue={handleDisclaimerContinue}
