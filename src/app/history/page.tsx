@@ -23,14 +23,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -38,12 +30,10 @@ import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebas
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Trip, Notification } from '@/lib/data';
+import type { Trip, Notification, Offer } from '@/lib/data';
 import { collection, query, where } from 'firebase/firestore';
-import { Bell, CheckCircle, PackageOpen, X, Ship, Star, MessageSquare, AlertCircle, Phone, Pencil, SendHorizonal, Paperclip } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Bell, CheckCircle, PackageOpen, Ship } from 'lucide-react';
+import { OfferCard } from '@/components/offer-card';
 
 const statusMap: Record<string, string> = {
     'Awaiting-Offers': 'بانتظار العروض',
@@ -59,12 +49,43 @@ const statusVariantMap: Record<string, "default" | "secondary" | "destructive" |
     'Cancelled': 'destructive',
 }
 
+const TripOffers = ({ trip }: { trip: Trip }) => {
+    const firestore = useFirestore();
+    const offersQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        return query(collection(firestore, `trips/${trip.id}/offers`), where('status', '==', 'Pending'));
+    }, [firestore, trip.id]);
+
+    const { data: offers, isLoading } = useCollection<Offer>(offersQuery);
+
+    if (isLoading) {
+        return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-48 w-full" />
+            </div>
+        );
+    }
+    
+    if (!offers || offers.length === 0) {
+        return <p className="text-center text-muted-foreground p-4">لم يتم استلام أي عروض لهذا الطلب بعد.</p>;
+    }
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {offers.map(offer => (
+                <OfferCard key={offer.id} offer={offer} />
+            ))}
+        </div>
+    );
+};
+
 export default function HistoryPage() {
   const { user, isUserLoading } = useUser();
   const router = useRouter();
   const firestore = useFirestore();
   
-  const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
+  const [openAccordion, setOpenAccordion] = useState<string[]>([]);
   
   const awaitingTripsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -94,13 +115,11 @@ export default function HistoryPage() {
   useEffect(() => {
     if (isLoadingAwaiting || isLoadingConfirmed) return;
     
-    if (hasAwaitingOffers) {
-        setOpenAccordion('awaiting');
-    } else if (hasConfirmedTrips) {
-        setOpenAccordion('confirmed');
-    } else {
-        setOpenAccordion(undefined);
-    }
+    const openItems: string[] = [];
+    if (hasAwaitingOffers) openItems.push('awaiting');
+    if (hasConfirmedTrips) openItems.push('confirmed');
+    setOpenAccordion(openItems);
+
   }, [hasAwaitingOffers, hasConfirmedTrips, isLoadingAwaiting, isLoadingConfirmed]);
 
 
@@ -149,50 +168,50 @@ export default function HistoryPage() {
           </CardHeader>
         </Card>
 
-        <Accordion type="single" collapsible className="w-full space-y-6" value={openAccordion} onValueChange={setOpenAccordion}>
+        <Accordion type="multiple" className="w-full space-y-6" value={openAccordion} onValueChange={setOpenAccordion}>
           
           {isLoadingAwaiting && renderSkeleton()}
           {!isLoadingAwaiting && awaitingTrips && awaitingTrips.length > 0 && (
-            <AccordionItem value="awaiting" className="border-none">
-              <Card>
+            <Card>
+                <AccordionItem value="awaiting" className="border-none">
                 <AccordionTrigger className="p-6 text-lg hover:no-underline">
                   <div className='flex items-center gap-2'><PackageOpen className="h-6 w-6 text-primary" /><CardTitle>طلبات بانتظار العروض</CardTitle></div>
                 </AccordionTrigger>
                 <AccordionContent>
                   <CardContent>
                     <CardDescription className="mb-4">
-                      هنا تظهر طلباتك التي أرسلتها. قريباً ستتمكن من رؤية العروض من الناقلين هنا.
+                      هنا تظهر طلباتك التي أرسلتها. يمكنك استعراض العروض المقدمة من الناقلين لكل طلب.
                     </CardDescription>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>من</TableHead>
-                          <TableHead>إلى</TableHead>
-                          <TableHead>تاريخ الطلب</TableHead>
-                          <TableHead>الحالة</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {awaitingTrips.map(trip => (
-                          <TableRow key={trip.id}>
-                            <TableCell>{trip.origin}</TableCell>
-                            <TableCell>{trip.destination}</TableCell>
-                            <TableCell>{new Date(trip.departureDate).toLocaleDateString('ar-SA')}</TableCell>
-                            <TableCell><Badge variant={statusVariantMap[trip.status]}>{statusMap[trip.status]}</Badge></TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
+                    <Accordion type="single" collapsible className="w-full space-y-4">
+                       {awaitingTrips.map(trip => (
+                            <AccordionItem value={trip.id} key={trip.id}>
+                                <Card className="overflow-hidden">
+                                     <AccordionTrigger className="p-4 bg-card/80 hover:no-underline">
+                                         <div className="flex justify-between items-center w-full">
+                                            <div>
+                                                <p className="font-bold">طلب رحلة: {trip.origin} إلى {trip.destination}</p>
+                                                <p className="text-sm text-muted-foreground">تاريخ الطلب: {new Date(trip.departureDate).toLocaleDateString('ar-SA')}</p>
+                                            </div>
+                                            <Badge variant={statusVariantMap[trip.status]}>{statusMap[trip.status]}</Badge>
+                                         </div>
+                                     </AccordionTrigger>
+                                     <AccordionContent className="p-4">
+                                        <TripOffers trip={trip} />
+                                     </AccordionContent>
+                                </Card>
+                            </AccordionItem>
+                       ))}
+                    </Accordion>
                   </CardContent>
                 </AccordionContent>
-              </Card>
-            </AccordionItem>
+                </AccordionItem>
+            </Card>
           )}
           
           {isLoadingConfirmed && renderSkeleton()}
           {!isLoadingConfirmed && confirmedTrips && confirmedTrips.length > 0 && (
-              <AccordionItem value="confirmed" className="border-none">
-                <Card>
+              <Card>
+                <AccordionItem value="confirmed" className="border-none">
                   <AccordionTrigger className="p-6 text-lg hover:no-underline">
                     <div className='flex items-center gap-2'><CheckCircle className="h-6 w-6 text-green-500" /><CardTitle>رحلاتي السابقة والمؤكدة</CardTitle></div>
                   </AccordionTrigger>
@@ -223,8 +242,8 @@ export default function HistoryPage() {
                       </Table>
                     </CardContent>
                   </AccordionContent>
-                </Card>
-              </AccordionItem>
+                </AccordionItem>
+              </Card>
             )
           }
         </Accordion>

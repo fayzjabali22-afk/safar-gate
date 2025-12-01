@@ -1,28 +1,49 @@
 
+
 export type UserProfile = {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
   phoneNumber?: string;
+  role?: 'traveler' | 'carrier';
 };
+
+export type CarrierProfile = {
+  id: string;
+  name: string;
+  contactEmail: string;
+  phoneNumber?: string;
+  averageRating?: number;
+}
 
 export type Trip = {
   id: string;
   userId: string;
-  carrierName: string;
-  carrierPhoneNumber: string;
+  carrierId?: string; // Optional until a carrier accepts
+  carrierName?: string;
+  carrierPhoneNumber?: string;
   origin: string;
   destination: string;
   departureDate: string; // ISO 8601 format: 'YYYY-MM-DDTHH:mm:ssZ'
   arrivalDate?: string;
   status: 'Planned' | 'In-Transit' | 'Completed' | 'Cancelled' | 'Awaiting-Offers';
-  cargoDetails: string;
-  vehicleType: string;
-  vehicleCategory: 'small' | 'bus';
-  vehicleModelYear: number;
-  availableSeats: number;
+  cargoDetails?: string;
+  vehicleType?: string;
+  vehicleCategory?: 'small' | 'bus';
+  vehicleModelYear?: number;
+  availableSeats?: number;
   passengers?: number;
+};
+
+export type Offer = {
+    id: string;
+    tripId: string;
+    carrierId: string;
+    price: number;
+    notes?: string;
+    status: 'Pending' | 'Accepted' | 'Rejected';
+    createdAt: string; // ISO 8601 format
 };
 
 export type Notification = {
