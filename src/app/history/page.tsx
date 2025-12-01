@@ -1,4 +1,3 @@
-
 'use client';
 import { AppLayout } from '@/components/app-layout';
 import {
@@ -26,15 +25,16 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Trip, Notification, Offer } from '@/lib/data';
+import type { Trip, Notification, Offer, CarrierProfile } from '@/lib/data';
 import { mockOffers, tripHistory, mockCarriers } from '@/lib/data';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query, where, doc, getDocs } from 'firebase/firestore';
 import { Bell, CheckCircle, PackageOpen, Ship } from 'lucide-react';
 import { OfferCard } from '@/components/offer-card';
+import { useToast } from '@/hooks/use-toast';
 
 const statusMap: Record<string, string> = {
     'Awaiting-Offers': 'بانتظار العروض',
@@ -50,7 +50,7 @@ const statusVariantMap: Record<string, "default" | "secondary" | "destructive" |
     'Cancelled': 'destructive',
 }
 
-const TripOffers = ({ trip }: { trip: Trip }) => {
+const TripOffers = ({ trip, onOfferAccepted }: { trip: Trip; onOfferAccepted: () => void }) => {
     // MOCK DATA USAGE: Using mockOffers instead of fetching from Firestore
     const offers = mockOffers.filter(offer => offer.tripId === trip.id && offer.status === 'Pending');
     const isLoading = false; // Mock data is never loading
@@ -75,7 +75,7 @@ const TripOffers = ({ trip }: { trip: Trip }) => {
             <p className="text-center text-accent font-semibold">انتظر قد تصلك عروض افضل</p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {offers.map(offer => (
-                    <OfferCard key={offer.id} offer={offer} />
+                    <OfferCard key={offer.id} offer={offer} trip={trip} onAccept={onOfferAccepted} />
                 ))}
             </div>
         </div>
@@ -85,13 +85,17 @@ const TripOffers = ({ trip }: { trip: Trip }) => {
 
 export default function HistoryPage() {
   const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
   
   const [openAccordion, setOpenAccordion] = useState<string[]>([]);
   
-  // MOCK DATA USAGE: Filtering mock tripHistory instead of useCollection
-  const awaitingTrips = tripHistory.filter(t => t.status === 'Awaiting-Offers');
-  const confirmedTrips = tripHistory.filter(t => ['Planned', 'Completed', 'Cancelled'].includes(t.status));
+  // This state will now manage the trips shown in the UI
+  const [displayedTrips, setDisplayedTrips] = useState(tripHistory);
+
+  const awaitingTrips = displayedTrips.filter(t => t.status === 'Awaiting-Offers');
+  const confirmedTrips = displayedTrips.filter(t => ['Planned', 'Completed', 'Cancelled'].includes(t.status));
   const isLoadingAwaiting = false;
   const isLoadingConfirmed = false;
 
@@ -103,7 +107,6 @@ export default function HistoryPage() {
 
   useEffect(() => {
     if (!isUserLoading && !user) {
-        // For development with mock data, we can comment this out to avoid being redirected
         // router.push('/login');
     }
   }, [user, isUserLoading, router]);
@@ -117,6 +120,70 @@ export default function HistoryPage() {
     setOpenAccordion(openItems);
 
   }, [hasAwaitingOffers, hasConfirmedTrips, isLoadingAwaiting, isLoadingConfirmed]);
+
+
+  const handleAcceptOffer = async (acceptedOffer: Offer, trip: Trip) => {
+    if (!firestore) return;
+
+    toast({ title: 'جاري قبول العرض...', description: 'لحظات من فضلك.' });
+
+    try {
+        const tripRef = doc(firestore, 'trips', trip.id);
+        const offersQuery = query(collection(firestore, `trips/${trip.id}/offers`));
+        const offersSnapshot = await getDocs(offersQuery);
+
+        // This would be a transaction in a real app
+        // 1. Update the accepted offer
+        const acceptedOfferRef = doc(firestore, `trips/${trip.id}/offers`, acceptedOffer.id);
+        updateDocumentNonBlocking(acceptedOfferRef, { status: 'Accepted' });
+
+        // 2. Reject all other offers
+        offersSnapshot.forEach(offerDoc => {
+            if (offerDoc.id !== acceptedOffer.id) {
+                const offerRef = doc(firestore, `trips/${trip.id}/offers`, offerDoc.id);
+                updateDocumentNonBlocking(offerRef, { status: 'Rejected' });
+            }
+        });
+        
+        const carrier = mockCarriers.find(c => c.id === acceptedOffer.carrierId);
+
+        // 3. Update the trip itself
+        updateDocumentNonBlocking(tripRef, {
+            status: 'Planned',
+            carrierId: acceptedOffer.carrierId,
+            carrierName: carrier?.name || 'اسم الناقل غير متوفر', // Get carrier name
+            // price: acceptedOffer.price, // Assuming you add price to Trip schema
+        });
+        
+        // --- UI UPDATE ---
+        // This is a simulation of the real-time update
+        setDisplayedTrips(prevTrips => {
+            return prevTrips.map(t => {
+                if (t.id === trip.id) {
+                    return { 
+                        ...t, 
+                        status: 'Planned', 
+                        carrierName: carrier?.name || 'اسم الناقل غير متوفر'
+                    };
+                }
+                return t;
+            });
+        });
+
+        toast({
+            title: 'تم قبول العرض بنجاح!',
+            description: `تم تأكيد حجزك مع ${carrier?.name}.`,
+        });
+
+    } catch (error) {
+        console.error("Error accepting offer: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'حدث خطأ',
+            description: 'لم نتمكن من قبول العرض. يرجى المحاولة مرة أخرى.',
+        });
+    }
+  };
 
 
   const renderSkeleton = () => (
@@ -199,7 +266,7 @@ export default function HistoryPage() {
                                             </div>
                                         </AccordionTrigger>
                                         <AccordionContent>
-                                            <TripOffers trip={trip} />
+                                            <TripOffers trip={trip} onOfferAccepted={() => handleAcceptOffer(mockOffers.find(o => o.tripId === trip.id)!, trip)} />
                                         </AccordionContent>
                                     </Card>
                                 </AccordionItem>

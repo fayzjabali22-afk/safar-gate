@@ -1,7 +1,7 @@
 
 'use client';
 
-import type { Offer, CarrierProfile } from '@/lib/data';
+import type { Offer, CarrierProfile, Trip } from '@/lib/data';
 import { mockCarriers } from '@/lib/data'; // Import mock carriers
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,8 @@ import { Skeleton } from './ui/skeleton';
 
 interface OfferCardProps {
   offer: Offer;
+  trip: Trip;
+  onAccept: (offer: Offer, trip: Trip) => void;
 }
 
 const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
@@ -50,13 +52,7 @@ const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
     )
 }
 
-export function OfferCard({ offer }: OfferCardProps) {
-    const { toast } = useToast();
-
-    const handleAccept = () => {
-        toast({ title: "قبول العرض", description: "سيتم تفعيل هذه الميزة في المرحلة التالية." });
-    };
-
+export function OfferCard({ offer, trip, onAccept }: OfferCardProps) {
   return (
     <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2 border-border/60 flex flex-col justify-between bg-card/70">
         <CardHeader>
@@ -77,7 +73,7 @@ export function OfferCard({ offer }: OfferCardProps) {
           )}
         </CardContent>
         <CardFooter className="flex gap-2 p-2 bg-background/30">
-            <Button size="lg" className="w-full bg-green-600 hover:bg-green-700" onClick={handleAccept}>
+            <Button size="lg" className="w-full bg-green-600 hover:bg-green-700" onClick={() => onAccept(offer, trip)}>
                 <ThumbsUp className="ml-2 h-4 w-4" />
                 قبول وتأكيد الحجز
             </Button>
