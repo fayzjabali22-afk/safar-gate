@@ -289,20 +289,6 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   
-                  {/* Action Button */}
-                  <Button onClick={handleBookingRequest} size="lg" className="w-full mt-4 bg-accent hover:bg-accent/90 text-accent-foreground">
-                     {searchMode === 'all-carriers' ? (
-                        <>
-                            <Globe className="ml-2 h-4 w-4" />
-                            إرسال طلب للحصول على عروض
-                        </>
-                    ) : (
-                        <>
-                            <UserSearch className="ml-2 h-4 w-4" />
-                            إرسال طلب مباشر للناقل
-                        </>
-                    )}
-                  </Button>
                 </div>
               </CardContent>
             </Card>
