@@ -92,9 +92,9 @@ const TripOffers = ({ trip }: { trip: Trip; }) => {
 
     return (
         <>
-            <div className="p-4 space-y-4">
-                <p className="text-center text-accent font-semibold">انتظر، قد تصلك عروض أفضل.</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="p-0 md:p-4 space-y-4">
+                <p className="text-center text-accent font-semibold px-4 pt-4">انتظر، قد تصلك عروض أفضل.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 md:p-0">
                     {offers.map(offer => (
                         <OfferCard key={offer.id} offer={offer} trip={trip} onAccept={() => handleAcceptClick(offer)} />
                     ))}
@@ -204,11 +204,11 @@ export default function HistoryPage() {
                   <div className='flex items-center gap-2'><PackageOpen className="h-6 w-6 text-primary" /><CardTitle>طلبات بانتظار العروض</CardTitle></div>
                 </AccordionTrigger>
                 <AccordionContent>
-                  <CardContent>
-                    <CardDescription className="mb-4">
+                  <CardContent className="p-0">
+                    <CardDescription className="mb-4 px-6">
                       هنا تظهر طلباتك التي أرسلتها. يمكنك استعراض العروض المقدمة من الناقلين لكل طلب.
                     </CardDescription>
-                    <Accordion type="single" collapsible className="w-full space-y-4">
+                    <Accordion type="single" collapsible className="w-full space-y-4 px-6">
                        {awaitingTrips.map(trip => {
                             const offerCount = mockOffers.filter(o => o.tripId === trip.id).length;
                             return (
