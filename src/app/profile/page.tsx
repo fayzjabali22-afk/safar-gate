@@ -27,9 +27,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useMemoFirebase, useDoc, setDocumentNonBlocking, useAuth } from '@/firebase';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { deleteUser } from 'firebase/auth';
+import { deleteUser, sendEmailVerification } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, Trash2 } from 'lucide-react';
+import { ShieldAlert, Trash2, MailCheck } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 
@@ -96,6 +96,24 @@ export default function ProfilePage() {
     });
   }
 
+  const handleResendVerification = async () => {
+    if (user && !user.emailVerified) {
+        try {
+            await sendEmailVerification(user, actionCodeSettings);
+            toast({
+                title: 'تم إرسال الرسالة',
+                description: 'تم إرسال رسالة تفعيل جديدة إلى بريدك الإلكتروني. الرجاء التحقق من صندوق الوارد.',
+            });
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'خطأ',
+                description: 'فشل إرسال بريد التحقق. يرجى المحاولة مرة أخرى بعد قليل.',
+            });
+        }
+    }
+  };
+
     const handleDeleteAccount = async () => {
     if (!user || !auth) {
         toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم العثور على المستخدم.' });
@@ -121,6 +139,27 @@ export default function ProfilePage() {
     <>
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-8">
+        
+        {user && !user.emailVerified && (
+          <Card className="border-yellow-500 shadow-lg">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-yellow-500">
+                    <ShieldAlert />
+                    تفعيل الحساب
+                </CardTitle>
+                <CardDescription>
+                    حسابك غير مفعل. الرجاء التحقق من بريدك الإلكتروني أو طلب إرسال رسالة تفعيل جديدة.
+                </CardDescription>
+            </CardHeader>
+            <CardFooter>
+                 <Button variant="outline" onClick={handleResendVerification}>
+                    <MailCheck className="ml-2 h-4 w-4" />
+                    إعادة إرسال رسالة التفعيل
+                </Button>
+            </CardFooter>
+          </Card>
+        )}
+
         <Card className="shadow-lg">
             <CardHeader>
             <CardTitle className="font-headline">إعدادات الملف الشخصي</CardTitle>

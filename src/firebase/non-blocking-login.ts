@@ -34,10 +34,11 @@ export async function initiateEmailSignUp(
     password: string,
     profileData: UserProfileCreation
 ): Promise<boolean> {
+    let user;
     try {
         // Step 1: Create the user in Firebase Authentication
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+        user = userCredential.user;
 
         if (!user) {
              toast({
@@ -47,44 +48,6 @@ export async function initiateEmailSignUp(
             });
             return false;
         }
-
-        // Step 2: Create the user's profile document in Firestore
-        try {
-            const userRef = doc(firestore, 'users', user.uid);
-            await setDoc(userRef, profileData, { merge: true });
-        } catch (firestoreError: any) {
-            toast({
-                variant: "destructive",
-                title: "فشل حفظ الملف الشخصي",
-                description: firestoreError.message || "لم نتمكن من حفظ بيانات ملفك الشخصي.",
-            });
-            // Optional: Consider deleting the auth user if profile creation fails
-            // await user.delete();
-            return false;
-        }
-
-        // Step 3: Send the verification email
-        try {
-            await sendEmailVerification(user, actionCodeSettings);
-            toast({
-                title: 'الخطوة الأخيرة!',
-                description: 'تم إرسال رسالة تحقق إلى بريدك الإلكتروني لتفعيل حسابك.',
-                duration: 8000,
-            });
-        } catch (emailError: any) {
-             toast({
-                variant: "destructive",
-                title: "فشل إرسال بريد التحقق",
-                description: emailError.message || "لم نتمكن من إرسال بريد التفعيل. حاول تسجيل الدخول لاحقاً لإعادة الإرسال.",
-            });
-            // We still return true because the account was created. The user can verify later.
-        }
-
-        // Step 4: Sign the user out to force them to verify their email
-        await auth.signOut();
-        
-        return true;
-
     } catch (authError: any) {
         let description = "حدث خطأ غير متوقع أثناء إنشاء الحساب.";
         if (authError.code === 'auth/email-already-in-use') {
@@ -99,6 +62,46 @@ export async function initiateEmailSignUp(
         });
         return false;
     }
+
+    // Step 2: Create the user's profile document in Firestore
+    try {
+        const userRef = doc(firestore, 'users', user.uid);
+        await setDoc(userRef, profileData, { merge: true });
+    } catch (firestoreError: any) {
+        toast({
+            variant: "destructive",
+            title: "فشل حفظ الملف الشخصي",
+            description: firestoreError.message || "لم نتمكن من حفظ بيانات ملفك الشخصي.",
+        });
+        // Since profile creation failed, we should not proceed.
+        // Optional: Consider deleting the auth user if profile creation fails
+        // await user.delete();
+        return false;
+    }
+
+    // Step 3: Send the verification email
+    try {
+        await sendEmailVerification(user, actionCodeSettings);
+        // This toast is now more of a success indicator for the whole process
+        toast({
+            title: 'الخطوة الأخيرة!',
+            description: 'تم إرسال رسالة تحقق إلى بريدك الإلكتروني لتفعيل حسابك.',
+            duration: 8000,
+        });
+    } catch (emailError: any) {
+         toast({
+            variant: "destructive",
+            title: "فشل إرسال بريد التحقق",
+            description: "تم إنشاء حسابك، لكن فشل إرسال بريد التفعيل. يمكنك تسجيل الدخول وطلب إرسالها مجدداً من صفحة ملفك الشخصي.",
+            duration: 10000
+        });
+        // We still return true because the account was created. The user can verify later.
+    }
+
+    // Step 4: Sign the user out to force them to verify their email before using the app fully
+    await auth.signOut();
+    
+    return true;
 }
 
 
