@@ -26,19 +26,13 @@
         "phoneNumber": {
           "type": "string",
           "description": "The phone number of the user."
-        },
-        "role": {
-          "type": "string",
-          "enum": ["traveler", "carrier"],
-          "description": "The role of the user in the system."
         }
       },
       "required": [
         "id",
         "firstName",
         "lastName",
-        "email",
-        "role"
+        "email"
       ]
     },
     "CarrierProfile": {
