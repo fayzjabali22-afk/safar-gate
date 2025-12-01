@@ -23,8 +23,8 @@ service cloud.firestore {
     match /trips/{tripId} {
       allow read, list: if true;
       allow create: if isOwner(request.resource.data.userId);
-      // Allow the user who owns the trip to update it (e.g. to add a booking ID)
-      allow update: if isOwner(resource.data.userId);
+      // Allow the user who owns the trip to update it (e.g. to add an accepted offer and booking ID)
+      allow update: if isOwner(resource.data.userId) && (request.resource.data.keys().hasAll(['acceptedOfferId', 'currentBookingId']));
       allow delete: if isOwner(resource.data.userId);
 
       match /offers/{offerId} {
