@@ -174,7 +174,8 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
     }
     
     // STATE 2: Waiting for carrier confirmation
-    if (booking?.status === 'Pending-Carrier-Confirmation') {
+    // THIS IS THE CRITICAL FIX: Only show this state if a booking exists AND its status is Pending.
+    if (trip.currentBookingId && booking?.status === 'Pending-Carrier-Confirmation') {
         return (
              <div className="text-center p-8 bg-background/30">
                 <Hourglass className="mx-auto h-12 w-12 text-accent mb-4 animate-spin" />
@@ -274,7 +275,7 @@ export default function HistoryPage() {
 
   return (
     <AppLayout>
-      <div className="bg-[#130609] p-0 rounded-lg space-y-8">
+      <div className="bg-[#130609] p-0 md:p-0 rounded-lg space-y-8">
         <Card style={{ backgroundColor: '#EDC17C' }} className="rounded-none md:rounded-lg">
           <CardHeader className="p-4">
             <div className="flex justify-between items-start">
@@ -308,7 +309,7 @@ export default function HistoryPage() {
           </CardHeader>
         </Card>
 
-        <Accordion type="multiple" className="w-full space-y-6 px-2 md:px-0" value={openAccordion} onValueChange={setOpenAccordion}>
+        <Accordion type="multiple" className="w-full space-y-6 px-0 md:px-0" value={openAccordion} onValueChange={setOpenAccordion}>
           
           {isLoading && renderSkeleton()}
           {hasAwaitingOffers && (
