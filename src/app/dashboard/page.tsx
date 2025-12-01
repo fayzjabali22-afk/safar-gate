@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Select,
@@ -56,10 +57,7 @@ const cities: { [key: string]: string } = {
 
 export default function DashboardPage() {
   const [date, setDate] = useState<Date>();
-  const { user } = useUser();
-  const firestore = useFirestore();
   const router = useRouter();
-  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const { toast } = useToast();
 
   const [searchOriginCountry, setSearchOriginCountry] = useState('');
@@ -79,52 +77,26 @@ export default function DashboardPage() {
   }, [searchDestinationCountry]);
 
   
-  const handleBookingRequestSubmit = async () => {
-      // This function will now be called AFTER successful login.
-      // We re-check for user and firestore just in case.
-      if (!firestore || !user) {
-        toast({
-            variant: "destructive",
-            title: "خطأ",
-            description: "لا يمكن إرسال الطلب. الرجاء المحاولة مرة أخرى.",
-        });
-        return;
-      }
-      
-      if (!searchOriginCity || !searchDestinationCity) {
-        toast({
-            variant: "destructive",
-            title: "بيانات غير مكتملة",
-            description: "الرجاء اختيار مدينة الانطلاق ومدينة الوصول.",
-        });
-        return;
-      }
-
-      const tripsCollection = collection(firestore, 'trips');
-      
-      const newTripData: Omit<Trip, 'id'> = {
-          userId: user.uid,
-          origin: searchOriginCity,
-          destination: searchDestinationCity,
-          passengers: searchSeats,
-          status: 'Awaiting-Offers',
-          departureDate: date ? date.toISOString() : new Date().toISOString(),
-          // ...(searchMode === 'specific-carrier' && { privateCarrierId: 'carrier01' }), // Replace with actual selected carrier
-      };
-      
-      addDocumentNonBlocking(tripsCollection, newTripData).then(() => {
-          toast({
-              title: "تم إرسال طلبك بنجاح!",
-              description: "سيتم توجيهك الآن لصفحة حجوزاتك لمتابعة العروض.",
-          });
-          router.push('/history');
+  const handlePriceRequest = () => {
+    if (!searchOriginCity) {
+      toast({
+        variant: "destructive",
+        title: "بيانات غير مكتملة",
+        description: "الرجاء اختيار مدينة الانطلاق.",
       });
-  };
-  
-  const handleBookingRequest = () => {
-    // ALWAYS open the auth dialog. The dialog itself will handle
-    // what to do if the user is already logged in.
-    setIsAuthDialogOpen(true);
+      return;
+    }
+    if (!searchDestinationCity) {
+      toast({
+        variant: "destructive",
+        title: "بيانات غير مكتملة",
+        description: "الرجاء اختيار مدينة الوصول.",
+      });
+      return;
+    }
+
+    // If all fields are valid, navigate to the signup page
+    router.push('/signup');
   };
 
 
@@ -291,15 +263,15 @@ export default function DashboardPage() {
                   
                 </div>
               </CardContent>
+              <CardFooter className="p-4 md:p-6 border-t border-border/60">
+                 <Button size="lg" className="w-full bg-[#B19C7D] hover:bg-[#a18c6d] text-white" onClick={handlePriceRequest}>
+                    طلب أسعار
+                </Button>
+              </CardFooter>
             </Card>
           </div>
         </div>
       </div>
-      <AuthRedirectDialog 
-        isOpen={isAuthDialogOpen}
-        onOpenChange={setIsAuthDialogOpen}
-        onLoginSuccess={handleBookingRequestSubmit}
-      />
     </AppLayout>
   );
 }
