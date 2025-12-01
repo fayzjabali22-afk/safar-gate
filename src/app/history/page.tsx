@@ -26,12 +26,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Notification, Offer, Booking } from '@/lib/data';
-import { collection, query, where, doc, writeBatch, deleteDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, doc, writeBatch, getDoc, serverTimestamp } from 'firebase/firestore';
 import { Bell, CheckCircle, PackageOpen, Ship, Hourglass, XCircle, Info, Loader2 } from 'lucide-react';
 import { OfferCard } from '@/components/offer-card';
 import { useToast } from '@/hooks/use-toast';
@@ -61,6 +61,63 @@ const cities: { [key: string]: string } = {
     dubai: 'دبي', kuwait: 'الكويت'
 };
 
+const BookingStatusManager = ({ trip, booking }: { trip: Trip; booking: Booking }) => {
+    const firestore = useFirestore();
+
+    const handleCancelRequest = async () => {
+        if (!firestore || !trip.acceptedOfferId || !trip.currentBookingId) return;
+
+        const batch = writeBatch(firestore);
+
+        const bookingRef = doc(firestore, 'bookings', trip.currentBookingId);
+        const tripRef = doc(firestore, 'trips', trip.id);
+        const offerRef = doc(firestore, `trips/${trip.id}/offers`, trip.acceptedOfferId);
+        
+        // 1. Delete the booking document
+        batch.delete(bookingRef);
+        
+        // 2. Update the trip document to remove booking/offer references
+        batch.update(tripRef, {
+            acceptedOfferId: null,
+            currentBookingId: null,
+        });
+
+        // 3. Revert the offer status to 'Pending'
+        batch.update(offerRef, { status: 'Pending' });
+
+        try {
+            await batch.commit();
+            // The UI will automatically update as the state changes
+        } catch (error) {
+            console.error("Failed to cancel booking:", error);
+        }
+    };
+    
+    if (booking.status === 'Pending-Carrier-Confirmation') {
+        return (
+            <div className="text-center p-8 space-y-4 bg-card/80 rounded-lg">
+                <Hourglass className="mx-auto h-12 w-12 text-primary animate-pulse" />
+                <h3 className="text-xl font-bold text-foreground">بانتظار تأكيد الناقل</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                    سفريات بانتظar تأكيد المقاعد من الناقل. فور موافقة الناقل وفتح شاشة الحجز، سيصلك إشعار فوري لتتمكن من إكمال الحجز بسهولة. يحرص فريق سفريات على تنظيم العملية وعدم تراكم الحجوزات لدى الناقل.
+                </p>
+                <p className="text-sm text-accent">قوم بمتابعة اعملك دقائق ويصلك الاشعار</p>
+                <Button variant="destructive" onClick={handleCancelRequest}>
+                    إلغاء الطلب
+                </Button>
+            </div>
+        );
+    }
+
+    // You can add more states here for 'Confirmed', 'Cancelled by Carrier', etc.
+    return (
+        <div className="text-center p-8">
+            <Info className="mx-auto h-12 w-12 text-blue-500" />
+            <h3 className="text-xl font-bold">حالة الحجز: {booking.status}</h3>
+        </div>
+    );
+};
+
 
 const TripOfferManager = ({ trip }: { trip: Trip; }) => {
     const { toast } = useToast();
@@ -71,11 +128,17 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
 
     const offersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        // Fetch offers that are pending for this trip
         return query(collection(firestore, `trips/${trip.id}/offers`), where("status", "==", "Pending"));
     }, [firestore, trip.id]);
 
     const { data: offers, isLoading: isLoadingOffers } = useCollection<Offer>(offersQuery);
+
+    const bookingRef = useMemoFirebase(() => {
+        if (!firestore || !trip.currentBookingId) return null;
+        return doc(firestore, 'bookings', trip.currentBookingId);
+    }, [firestore, trip.currentBookingId]);
+
+    const { data: booking, isLoading: isLoadingBooking } = useDoc<Booking>(bookingRef);
 
     const handleAcceptClick = (offer: Offer) => {
         if (!user) {
@@ -90,11 +153,63 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
         if (!firestore || !user || !selectedOffer) return;
 
         setIsDisclaimerOpen(false);
-        toast({
-            title: "تم قبول عرضك بنجاح!",
-            description: "هذه رسالة مؤقتة. في الخطوة التالية، سيتم بناء شاشة الانتظار.",
+        const batch = writeBatch(firestore);
+
+        // 1. Create a new Booking document with 'Pending-Carrier-Confirmation' status
+        const newBookingRef = doc(collection(firestore, 'bookings'));
+        const newBooking: Booking = {
+            id: newBookingRef.id,
+            tripId: trip.id,
+            userId: user.uid,
+            carrierId: selectedOffer.carrierId,
+            seats: trip.passengers || 1,
+            status: 'Pending-Carrier-Confirmation',
+            totalPrice: selectedOffer.price,
+        };
+        batch.set(newBookingRef, newBooking);
+        
+        // 2. Update the Trip document
+        const tripRef = doc(firestore, 'trips', trip.id);
+        batch.update(tripRef, {
+            acceptedOfferId: selectedOffer.id,
+            currentBookingId: newBookingRef.id,
+            status: 'Planned' // The trip is planned, just awaiting final seat confirmation
         });
+        
+        // 3. Update the Offer document
+        const offerRef = doc(firestore, `trips/${trip.id}/offers`, selectedOffer.id);
+        batch.update(offerRef, { status: 'Accepted' });
+
+        // 4. Create a notification for the carrier
+        const carrierNotifRef = doc(collection(firestore, `users/${selectedOffer.carrierId}/notifications`));
+        const notification: Partial<Notification> = {
+            userId: selectedOffer.carrierId,
+            title: "طلب حجز جديد!",
+            message: `لديك طلب حجز جديد لرحلة من ${cities[trip.origin] || trip.origin} إلى ${cities[trip.destination] || trip.destination}. الرجاء التأكيد.`,
+            type: 'new_booking_request',
+            isRead: false,
+            createdAt: serverTimestamp() as unknown as string,
+            link: `/carrier/bookings/${newBookingRef.id}` // Example link
+        };
+        batch.set(carrierNotifRef, notification);
+
+        try {
+            await batch.commit();
+            // The UI will update automatically because the trip's state (currentBookingId) has changed
+        } catch (error) {
+            console.error("Failed to create pending booking:", error);
+            toast({
+                title: "حدث خطأ",
+                description: "لم نتمكن من إرسال طلب الحجز. يرجى المحاولة مرة أخرى.",
+                variant: "destructive",
+            });
+        }
     };
+    
+    // If there's an active booking, show the status manager
+    if (booking && trip.currentBookingId) {
+        return <BookingStatusManager trip={trip} booking={booking} />;
+    }
 
     const availableOffers = offers && offers.length > 0 ? offers : mockOffers.filter(o => o.tripId === trip.id);
 
@@ -310,3 +425,5 @@ export default function HistoryPage() {
     </AppLayout>
   );
 }
+
+    
