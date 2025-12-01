@@ -109,13 +109,8 @@ export default function DashboardPage() {
           setIsAuthDialogOpen(true);
           return;
       }
-      
-      if (searchMode === 'specific-carrier' ) {
-          // Add validation for selecting a carrier if needed
-      }
 
-
-      // Step 3: Submit the request
+      // Step 2: Submit the request
       handleBookingRequestSubmit();
   };
 
