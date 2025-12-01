@@ -64,15 +64,20 @@ const TripOffers = ({ trip }: { trip: Trip }) => {
         );
     }
     
+    // Case 1: No offers received yet
     if (!offers || offers.length === 0) {
-        return <p className="text-center text-muted-foreground p-4">لم يتم استلام أي عروض لهذا الطلب بعد.</p>;
+        return <p className="text-center text-muted-foreground p-8">لم يصلك اي عروض عليك الانتظار</p>;
     }
 
+    // Case 2: Offers have been received
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
-            {offers.map(offer => (
-                <OfferCard key={offer.id} offer={offer} />
-            ))}
+        <div className="p-4 space-y-4">
+            <p className="text-center text-accent font-semibold">انتظر قد تصلك عروض افضل</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {offers.map(offer => (
+                    <OfferCard key={offer.id} offer={offer} />
+                ))}
+            </div>
         </div>
     );
 };
@@ -174,24 +179,30 @@ export default function HistoryPage() {
                       هنا تظهر طلباتك التي أرسلتها. يمكنك استعراض العروض المقدمة من الناقلين لكل طلب.
                     </CardDescription>
                     <Accordion type="single" collapsible className="w-full space-y-4">
-                       {awaitingTrips.map(trip => (
-                            <AccordionItem value={trip.id} key={trip.id}>
-                                <Card className="overflow-hidden">
-                                     <AccordionTrigger className="p-4 bg-card/80 hover:no-underline">
-                                         <div className="flex justify-between items-center w-full">
-                                            <div>
-                                                <p className="font-bold">طلب رحلة: {trip.origin} إلى {trip.destination}</p>
-                                                <p className="text-sm text-muted-foreground">تاريخ الطلب: {new Date(trip.departureDate).toLocaleDateString('ar-SA')}</p>
+                       {awaitingTrips.map(trip => {
+                            const offerCount = mockOffers.filter(o => o.tripId === trip.id).length;
+                            return (
+                                <AccordionItem value={trip.id} key={trip.id}>
+                                    <Card className="overflow-hidden">
+                                        <AccordionTrigger className="p-4 bg-card/80 hover:no-underline data-[state=closed]:rounded-b-lg">
+                                            <div className="flex justify-between items-center w-full">
+                                                <div className="text-right">
+                                                    <p className="font-bold">طلب رحلة: {trip.origin} إلى {trip.destination}</p>
+                                                    <p className="text-sm text-muted-foreground">تاريخ الطلب: {new Date(trip.departureDate).toLocaleDateString('ar-SA')}</p>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge variant={offerCount > 0 ? "secondary" : "outline"}>{offerCount} عروض</Badge>
+                                                    <Button size="sm" variant="outline" className="hidden sm:flex">شاهد العروض</Button>
+                                                </div>
                                             </div>
-                                            <Badge variant={statusVariantMap[trip.status]}>{statusMap[trip.status]}</Badge>
-                                         </div>
-                                     </AccordionTrigger>
-                                     <AccordionContent>
-                                        <TripOffers trip={trip} />
-                                     </AccordionContent>
-                                </Card>
-                            </AccordionItem>
-                       ))}
+                                        </AccordionTrigger>
+                                        <AccordionContent>
+                                            <TripOffers trip={trip} />
+                                        </AccordionContent>
+                                    </Card>
+                                </AccordionItem>
+                            )
+                       })}
                     </Accordion>
                   </CardContent>
                 </AccordionContent>
