@@ -153,6 +153,25 @@
         "status"
       ]
     },
+    "Offer": {
+      "title": "Offer",
+      "type": "object",
+      "description": "Represents an offer made by a carrier for a specific trip request.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique identifier for the offer." },
+        "tripId": { "type": "string", "description": "ID of the trip request this offer is for." },
+        "carrierId": { "type": "string", "description": "ID of the carrier making the offer." },
+        "price": { "type": "number", "description": "The price offered by the carrier for the trip." },
+        "notes": { "type": "string", "description": "Optional notes from the carrier." },
+        "status": {
+          "type": "string",
+          "enum": ["Pending", "Accepted", "Rejected"],
+          "description": "The current status of the offer."
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "tripId", "carrierId", "price", "status", "createdAt"]
+    },
     "Notification": {
         "title": "Notification",
         "type": "object",
@@ -276,6 +295,24 @@
             {
               "name": "tripId",
               "description": "The unique identifier for the trip."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/trips/{tripId}/offers/{offerId}",
+        "definition": {
+          "entityName": "Offer",
+          "schema": { "$ref": "#/backend/entities/Offer"},
+          "description": "Stores offers made by carriers for a specific trip request.",
+           "params": [
+            {
+              "name": "tripId",
+              "description": "The unique identifier for the trip."
+            },
+            {
+              "name": "offerId",
+              "description": "The unique identifier for the offer."
             }
           ]
         }
