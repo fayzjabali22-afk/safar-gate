@@ -81,6 +81,7 @@ export default function DashboardPage() {
   
   const handleBookingRequestSubmit = async () => {
       if (!firestore || !user) return;
+
       const tripsCollection = collection(firestore, 'trips');
       
       const newTripData: Omit<Trip, 'id'> = {
@@ -104,14 +105,24 @@ export default function DashboardPage() {
   };
   
   const handleBookingRequest = () => {
-      // Step 1: Check for user login
-      if (!user) {
-          setIsAuthDialogOpen(true);
-          return;
-      }
+    // Step 1: Check for user login
+    if (!user) {
+        setIsAuthDialogOpen(true);
+        return;
+    }
+    
+    // Step 2: Validate required fields
+    if (!searchOriginCity || !searchDestinationCity) {
+        toast({
+            variant: "destructive",
+            title: "بيانات غير مكتملة",
+            description: "الرجاء اختيار مدينة الانطلاق ومدينة الوصول.",
+        });
+        return;
+    }
 
-      // Step 2: Submit the request
-      handleBookingRequestSubmit();
+    // Step 3: Submit the request
+    handleBookingRequestSubmit();
   };
 
 
