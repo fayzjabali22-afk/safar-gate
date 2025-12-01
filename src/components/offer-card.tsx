@@ -5,7 +5,7 @@ import type { Offer } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { HandCoins, MessageCircle, Star, ThumbsDown, ThumbsUp } from 'lucide-react';
+import { HandCoins, MessageCircle, Star, ThumbsUp } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useToast } from '@/hooks/use-toast';
 import { useDoc, useFirestore } from '@/firebase';
@@ -58,10 +58,6 @@ export function OfferCard({ offer }: OfferCardProps) {
         toast({ title: "قبول العرض", description: "سيتم تفعيل هذه الميزة قريباً." });
     };
 
-    const handleReject = () => {
-        toast({ title: "رفض العرض", description: "سيتم تفعيل هذه الميزة قريباً.", variant: 'destructive' });
-    };
-
   return (
     <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2 border-border/60 flex flex-col justify-between bg-card/70">
         <CardHeader>
@@ -81,14 +77,10 @@ export function OfferCard({ offer }: OfferCardProps) {
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex gap-2 p-4 bg-background/30">
-            <Button size="sm" className="w-full bg-green-600 hover:bg-green-700" onClick={handleAccept}>
+        <CardFooter className="flex gap-2 p-2 bg-background/30">
+            <Button size="lg" className="w-full bg-green-600 hover:bg-green-700" onClick={handleAccept}>
                 <ThumbsUp className="ml-2 h-4 w-4" />
-                قبول
-            </Button>
-            <Button size="sm" variant="destructive" className="w-full" onClick={handleReject}>
-                <ThumbsDown className="ml-2 h-4 w-4" />
-                رفض
+                قبول وتأكيد الحجز
             </Button>
         </CardFooter>
     </Card>
