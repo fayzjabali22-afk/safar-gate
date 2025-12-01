@@ -223,7 +223,6 @@ export default function HistoryPage() {
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Badge variant={offerCount > 0 ? "secondary" : "outline"}>{offerCount} عروض</Badge>
-                                                    <Button size="sm" variant="outline" className="hidden sm:flex">شاهد العروض</Button>
                                                 </div>
                                             </div>
                                         </AccordionTrigger>
