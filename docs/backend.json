@@ -136,7 +136,7 @@
         },
         "status": {
             "type": "string",
-            "enum": ["Confirmed", "Pending-Payment", "Cancelled", "Completed"],
+            "enum": ["Confirmed", "Pending-Payment", "Cancelled", "Completed", "Pending-Carrier-Confirmation"],
             "description": "The status of the booking."
         },
         "totalPrice": {
@@ -344,3 +344,4 @@
     ]
   }
 }
+    
