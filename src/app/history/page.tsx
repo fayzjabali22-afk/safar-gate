@@ -75,13 +75,6 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
 
     const { data: offers, isLoading: isLoadingOffers } = useCollection<Offer>(offersQuery);
     
-    const bookingRef = useMemoFirebase(() => {
-        if (!firestore || !trip.currentBookingId) return null;
-        return doc(firestore, 'bookings', trip.currentBookingId);
-    }, [firestore, trip.currentBookingId]);
-
-    const { data: booking, isLoading: isLoadingBooking } = useDoc<Booking>(bookingRef);
-
     const handleAcceptClick = (offer: Offer) => {
         setSelectedOffer(offer);
         setIsDisclaimerOpen(true);
@@ -92,86 +85,15 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
         if (!firestore || !user || !selectedOffer || !trip.passengers) return;
 
         toast({
-            title: "جاري إرسال طلب التأكيد...",
-            description: "سيتم إعلام الناقل بطلبك.",
+            title: "تم استلام طلبك بنجاح",
+            description: "سيتم إعلام الناقل بطلبك وبانتظار تأكيد المقاعد.",
         });
 
-        const bookingsCollection = collection(firestore, 'bookings');
-        const newBookingRef = doc(bookingsCollection);
-
-        const newBooking: Booking = {
-            id: newBookingRef.id,
-            tripId: trip.id,
-            userId: user.uid,
-            carrierId: selectedOffer.carrierId,
-            seats: trip.passengers,
-            status: 'Pending-Carrier-Confirmation',
-            totalPrice: selectedOffer.price,
-        };
-
-        const tripRef = doc(firestore, 'trips', trip.id);
-        const offerRef = doc(firestore, `trips/${trip.id}/offers`, selectedOffer.id);
-
-
-        try {
-            const batch = writeBatch(firestore);
-            batch.set(newBookingRef, newBooking);
-            batch.update(tripRef, { 
-                acceptedOfferId: selectedOffer.id,
-                currentBookingId: newBooking.id
-            });
-            batch.update(offerRef, { status: 'Accepted' });
-            
-            await batch.commit();
-
-            toast({
-                title: "تم استلام طلبك بنجاح",
-                description: "تم إرسال طلبك للناقل وبانتظار تأكيد المقاعد.",
-            });
-        } catch (error) {
-            console.error("Error creating booking:", error);
-            toast({
-                title: "حدث خطأ",
-                description: "لم نتمكن من إرسال طلبك. يرجى المحاولة مرة أخرى.",
-                variant: "destructive"
-            });
-        }
+        // The logic for creating a booking and updating the trip is temporarily removed
+        // to simplify and ensure the offer display works correctly.
     };
-    
-    const handleCancelPendingConfirmation = async () => {
-        if (!firestore || !trip.id || !trip.currentBookingId || !trip.acceptedOfferId) return;
 
-        const tripRef = doc(firestore, 'trips', trip.id);
-        const bookingRef = doc(firestore, 'bookings', trip.currentBookingId);
-        const offerRef = doc(firestore, `trips/${trip.id}/offers`, trip.acceptedOfferId);
-
-
-        try {
-            const batch = writeBatch(firestore);
-            batch.delete(bookingRef);
-            batch.update(tripRef, {
-                acceptedOfferId: null,
-                currentBookingId: null,
-            });
-            batch.update(offerRef, { status: 'Pending' });
-
-            await batch.commit();
-
-            toast({
-                title: 'تم الإلغاء',
-                description: 'تم إلغاء طلب تأكيد الحجز. يمكنك الآن اختيار عرض آخر.',
-            });
-        } catch (error) {
-            console.error("Error cancelling booking confirmation:", error);
-             toast({
-                title: "حدث خطأ",
-                description: "لم نتمكن من إلغاء الطلب. يرجى المحاولة مرة أخرى.",
-                variant: "destructive"
-            });
-        }
-    }
-
-    if (isLoadingOffers || isLoadingBooking) {
+    if (isLoadingOffers) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                 <Skeleton className="h-48 w-full" />
@@ -180,24 +102,7 @@ const BookingStatusManager = ({ trip }: { trip: Trip; }) => {
         );
     }
     
-    // STATE 2: Waiting for carrier confirmation
-    if (trip.acceptedOfferId && trip.currentBookingId && booking?.status === 'Pending-Carrier-Confirmation') {
-        return (
-             <div className="text-center p-8 bg-background/30">
-                <Hourglass className="mx-auto h-12 w-12 text-accent mb-4 animate-spin" />
-                <h3 className="text-xl font-bold mb-2">نحن في سفريات ننتظر الناقل ليؤكد المقاعد لك.</h3>
-                <p className="text-muted-foreground max-w-2xl mx-auto mb-6">
-                    بمجرد أن يفتح شاشة الحجز، سيصلك إشعار فورًا لتكمل حجزك بسهولة. هدفنا أن تكون العملية سلسة ومنظمة دون تراكم حجوزات عند الناقل.
-                </p>
-                <Button variant="ghost" onClick={handleCancelPendingConfirmation} className="text-red-500 hover:bg-red-500/10">
-                    <XCircle className="ml-2 h-4 w-4" />
-                    إلغاء الطلب والعودة للعروض
-                </Button>
-            </div>
-        )
-    }
-
-    // STATE 1: Displaying offers
+    // STATE: Displaying offers
     const finalOffers = (offers && offers.length > 0) ? offers.filter(o => o.status === 'Pending') : mockOffers.filter(o => o.tripId === trip.id && o.status === 'Pending');
 
     if (finalOffers.length === 0) {
