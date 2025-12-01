@@ -188,8 +188,8 @@ export default function HistoryPage() {
                                             <div className="flex justify-between items-center w-full">
                                                 <div className="text-right">
                                                     <div className="flex items-baseline gap-3">
-                                                        <p className="font-bold text-lg">طلب رحلة: {trip.origin} إلى {trip.destination}</p>
-                                                        <p className="text-xs text-muted-foreground">({new Date(trip.departureDate).toLocaleDateString('ar-SA')})</p>
+                                                        <p className="font-bold text-xl">طلب رحلة: {trip.origin} إلى {trip.destination}</p>
+                                                        <p className="text-sm text-muted-foreground">({new Date(trip.departureDate).toLocaleDateString('ar-SA')})</p>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2">
