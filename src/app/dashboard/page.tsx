@@ -167,8 +167,8 @@ export default function DashboardPage() {
 
           <Card className="w-full max-w-2xl shadow-lg rounded-lg border-border/60 bg-card/80 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>إنشاء طلب رحلة جديد</CardTitle>
-              <CardDescription>اطلب عروض أسعار من الناقلين لرحلتك المخصصة.</CardDescription>
+              <CardTitle>بحث عن رحلة أو إنشاء طلب</CardTitle>
+              <CardDescription>استخدم النموذج التالي للبحث عن رحلات مجدولة أو لإنشاء طلب رحلة مخصصة.</CardDescription>
             </CardHeader>
             <CardContent className="p-4 md:p-6">
               <div className="grid grid-cols-1 gap-6">
@@ -208,7 +208,7 @@ export default function DashboardPage() {
                     <Label htmlFor="carrier-search">ابحث عن ناقلك المفضل بالاسم أو رقم الهاتف</Label>
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="carrier-search" placeholder="مثال: شركة النقل السريع..." className="pl-10" />
+                      <Input id="carrier-search" placeholder="مثال: شركة النقل السريع..." className="pl-10" onChange={(e) => setCarrierSearch(e.target.value)} />
                     </div>
                   </div>
                 )}
@@ -325,22 +325,13 @@ export default function DashboardPage() {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="p-4 md:p-6 border-t border-border/60 flex flex-col gap-2">
-               <Button size="lg" className="w-full bg-[#B19C7D] hover:bg-[#a18c6d] text-white" onClick={handleCreateTripRequest}>
-                  طلب أسعار
-              </Button>
-            </CardFooter>
           </Card>
           
-           <div className="text-center my-8">
-                <p className="text-muted-foreground">أو يمكنك اختيار رحلتك من الرحلات المجدولة بالاسفل، قم باختيار المناسب لك.</p>
-            </div>
-
             {/* Section 2: Scheduled Trips */}
-            <div className="w-full max-w-4xl space-y-8">
+            <div className="w-full max-w-4xl space-y-4">
               <header className="text-center">
                 <h2 className="text-2xl font-bold tracking-tight text-foreground">الرحلات المجدولة</h2>
-                <p className="text-muted-foreground mt-2">ابحث عن الرحلات المجدولة من قبل الناقلين واحجز مقعدك مباشرة.</p>
+                <p className="text-muted-foreground mt-2">إذا وجدت رحلة مناسبة، يمكنك حجزها مباشرة.</p>
               </header>
 
               <Card className="w-full shadow-lg rounded-lg border-border/60 bg-card/80 backdrop-blur-sm">
@@ -377,13 +368,19 @@ export default function DashboardPage() {
                       {filteredScheduledTrips.length === 0 && (
                         <TableRow>
                             <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                                لا توجد رحلات مجدولة تطابق بحثك.
+                                لا توجد رحلات مجدولة تطابق بحثك. جرب تعديل الفلاتر أو قم بإنشاء طلب جديد.
                             </TableCell>
                         </TableRow>
                       )}
                     </TableBody>
                   </Table>
                 </CardContent>
+                 <CardFooter className="p-4 md:p-6 border-t border-border/60 flex flex-col gap-2">
+                    <p className="text-sm text-muted-foreground text-center mb-2">لم تجد ما تبحث عنه؟</p>
+                    <Button size="lg" className="w-full bg-[#B19C7D] hover:bg-[#a18c6d] text-white" onClick={handleCreateTripRequest}>
+                        اطلب أسعار من الناقلين لرحلتك
+                    </Button>
+                </CardFooter>
               </Card>
             </div>
         </div>
@@ -396,3 +393,4 @@ export default function DashboardPage() {
   );
 }
 
+    
