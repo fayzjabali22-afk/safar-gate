@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label';
 import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import type { Trip } from '@/lib/data';
+import { scheduledTrips } from '@/lib/data'; 
 import { TripCard } from '@/components/trip-card';
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -36,12 +37,13 @@ import {
 } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
-import { collection, query, addDoc, where } from 'firebase/firestore';
+import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection, query, addDoc } from 'firebase/firestore';
 import { AuthRedirectDialog } from '@/components/auth-redirect-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
+import { BookingDialog, type PassengerDetails } from '@/components/booking-dialog';
 
 
 // Mock data for countries and cities
@@ -70,13 +72,13 @@ export default function DashboardPage() {
   const [isAuthRedirectOpen, setIsAuthRedirectOpen] = useState(false);
   const { toast } = useToast();
 
-  const tripsQuery = useMemoFirebase(() => {
-    if (!firestore) return null;
-    // Fetch only scheduled trips that are 'Planned'
-    return query(collection(firestore, 'trips'), where('status', '==', 'Planned'));
-  }, [firestore]);
+  // Booking Dialog State
+  const [selectedTripForBooking, setSelectedTripForBooking] = useState<Trip | null>(null);
+  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
 
-  const { data: allTrips, isLoading } = useCollection<Trip>(tripsQuery);
+
+  const allTrips = scheduledTrips;
+  const isLoading = false; 
 
   const [searchOriginCountry, setSearchOriginCountry] = useState('');
   const [searchOriginCity, setSearchOriginCity] = useState('');
@@ -105,7 +107,10 @@ export default function DashboardPage() {
         return;
     }
     
-    const foundTrip = (allTrips || []).find(trip => {
+    const normalizePhoneNumber = (phone: string) => phone.replace(/[\s+()-]/g, '');
+    const searchInputNormalized = normalizePhoneNumber(carrierSearchInput);
+
+    const foundTrip = allTrips.find(trip => {
         const carrierName = trip.carrierName || '';
         const nameMatch = carrierName.toLowerCase().includes(carrierSearchInput.toLowerCase());
         return nameMatch;
@@ -124,16 +129,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     let baseTrips: Trip[] = [];
-    const tripsSource = allTrips || [];
     
     if (searchMode === 'specific-carrier') {
         if (selectedCarrierName) {
-            baseTrips = tripsSource.filter(trip => trip.carrierName === selectedCarrierName);
+            baseTrips = allTrips.filter(trip => trip.carrierName === selectedCarrierName);
         } else {
             baseTrips = [];
         }
     } else {
-        baseTrips = [...tripsSource];
+        baseTrips = [...allTrips];
     }
 
     let filteredTrips = [...baseTrips];
@@ -178,6 +182,64 @@ export default function DashboardPage() {
     }
 
   }, [searchOriginCity, searchDestinationCity, searchSeats, date, allTrips, searchMode, selectedCarrierName, searchVehicleType]);
+
+
+    const handleBookNowClick = (trip: Trip) => {
+        if (!user) {
+            setIsAuthRedirectOpen(true);
+            return;
+        }
+        if (!user.emailVerified) {
+            toast({
+                variant: 'destructive',
+                title: 'الحساب غير مفعل',
+                description: 'الرجاء تفعيل حسابك أولاً لتتمكن من الحجز.',
+            });
+            return;
+        }
+        setSelectedTripForBooking(trip);
+        setIsBookingDialogOpen(true);
+    };
+
+    const handleConfirmBooking = (passengers: PassengerDetails[]) => {
+        if (!firestore || !user || !selectedTripForBooking) return;
+        
+        const bookingsCollection = collection(firestore, 'bookings');
+        const newBooking = {
+            tripId: selectedTripForBooking.id,
+            userId: user.uid,
+            carrierId: selectedTripForBooking.carrierId!,
+            seats: passengers.length,
+            passengersDetails: passengers,
+            status: 'Pending-Carrier-Confirmation',
+            totalPrice: (selectedTripForBooking.price || 0) * passengers.length,
+            createdAt: new Date().toISOString(),
+        };
+
+        addDocumentNonBlocking(bookingsCollection, newBooking);
+
+        if (selectedTripForBooking.carrierId) {
+            const notificationsCollection = collection(firestore, 'users', selectedTripForBooking.carrierId, 'notifications');
+            addDocumentNonBlocking(notificationsCollection, {
+                userId: selectedTripForBooking.carrierId,
+                title: 'طلب حجز جديد',
+                message: `لديك طلب حجز جديد لرحلة ${cities[selectedTripForBooking.origin]} - ${cities[selectedTripForBooking.destination]}.`,
+                type: 'new_booking_request',
+                isRead: false,
+                createdAt: new Date().toISOString(),
+                link: `/carrier/bookings` // Assuming a future carrier dashboard
+            });
+        }
+        
+        toast({
+            title: 'تم إرسال طلب الحجز بنجاح!',
+            description: 'سيتم إعلامك عند تأكيد الناقل للحجز. يمكنك المتابعة من صفحة إدارة الحجز.',
+        });
+        
+        setIsBookingDialogOpen(false);
+        setSelectedTripForBooking(null);
+        router.push('/history');
+    };
 
 
   const handleMainActionButtonClick = () => {
@@ -479,7 +541,7 @@ export default function DashboardPage() {
                                 <AccordionContent>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                                         {tripsForDate.map(trip => (
-                                            <TripCard key={trip.id} trip={trip} />
+                                            <TripCard key={trip.id} trip={trip} onBookNow={handleBookNowClick} />
                                         ))}
                                     </div>
                                 </AccordionContent>
@@ -514,6 +576,15 @@ export default function DashboardPage() {
         isOpen={isAuthRedirectOpen}
         onOpenChange={setIsAuthRedirectOpen}
       />
+      {selectedTripForBooking && (
+        <BookingDialog
+            isOpen={isBookingDialogOpen}
+            onOpenChange={setIsBookingDialogOpen}
+            trip={selectedTripForBooking}
+            seatCount={searchSeats}
+            onConfirm={handleConfirmBooking}
+        />
+      )}
     </AppLayout>
   );
 }

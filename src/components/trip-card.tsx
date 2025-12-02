@@ -64,7 +64,7 @@ const CarrierInfo = ({ carrierId, carrierName }: { carrierId?: string, carrierNa
 }
 
 
-export function TripCard({ trip }: { trip: Trip }) {
+export function TripCard({ trip, onBookNow }: { trip: Trip; onBookNow: (trip: Trip) => void; }) {
     const router = useRouter();
     const { user } = useUser();
     const { toast } = useToast();
@@ -84,13 +84,7 @@ export function TripCard({ trip }: { trip: Trip }) {
             });
             return;
         }
-        // For now, we just log it.
-        console.log("Booking trip:", trip.id);
-        toast({
-            title: 'قيد الإنشاء',
-            description: 'سيتم قريباً تفعيل الحجز المباشر من هنا.',
-        });
-        // router.push(`/book/${trip.id}`);
+        onBookNow(trip);
     }
 
     const originCity = cities[trip.origin] || trip.origin;

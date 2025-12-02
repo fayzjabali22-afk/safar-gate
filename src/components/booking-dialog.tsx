@@ -17,6 +17,8 @@ import { useState, useEffect } from 'react';
 import type { Trip } from '@/lib/data';
 import { Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 export interface PassengerDetails {
   name: string;
@@ -33,7 +35,6 @@ interface BookingDialogProps {
 
 export function BookingDialog({ isOpen, onOpenChange, trip, seatCount, onConfirm }: BookingDialogProps) {
     const { toast } = useToast();
-    
     const [passengers, setPassengers] = useState<PassengerDetails[]>([]);
 
     useEffect(() => {
@@ -54,8 +55,8 @@ export function BookingDialog({ isOpen, onOpenChange, trip, seatCount, onConfirm
         if (!allNamesFilled) {
             toast({
                 variant: 'destructive',
-                title: 'Incomplete Data',
-                description: 'Please enter the names of all passengers.',
+                title: 'بيانات غير مكتملة',
+                description: 'الرجاء إدخال أسماء جميع الركاب.',
             });
             return;
         }
@@ -66,9 +67,9 @@ export function BookingDialog({ isOpen, onOpenChange, trip, seatCount, onConfirm
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
-                <DialogTitle>Confirm Booking: Passenger Details</DialogTitle>
+                <DialogTitle>تأكيد الحجز: تفاصيل الركاب</DialogTitle>
                 <DialogDescription>
-                    You are about to book {seatCount} seat(s). Please enter passenger details.
+                    أنت على وشك حجز {seatCount} مقعد(مقاعد). الرجاء إدخال بيانات الركاب.
                 </DialogDescription>
                 </DialogHeader>
                 
@@ -76,31 +77,31 @@ export function BookingDialog({ isOpen, onOpenChange, trip, seatCount, onConfirm
                     <div className="space-y-6">
                         {Array.from({ length: seatCount }).map((_, index) => (
                         <div key={index} className="p-4 border rounded-lg space-y-4 bg-muted/50">
-                            <Label className="font-bold">Passenger {index + 1}</Label>
+                            <Label className="font-bold">الراكب {index + 1}</Label>
                             <div className="grid gap-2">
-                                <Label htmlFor={`name-${index}`}>Full Name</Label>
+                                <Label htmlFor={`name-${index}`}>الاسم الكامل</Label>
                                 <Input
                                     id={`name-${index}`}
-                                    placeholder="Enter passenger's full name"
+                                    placeholder="أدخل الاسم الكامل للراكب"
                                     value={passengers[index]?.name || ''}
                                     onChange={(e) => handlePassengerChange(index, 'name', e.target.value)}
                                 />
                             </div>
                             <div className="grid gap-2">
-                                <Label>Age Group</Label>
+                                <Label>الفئة العمرية</Label>
                                 <RadioGroup
                                     defaultValue="adult"
                                     className="flex gap-4"
                                     value={passengers[index]?.type || 'adult'}
                                     onValueChange={(value) => handlePassengerChange(index, 'type', value)}
                                 >
-                                    <div className="flex items-center space-x-2">
+                                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
                                         <RadioGroupItem value="adult" id={`adult-${index}`} />
-                                        <Label htmlFor={`adult-${index}`}>Adult</Label>
+                                        <Label htmlFor={`adult-${index}`}>بالغ</Label>
                                     </div>
-                                    <div className="flex items-center space-x-2">
+                                    <div className="flex items-center space-x-2 rtl:space-x-reverse">
                                         <RadioGroupItem value="child" id={`child-${index}`} />
-                                        <Label htmlFor={`child-${index}`}>Child</Label>
+                                        <Label htmlFor={`child-${index}`}>طفل</Label>
                                     </div>
                                 </RadioGroup>
                             </div>
@@ -110,10 +111,10 @@ export function BookingDialog({ isOpen, onOpenChange, trip, seatCount, onConfirm
                 </ScrollArea>
                 
                 <DialogFooter>
-                <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+                <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>إلغاء</Button>
                 <Button type="submit" onClick={handleSubmit}>
-                    <Send className="mr-2 h-4 w-4" />
-                    Send Booking Request
+                    <Send className="ml-2 h-4 w-4" />
+                    إرسال طلب الحجز
                 </Button>
                 </DialogFooter>
             </DialogContent>
