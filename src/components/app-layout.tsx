@@ -186,42 +186,33 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-[#EDC17C] px-4 text-black md:px-6">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
         {/* Mobile: Left side (Menu) */}
         <div className="flex items-center md:hidden">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
-                <Menu className="h-4 w-4 text-black" />
+                <Menu className="h-4 w-4" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
             <SheetContent
               side="left"
-              style={{
-                backgroundColor: '#EDC17C',
-                borderRight: '2px solid #8B0000',
-              }}
-              className="w-full max-w-xs"
+              className="w-full max-w-xs bg-card p-0"
             >
               <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle>
-              <nav className="grid gap-6 text-lg font-medium">
+              <nav className="grid gap-6 text-lg font-medium p-6">
                 <Link
                   href="/dashboard"
                   className="-ml-4 mb-4 flex items-center gap-2 text-lg font-semibold"
                 >
-                  <img
-                    src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png"
-                    alt="Safar Carrier Logo"
-                    style={{ height: '110px', width: '145px' }}
-                  />
-                  <span className="sr-only">Safar Carrier</span>
+                   <span className="font-bold text-primary">Fayz RideShare</span>
                 </Link>
                 {mobileMenuItems.map((item) => {
                     const isDisabled = item.auth && !user;
                     if (isDisabled) {
                       return (
-                         <span key={item.label} className="flex items-center font-bold text-black/50 cursor-not-allowed">
+                         <span key={item.label} className="flex items-center text-muted-foreground cursor-not-allowed">
                             <Lock className="ml-2 h-4 w-4" />
                             {item.label}
                         </span>
@@ -231,7 +222,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         <Link
                             key={item.label}
                             href={item.href}
-                            className={cn("font-bold text-black hover:text-gray-700", pathname === item.href && "underline")}
+                            className={cn("hover:text-foreground/80", pathname === item.href && "text-foreground font-bold")}
                         >
                             {item.label}
                         </Link>
@@ -248,12 +239,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             href="/dashboard"
             className="flex items-center gap-2 text-lg font-semibold"
           >
-            <img
-              src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png"
-              alt="Safar Carrier Logo"
-              style={{ height: '110px', width: '145px' }}
-            />
-            <span className="sr-only">Safar Carrier</span>
+             <span className="font-bold text-primary">Fayz RideShare</span>
           </Link>
         </div>
 
@@ -287,7 +273,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="h-10 w-10 border-2 border-[#8B0000]">
+                    <Avatar className="h-10 w-10 border-2 border-primary">
                     {user?.photoURL && (
                         <AvatarImage
                         src={user.photoURL}
@@ -313,7 +299,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="h-10 w-10 border-2 border-[#8B0000]">
+                    <Avatar className="h-10 w-10 border-2 border-primary">
                     {user?.photoURL && (
                         <AvatarImage
                         src={user.photoURL}
@@ -337,13 +323,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Secondary Navigation Header */}
-      <nav className="sticky top-16 z-40 hidden h-12 items-center justify-center gap-8 border-b border-b-white bg-[#EDC17C] px-6 md:flex">
+      <nav className="sticky top-16 z-40 hidden h-12 items-center justify-center gap-8 border-b bg-card px-6 md:flex">
         {menuItems.map((item) => {
             const isDisabled = item.auth && !user;
             const linkClass = cn(
-              "text-sm font-medium text-black transition-colors hover:text-gray-700",
-              pathname === item.href && !isDisabled && "underline",
-              isDisabled && "cursor-not-allowed text-black/50 flex items-center gap-1"
+              "text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
+              pathname === item.href && !isDisabled && "text-foreground font-bold",
+              isDisabled && "cursor-not-allowed text-muted-foreground/50 flex items-center gap-1"
             );
 
             if (isDisabled) {

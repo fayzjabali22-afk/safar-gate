@@ -26,8 +26,6 @@ export function AuthRedirectDialog({ isOpen, onOpenChange, onLoginSuccess }: Aut
     const { user, isUserLoading } = useUser();
 
     useEffect(() => {
-        // If the dialog is open and the user successfully logs in,
-        // close the dialog and call the success callback.
         if (isOpen && user && !isUserLoading && onLoginSuccess) {
             onOpenChange(false);
             onLoginSuccess();
@@ -37,7 +35,6 @@ export function AuthRedirectDialog({ isOpen, onOpenChange, onLoginSuccess }: Aut
 
     const handleLogin = () => {
         router.push('/login');
-        // The dialog remains open, and the useEffect will handle closing it on successful login.
     };
 
     const handleSignup = () => {
@@ -46,21 +43,21 @@ export function AuthRedirectDialog({ isOpen, onOpenChange, onLoginSuccess }: Aut
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AlertDialogContent dir="rtl">
+      <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>يجب عليك تسجيل الدخول أولاً</AlertDialogTitle>
-          <AlertDialogDescription className="text-right">
-            للمتابعة وإرسال طلبك، يرجى تسجيل الدخول إلى حسابك أو إنشاء حساب جديد إذا لم تكن مسجلاً بعد.
+          <AlertDialogTitle>You must log in first</AlertDialogTitle>
+          <AlertDialogDescription>
+            To continue and send your request, please log in to your account or create a new one if you are not yet registered.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="sm:justify-center flex-col sm:flex-col gap-2 pt-4">
           <Button onClick={handleLogin} className="w-full">
-            <LogIn className="ml-2 h-4 w-4"/>
-            تسجيل الدخول (حساب سابق)
+            <LogIn className="mr-2 h-4 w-4"/>
+            Login (Existing Account)
           </Button>
           <Button variant="secondary" onClick={handleSignup} className="w-full">
-            <UserPlus className="ml-2 h-4 w-4"/>
-            إنشاء حساب جديد
+            <UserPlus className="mr-2 h-4 w-4"/>
+            Create New Account
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

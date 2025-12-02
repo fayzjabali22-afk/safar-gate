@@ -22,8 +22,8 @@ export async function initiateAnonymousSignIn(authInstance: Auth): Promise<boole
   } catch (error) {
     toast({
         variant: "destructive",
-        title: "خطأ في المصادقة",
-        description: "لم نتمكن من تسجيل دخولك كمستخدم مجهول.",
+        title: "Authentication Error",
+        description: "Could not sign you in as a guest.",
     });
     return false;
   }
@@ -41,70 +41,60 @@ export async function initiateEmailSignUp(
 ): Promise<boolean> {
     let user;
     try {
-        // Step 1: Create the user in Firebase Authentication
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         user = userCredential.user;
 
         if (!user) {
              toast({
                 variant: "destructive",
-                title: "فشل إنشاء الحساب",
-                description: "لم يتم إرجاع بيانات المستخدم بعد الإنشاء.",
+                title: "Account Creation Failed",
+                description: "No user data returned after creation.",
             });
             return false;
         }
     } catch (authError: any) {
-        let description = "حدث خطأ غير متوقع أثناء إنشاء الحساب.";
+        let description = "An unexpected error occurred during account creation.";
         if (authError.code === 'auth/email-already-in-use') {
-            description = "هذا البريد الإلكتروني مسجل بالفعل. يرجى تسجيل الدخول بدلاً من ذلك.";
+            description = "This email is already registered. Please log in instead.";
         } else if (authError.code === 'auth/weak-password') {
-            description = "كلمة المرور ضعيفة جدا. يجب أن تتكون من 6 أحرف على الأقل."
+            description = "The password is too weak. It must be at least 6 characters long."
         }
         toast({
             variant: "destructive",
-            title: "فشل إنشاء الحساب",
+            title: "Account Creation Failed",
             description: description,
         });
         return false;
     }
 
-    // Step 2: Create the user's profile document in Firestore
     try {
         const userRef = doc(firestore, 'users', user.uid);
-        // Add serverTimestamp for creation date if needed for user profile
         await setDoc(userRef, { ...profileData, createdAt: serverTimestamp() });
     } catch (firestoreError: any) {
         toast({
             variant: "destructive",
-            title: "فشل حفظ الملف الشخصي",
-            description: firestoreError.message || "لم نتمكن من حفظ بيانات ملفك الشخصي.",
+            title: "Profile Save Failed",
+            description: firestoreError.message || "Could not save your profile data.",
         });
-        // Since profile creation failed, we should not proceed.
-        // Optional: Consider deleting the auth user if profile creation fails
-        // await user.delete();
         return false;
     }
 
-    // Step 3: Send the verification email
     try {
         await sendEmailVerification(user, actionCodeSettings);
-        // This toast is now more of a success indicator for the whole process
         toast({
-            title: 'الخطوة الأخيرة!',
-            description: 'تم إرسال رسالة تحقق إلى بريدك الإلكتروني لتفعيل حسابك.',
+            title: 'Final Step!',
+            description: 'A verification email has been sent to activate your account.',
             duration: 8000,
         });
     } catch (emailError: any) {
          toast({
             variant: "destructive",
-            title: "فشل إرسال بريد التحقق",
-            description: "تم إنشاء حسابك، لكن فشل إرسال بريد التفعيل. يمكنك تسجيل الدخول وطلب إرسالها مجدداً من صفحة ملفك الشخصي.",
+            title: "Failed to Send Verification Email",
+            description: "Your account was created, but sending the verification email failed. You can log in and request it again from your profile page.",
             duration: 10000
         });
-        // We still return true because the account was created. The user can verify later.
     }
 
-    // Step 4: Sign the user out to force them to verify their email before using the app fully
     await auth.signOut();
     
     return true;
@@ -119,8 +109,8 @@ export async function initiateEmailSignIn(authInstance: Auth, email: string, pas
   } catch (error: any) {
     toast({
         variant: "destructive",
-        title: "فشل تسجيل الدخول",
-        description: "يرجى التحقق من بريدك الإلكتروني وكلمة المرور.",
+        title: "Login Failed",
+        description: "Please check your email and password.",
     });
     return false;
   }
@@ -133,12 +123,10 @@ export async function initiateGoogleSignIn(auth: Auth, firestore: Firestore): Pr
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
 
-    // Check if a user profile already exists.
     const userRef = doc(firestore, 'users', user.uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // This is a new user, create a profile for them.
       const [firstName, ...lastNameParts] = (user.displayName || '').split(' ');
       const newUserProfile: UserProfileCreation = {
         firstName: firstName || '',
@@ -149,20 +137,19 @@ export async function initiateGoogleSignIn(auth: Auth, firestore: Firestore): Pr
       await setDoc(userRef, { ...newUserProfile, createdAt: serverTimestamp() });
     }
     
-    // After sign-in (and profile creation if needed), user is redirected by the auth state listener.
     return true;
   } catch (error: any) {
     if (error.code === 'auth/operation-not-allowed') {
         toast({
             variant: 'destructive',
-            title: 'خطأ في الإعدادات',
-            description: 'تسجيل الدخول عبر جوجل غير مفعل. يرجى مراجعة إعدادات Firebase.',
+            title: 'Configuration Error',
+            description: 'Google Sign-In is not enabled. Please check Firebase settings.',
         });
     } else {
         toast({
           variant: 'destructive',
-          title: 'فشل تسجيل الدخول عبر جوجل',
-          description: error.message || 'حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.',
+          title: 'Google Sign-In Failed',
+          description: error.message || 'An unexpected error occurred. Please try again.',
         });
     }
     return false;

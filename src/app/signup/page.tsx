@@ -123,18 +123,18 @@ export default function SignupPage() {
             <Card className="mx-auto max-w-sm text-center">
                 <CardHeader>
                     <MailCheck className="mx-auto h-16 w-16 text-green-500" />
-                    <CardTitle className="text-2xl mt-4">نجحت</CardTitle>
+                    <CardTitle className="text-2xl mt-4">Success!</CardTitle>
                     <CardDescription className="pt-2">
-                        لقد أرسلنا رابط التفعيل والإقرار القانوني إلى بريدك الإلكتروني.
+                        We've sent a verification and legal acknowledgment link to your email.
                         <br/>
                         <span className="font-bold text-foreground">{userEmail}</span>
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <p className="text-xs text-muted-foreground">
-                        إذا لم تجد البريد الإلكتروني، يرجى التحقق من مجلد الرسائل غير المرغوب فيها (Spam).
+                        If you don't see the email, please check your spam folder.
                     </p>
-                    <Button onClick={() => router.push('/login')} className="mt-4">العودة لتسجيل الدخول</Button>
+                    <Button onClick={() => router.push('/login')} className="mt-4">Back to Login</Button>
                 </CardContent>
             </Card>
         </div>
@@ -224,9 +224,9 @@ export default function SignupPage() {
               <Button type="submit" className="w-full">
                 Create an account
               </Button>
-              <Button variant="destructive" type="button" className="w-full" onClick={handleGuestSignIn}>
-                <TestTube2 className="ml-2 h-5 w-5" />
-                متابعة كضيف (وضع التطوير)
+              <Button variant="secondary" type="button" className="w-full" onClick={handleGuestSignIn}>
+                <TestTube2 className="mr-2 h-5 w-5" />
+                Continue as Guest (Dev Mode)
               </Button>
             </form>
           </Form>
@@ -254,6 +254,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-    
-    

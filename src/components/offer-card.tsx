@@ -48,10 +48,10 @@ const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
               <AvatarFallback>{carrier?.name?.charAt(0) || 'C'}</AvatarFallback>
             </Avatar>
             <div>
-                <p className="font-bold text-md text-white">{carrier?.name || 'ناقل غير معروف'}</p>
+                <p className="font-bold text-md text-foreground">{carrier?.name || 'Unknown Carrier'}</p>
                 <div className="flex items-center text-xs text-muted-foreground gap-1">
                     <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
-                    <span>{carrier?.averageRating || 'جديد'}</span>
+                    <span>{carrier?.averageRating || 'New'}</span>
                 </div>
             </div>
         </div>
@@ -70,7 +70,7 @@ export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps
 
   return (
     
-        <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2 border-border/60 flex flex-col justify-between" style={{backgroundColor: '#13060A'}}>
+        <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2 border-border/60 flex flex-col justify-between bg-card">
             <CardHeader>
                 <CarrierInfo carrierId={offer.carrierId} />
             </CardHeader>
@@ -79,33 +79,33 @@ export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps
                   <div className="relative aspect-video w-full overflow-hidden rounded-md">
                       <Image 
                           src={vehicleImage.imageUrl}
-                          alt="صورة المركبة" 
+                          alt="Vehicle Image" 
                           fill
                           className="object-cover"
                       />
                   </div>
                  )}
                 <div className="text-sm text-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">
-                    <p className='flex items-center gap-2 font-bold'><Car className="h-4 w-4 text-accent" /> بيانات المركبة:</p>
+                    <p className='flex items-center gap-2 font-bold'><Car className="h-4 w-4 text-accent" /> Vehicle Details:</p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pl-6">
-                        <p><strong>النوع:</strong> {offer.vehicleType || 'غير محدد'}</p>
-                        <p><strong>سنة الصنع:</strong> {offer.vehicleModelYear || 'غير محدد'}</p>
-                        <p><strong>الفئة:</strong> {offer.vehicleCategory || 'غير محدد'}</p>
-                        <p><strong>المقاعد:</strong> {offer.availableSeats || 'غير محدد'}</p>
+                        <p><strong>Type:</strong> {offer.vehicleType || 'N/A'}</p>
+                        <p><strong>Model Year:</strong> {offer.vehicleModelYear || 'N/A'}</p>
+                        <p><strong>Category:</strong> {offer.vehicleCategory || 'N/A'}</p>
+                        <p><strong>Seats:</strong> {offer.availableSeats || 'N/A'}</p>
                     </div>
                 </div>
 
                  <div className="text-sm text-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">
-                    <p className='flex items-center gap-2 font-bold'><HandCoins className="h-4 w-4 text-accent" /> تفاصيل السعر:</p>
+                    <p className='flex items-center gap-2 font-bold'><HandCoins className="h-4 w-4 text-accent" /> Price Details:</p>
                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pl-6">
-                        <p><strong>السعر الإجمالي:</strong> {offer.price} JOD</p>
-                        <p><strong>العربون ({offer.depositPercentage || 20}%):</strong> {depositAmount.toFixed(2)} JOD</p>
+                        <p><strong>Total Price:</strong> {offer.price} JOD</p>
+                        <p><strong>Deposit ({offer.depositPercentage || 20}%):</strong> {depositAmount.toFixed(2)} JOD</p>
                     </div>
                 </div>
 
               {offer.notes && (
                 <div className="text-sm text-muted-foreground p-3 bg-background/50 rounded-md border border-dashed border-border">
-                    <p className='flex gap-2'><MessageCircle className="h-4 w-4 mt-0.5" /> <strong>إضافات:</strong></p>
+                    <p className='flex gap-2'><MessageCircle className="h-4 w-4 mt-0.5" /> <strong>Extras:</strong></p>
                     <p>{offer.notes}</p>
                 </div>
               )}
@@ -114,13 +114,13 @@ export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps
                 <Button className="w-full" onClick={handleAcceptClick} disabled={isAccepting}>
                     {isAccepting ? (
                         <>
-                            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                            جاري الإرسال...
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Sending...
                         </>
                     ) : (
                         <>
-                            <Send className="ml-2 h-4 w-4" />
-                            إرسال طلب الحجز
+                            <Send className="mr-2 h-4 w-4" />
+                            Send Booking Request
                         </>
                     )}
                 </Button>
@@ -130,7 +130,3 @@ export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps
     
   );
 }
-
-    
-
-    

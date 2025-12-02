@@ -28,11 +28,11 @@ import Image from 'next/image';
 
 
 const cities: { [key: string]: string } = {
-    damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص',
-    amman: 'عمّان', irbid: 'إربد', zarqa: 'الزرقاء',
-    riyadh: 'الرياض', jeddah: 'جدة', dammam: 'الدمام',
-    cairo: 'القاهرة', alexandria: 'الاسكندرية', giza: 'الجيزة',
-    dubai: 'دبي', kuwait: 'الكويت'
+    damascus: 'Damascus', aleppo: 'Aleppo', homs: 'Homs',
+    amman: 'Amman', irbid: 'Irbid', zarqa: 'Zarqa',
+    riyadh: 'Riyadh', jeddah: 'Jeddah', dammam: 'Dammam',
+    cairo: 'Cairo', alexandria: 'Alexandria', giza: 'Giza',
+    dubai: 'Dubai', kuwait: 'Kuwait'
 };
 
 const CarrierInfo = ({ carrierId, carrierName }: { carrierId: string; carrierName?: string; }) => {
@@ -68,10 +68,10 @@ const CarrierInfo = ({ carrierId, carrierName }: { carrierId: string; carrierNam
         <AvatarFallback>{carrier?.name?.charAt(0) || 'C'}</AvatarFallback>
       </Avatar>
       <div>
-        <p className="font-bold text-sm text-white">{carrier?.name || carrierName}</p>
+        <p className="font-bold text-sm text-foreground">{carrier?.name || carrierName}</p>
         <div className="flex items-center text-xs text-muted-foreground gap-1">
           <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" />
-          <span>{carrier?.averageRating || 'جديد'}</span>
+          <span>{carrier?.averageRating || 'New'}</span>
         </div>
       </div>
     </div>
@@ -83,13 +83,13 @@ export function ScheduledTripCard({ trip, onBookNow }: { trip: Trip; onBookNow: 
   const vehicleImage = PlaceHolderImages.find((img) => img.id === 'car-placeholder');
 
   return (
-    <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2 border-border/60 flex flex-col justify-between" style={{ backgroundColor: '#13060A' }}>
+    <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2 border-border/60 flex flex-col justify-between bg-card">
       <CardHeader>
         {trip.carrierId && <CarrierInfo carrierId={trip.carrierId} carrierName={trip.carrierName} />}
         <div className="flex justify-between items-center pt-2">
             <Badge variant="secondary" className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                {new Date(trip.departureDate).toLocaleDateString('ar-SA')}
+                {new Date(trip.departureDate).toLocaleDateString()}
             </Badge>
             <div className="flex items-center gap-2 text-sm font-bold">
                <span>{cities[trip.origin]}</span>
@@ -103,34 +103,32 @@ export function ScheduledTripCard({ trip, onBookNow }: { trip: Trip; onBookNow: 
             <div className="relative aspect-video w-full overflow-hidden rounded-md">
                 <Image 
                     src={vehicleImage.imageUrl}
-                    alt="صورة المركبة" 
+                    alt="Vehicle image" 
                     fill
                     className="object-cover"
                 />
             </div>
         )}
         <div className="text-sm text-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">
-            <p className='flex items-center gap-2 font-bold'><Car className="h-4 w-4 text-accent" /> بيانات المركبة:</p>
+            <p className='flex items-center gap-2 font-bold'><Car className="h-4 w-4 text-accent" /> Vehicle Details:</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pl-6">
-                <p><strong>النوع:</strong> {trip.vehicleType || 'غير محدد'}</p>
-                <p><strong>المقاعد المتاحة:</strong> {trip.availableSeats || 'غير محدد'}</p>
+                <p><strong>Type:</strong> {trip.vehicleType || 'N/A'}</p>
+                <p><strong>Available Seats:</strong> {trip.availableSeats || 'N/A'}</p>
             </div>
         </div>
         <div className="text-sm text-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">
-            <p className='flex items-center gap-2 font-bold'><HandCoins className="h-4 w-4 text-accent" /> تفاصيل السعر:</p>
+            <p className='flex items-center gap-2 font-bold'><HandCoins className="h-4 w-4 text-accent" /> Price Details:</p>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pl-6">
-                <p><strong>السعر الإجمالي:</strong> {trip.price} JOD</p>
-                <p><strong>العربون ({trip.depositPercentage || 0}%):</strong> {depositAmount.toFixed(2)} JOD</p>
+                <p><strong>Total Price:</strong> {trip.price} JOD</p>
+                <p><strong>Deposit ({trip.depositPercentage || 0}%):</strong> {depositAmount.toFixed(2)} JOD</p>
             </div>
         </div>
       </CardContent>
       <CardFooter className="flex p-2 bg-background/30 gap-2">
         <Button size="sm" className="w-full" onClick={() => onBookNow(trip)}>
-            حجز الآن
+            Book Now
         </Button>
       </CardFooter>
     </Card>
   );
 }
-
-    

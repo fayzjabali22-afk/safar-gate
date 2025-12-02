@@ -26,20 +26,20 @@ export function LegalDisclaimerDialog({ isOpen, onOpenChange, onContinue }: Lega
 
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AlertDialogContent dir="rtl">
+      <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>ملاحظة قانونية هامة</AlertDialogTitle>
-          <AlertDialogDescription className="text-right">
-            بمجرد قيامك بالضغط على زر "المتابعة"، فإنك تقر وتوافق على أن موقع سفريات يعمل فقط كوسيط تقني لتقريب التواصل بين طرفين: المسافر والناقل.
+          <AlertDialogTitle>Important Legal Notice</AlertDialogTitle>
+          <AlertDialogDescription>
+            By clicking "Continue", you acknowledge and agree that Fayz RideShare acts solely as a technical intermediary to facilitate communication between two parties: the traveler and the carrier.
             <br/><br/>
-            ولا يتحمل موقع سفريات أي مسؤولية قانونية أو تعاقدية أو جزائية عن أي فعل أو سلوك أو التزام قد يصدر عن الناقل أو المسافر.
+            Fayz RideShare assumes no legal, contractual, or criminal liability for any act, behavior, or obligation that may arise from the carrier or the traveler.
             <br/><br/>
-            وتقع جميع الالتزامات والحقوق حصراً على عاتق الأطراف المتعاقدة فيما بينهم، ويظل موقع سفريات خالياً من أي مسؤولية أو تبعة قانونية ذات صلة.
+            All obligations and rights are exclusively the responsibility of the contracting parties, and Fayz RideShare remains free from any related legal liability or consequence.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>إلغاء</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm}>متابعة</AlertDialogAction>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirm}>Continue</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
