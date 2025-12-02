@@ -91,21 +91,7 @@ export const mockCarriers: CarrierProfile[] = [
     { id: 'carrier04', name: 'الجبالي للنقل', contactEmail: 'jebali.transport@email.com', averageRating: 4.0 },
 ];
 
-// Create a trip that is explicitly awaiting offers
-const tripAwaitingOffers: Trip = {
-    id: 'TRIP-AWAITING-001',
-    userId: 'user123',
-    origin: 'amman',
-    destination: 'riyadh',
-    departureDate: new Date(new Date().setDate(new Date().getDate() + 10)).toISOString(),
-    status: 'Awaiting-Offers',
-    passengers: 2
-};
-
-
-export const tripHistory: Trip[] = [
-  tripAwaitingOffers
-];
+export const tripHistory: Trip[] = [];
 
 export const mockOffers: Offer[] = [
     {
@@ -154,3 +140,5 @@ export const mockOffers: Offer[] = [
 
 // This is now empty as requested
 export const mockConfirmedTrips: Trip[] = [];
+
+    

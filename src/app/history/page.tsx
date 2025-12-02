@@ -41,7 +41,7 @@ import { TripReportCard } from '@/components/trip-report-card';
 
 const statusMap: Record<string, string> = {
     'Awaiting-Offers': 'بانتظار العروض',
-    'Planned': 'مؤكدة',
+    'Planned': 'بانتظار الدفع',
     'Completed': 'مكتملة',
     'Cancelled': 'ملغاة',
 }
@@ -65,6 +65,8 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
     const { toast } = useToast();
     const firestore = useFirestore();
     const { user } = useUser();
+    const [isAccepting, setIsAccepting] = useState(false);
+    const [showWaitingScreen, setShowWaitingScreen] = useState(false);
 
     const offersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -88,15 +90,17 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
     const { data: booking, isLoading: isLoadingBooking } = useDoc<Booking>(bookingRef);
 
     const handleAcceptOffer = async (selectedOffer: Offer) => {
-        if (!firestore || !user) return;
+        if (!firestore || !user || isAccepting) return;
         
-        toast({ title: "جاري تأكيد الحجز...", description: "يرجى الانتظار."});
+        setIsAccepting(true);
+        toast({ title: "جاري إرسال طلب الحجز...", description: "سنقوم بإعلام الناقل بطلبك."});
+        setShowWaitingScreen(true); // Show the waiting screen immediately
 
         const batch = writeBatch(firestore);
         const newBookingRef = doc(collection(firestore, 'bookings'));
 
         try {
-            // Simplified Flow: Immediately set to Pending-Payment
+            // Simplified Flow for dev: Immediately set to Pending-Payment
             const newBooking: Omit<Booking, 'id'> = {
                 tripId: trip.id,
                 userId: user.uid,
@@ -111,7 +115,7 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
             batch.update(tripRef, {
                 acceptedOfferId: selectedOffer.id,
                 currentBookingId: newBookingRef.id,
-                status: 'Planned'
+                status: 'Planned' // This is the status for "waiting for payment"
             });
             
             const offerRef = doc(firestore, `trips/${trip.id}/offers`, selectedOffer.id);
@@ -138,11 +142,12 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
             });
 
         } catch (error) {
+             console.error("Error accepting offer:", error);
              const permissionError = new FirestorePermissionError({
                 path: `batch write including bookings, trips, offers, and notifications`,
                 operation: 'write',
                 requestResourceData: { 
-                    bookingStatus: 'Pending-Payment', 
+                    bookingStatus: 'Pending-Carrier-Confirmation', 
                     tripId: trip.id,
                     offerId: selectedOffer.id,
                 },
@@ -151,9 +156,13 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
 
             toast({
                 title: "حدث خطأ",
-                description: "لم نتمكن من تأكيد الحجز. يرجى المحاولة مرة أخرى.",
+                description: "لم نتمكن من إرسال طلب الحجز. يرجى المحاولة مرة أخرى.",
                 variant: "destructive",
             });
+            setShowWaitingScreen(false); // Hide waiting screen on error
+        } finally {
+            setIsAccepting(false);
+            // Don't hide waiting screen on success, let the UI transition naturally
         }
     };
     
@@ -172,8 +181,21 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
         )
     }
 
+    if (showWaitingScreen) {
+        return (
+            <div className="flex flex-col items-center justify-center p-8 text-center">
+                <Hourglass className="h-12 w-12 text-primary animate-bounce mb-4" />
+                <h3 className="text-xl font-bold">بانتظار موافقة الناقل</h3>
+                <p className="text-muted-foreground mt-2">
+                    تم إرسال طلبك بنجاح. سنقوم بإعلامك فور موافقة الناقل على الحجز.
+                    <br/>
+                    يمكنك إغلاق هذه الشاشة، سيصلك إشعار بالنتيجة.
+                </p>
+            </div>
+        )
+    }
 
-    const availableOffers = offers && offers.length > 0 ? offers : mockOffers.filter(o => o.tripId === trip.id);
+    const availableOffers = offers && offers.length > 0 ? offers : trip.id === 'TRIP-AWAITING-001' ? mockOffers : [];
 
     return (
         <>
@@ -202,7 +224,7 @@ export default function HistoryPage() {
   const firestore = useFirestore();
   const router = useRouter();
   
-  const [openAccordion, setOpenAccordion] = useState<string[]>([]);
+  const [openAccordion, setOpenAccordion] = useState<string[]>(['awaiting', 'planned', 'confirmed']);
   
   const userTripsQuery = useMemoFirebase(() => {
       if (!firestore || !user) return null;
@@ -213,30 +235,19 @@ export default function HistoryPage() {
 
   const awaitingTrips = allUserTrips?.filter(t => t.status === 'Awaiting-Offers') || [];
   const plannedTrips = allUserTrips?.filter(t => t.status === 'Planned') || [];
-  const confirmedTrips: Trip[] = allUserTrips?.filter(t => t.status === 'Completed' || t.status === 'Cancelled') || [];
+  const pastTrips: Trip[] = allUserTrips?.filter(t => t.status === 'Completed' || t.status === 'Cancelled') || [];
   
   const hasAwaitingOffers = !isLoading && awaitingTrips.length > 0;
   const hasPlannedTrips = !isLoading && plannedTrips.length > 0;
-  const hasConfirmedTrips = !isLoading && confirmedTrips.length > 0;
+  const hasPastTrips = !isLoading && pastTrips.length > 0;
   
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(collection(firestore, `users/${user.uid}/notifications`));
   }, [firestore, user]);
+
   const { data: notifications } = useCollection<Notification>(notificationsQuery);
   const notificationCount = notifications?.filter(n => !n.isRead).length || 0;
-
-
-  useEffect(() => {
-    if (isLoading) return;
-    
-    const openItems: string[] = [];
-    if (hasAwaitingOffers) openItems.push('awaiting');
-    if (hasPlannedTrips) openItems.push('planned');
-    if (hasConfirmedTrips) openItems.push('confirmed');
-    setOpenAccordion(openItems);
-
-  }, [hasAwaitingOffers, hasPlannedTrips, hasConfirmedTrips, isLoading]);
 
 
   const renderSkeleton = () => (
@@ -245,8 +256,17 @@ export default function HistoryPage() {
     </div>
   );
 
-  if (isUserLoading && !user) return <AppLayout>{renderSkeleton()}</AppLayout>;
-
+  if (isUserLoading && !user) {
+      return (
+        <AppLayout>
+            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                <h2 className="text-xl font-bold">جاري التحميل...</h2>
+                <p className="text-muted-foreground">يتم الآن تحميل بيانات حسابك.</p>
+            </div>
+        </AppLayout>
+      );
+  }
 
   return (
     <AppLayout>
@@ -333,6 +353,9 @@ export default function HistoryPage() {
                   <div className='flex items-center gap-2'><Hourglass className="h-6 w-6 text-yellow-500" /><CardTitle>حجوزات بانتظار الدفع</CardTitle></div>
                 </AccordionTrigger>
                 <AccordionContent className="p-0">
+                    <CardDescription className="mb-4 px-6">
+                        هذه الحجوزات تم تأكيدها من قبل الناقل وهي بانتظار إتمام عملية الدفع من طرفك.
+                    </CardDescription>
                     <Accordion type="single" collapsible className="w-full">
                         {plannedTrips.map(trip => (
                             <AccordionItem value={trip.id} key={trip.id} className="border-none">
@@ -360,15 +383,15 @@ export default function HistoryPage() {
           )}
           
           
-          {hasConfirmedTrips && (
+          {hasPastTrips && (
               <AccordionItem value="confirmed" className="border-none">
                 <Card className="rounded-none md:rounded-lg">
                   <AccordionTrigger className="p-6 text-lg hover:no-underline">
-                    <div className='flex items-center gap-2'><CheckCircle className="h-6 w-6 text-green-500" /><CardTitle>رحلاتي السابقة والمؤكدة</CardTitle></div>
+                    <div className='flex items-center gap-2'><CheckCircle className="h-6 w-6 text-green-500" /><CardTitle>رحلاتي السابقة</CardTitle></div>
                   </AccordionTrigger>
                   <AccordionContent>
                     <CardContent className="space-y-6 p-4 md:p-6">
-                      <CardDescription className="mb-4">سجل رحلاتك التي قمت بحجزها بالفعل.</CardDescription>
+                      <CardDescription className="mb-4">سجل رحلاتك المكتملة أو الملغاة.</CardDescription>
                       <Table>
                         <TableHeader>
                             <TableRow>
@@ -380,7 +403,7 @@ export default function HistoryPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {confirmedTrips.map(trip => (
+                            {pastTrips.map(trip => (
                                <TableRow key={trip.id}>
                                   <TableCell>{trip.carrierName || 'غير محدد'}</TableCell>
                                   <TableCell>{cities[trip.origin as keyof typeof cities] || trip.origin}</TableCell>
@@ -412,3 +435,6 @@ export default function HistoryPage() {
     </AppLayout>
   );
 }
+
+
+    

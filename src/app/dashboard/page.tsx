@@ -61,13 +61,14 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const { user } = useUser();
   const firestore = useFirestore();
+  const [isAuthRedirectOpen, setIsAuthRedirectOpen] = useState(false);
 
   const [searchOriginCountry, setSearchOriginCountry] = useState('');
   const [searchOriginCity, setSearchOriginCity] = useState('');
   const [searchDestinationCountry, setSearchDestinationCountry] = useState('');
   const [searchDestinationCity, setSearchDestinationCity] = useState('');
   const [searchSeats, setSearchSeats] = useState(1);
-  const [searchMode, setSearchMode] = useState<'specific-carrier' | 'all-carriers'>('all-carriers');
+  const [searchMode, setSearchMode] = useState<'all-carriers' | 'specific-carrier'>('all-carriers');
 
   
   useEffect(() => {
@@ -78,84 +79,42 @@ export default function DashboardPage() {
     setSearchDestinationCity('');
   }, [searchDestinationCountry]);
 
-  
-  const handlePriceRequest = () => {
-    if (!searchOriginCity) {
-      toast({
-        variant: "destructive",
-        title: "بيانات غير مكتملة",
-        description: "الرجاء اختيار مدينة الانطلاق.",
-      });
-      return;
-    }
-    if (!searchDestinationCity) {
-      toast({
-        variant: "destructive",
-        title: "بيانات غير مكتملة",
-        description: "الرجاء اختيار مدينة الوصول.",
-      });
-      return;
-    }
 
-    // If all fields are valid, navigate to the signup page
-    router.push('/signup');
-  };
-
-  const handleCreateMockRequest = async () => {
-    if (!firestore || !user) {
-        toast({ title: "Error", description: "You must be logged in as a guest to create a mock request.", variant: "destructive" });
+  const handleCreateTripRequest = async () => {
+    if (!user) {
+        setIsAuthRedirectOpen(true);
+        return;
+    }
+    
+    if (!firestore || !searchOriginCity || !searchDestinationCity || !date) {
+        toast({ title: "Incomplete Data", description: "Please fill all trip details.", variant: "destructive" });
         return;
     }
 
-    toast({ title: "Creating Mock Request...", description: "Please wait..." });
-
+    const newTrip: Omit<Trip, 'id'> = {
+        userId: user.uid,
+        origin: searchOriginCity,
+        destination: searchDestinationCity,
+        departureDate: date.toISOString(),
+        status: 'Awaiting-Offers',
+        passengers: searchSeats,
+    };
+    
     try {
-        const batch = writeBatch(firestore);
-
-        // 1. Create a mock trip
-        const newTripRef = doc(collection(firestore, "trips"));
-        const mockTrip: Omit<Trip, 'id'> = {
-            userId: user.uid,
-            origin: 'riyadh',
-            destination: 'amman',
-            departureDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
-            status: 'Awaiting-Offers',
-            passengers: 2,
-        };
-        batch.set(newTripRef, mockTrip);
-
-        // 2. Create 3 mock offers for the trip
-        const mockCarriers = ['carrier01', 'carrier02', 'carrier03'];
-        const mockOfferData = [
-            { price: 100, notes: 'عرض وهمي 1', vehicleType: 'GMC Yukon', vehicleCategory: 'small', vehicleModelYear: 2023, availableSeats: 7, depositPercentage: 20 },
-            { price: 95, notes: 'عرض وهمي 2', vehicleType: 'Hyundai Staria', vehicleCategory: 'small', vehicleModelYear: 2024, availableSeats: 8, depositPercentage: 15 },
-            { price: 110, notes: 'عرض وهمي 3', vehicleType: 'Mercedes-Benz Sprinter', vehicleCategory: 'bus', vehicleModelYear: 2022, availableSeats: 12, depositPercentage: 25 },
-        ];
-        
-        for (let i = 0; i < mockCarriers.length; i++) {
-            const newOfferRef = doc(collection(firestore, `trips/${newTripRef.id}/offers`));
-            const mockOffer: Omit<Offer, 'id'> = {
-                tripId: newTripRef.id,
-                carrierId: mockCarriers[i],
-                status: 'Pending',
-                createdAt: serverTimestamp() as unknown as string,
-                ...mockOfferData[i],
-            };
-            batch.set(newOfferRef, mockOffer);
-        }
-        
-        await batch.commit();
-
-        toast({ title: "Success!", description: "Mock request and offers created. Redirecting..." });
-
-        // 3. Redirect to the history page
-        router.push('/history');
-
+        const tripRef = await addDoc(collection(firestore, 'trips'), newTrip);
+        toast({ title: "Request Sent!", description: "Your trip request has been sent to carriers." });
+        router.push('/history'); // Redirect to history to see the new request
     } catch (error) {
-        console.error("Error creating mock request:", error);
-        toast({ title: "Error", description: "Failed to create mock data.", variant: "destructive" });
+        console.error("Error creating trip request:", error);
+        toast({ title: "Error", description: "Could not create your trip request.", variant: "destructive" });
     }
-};
+  };
+
+  const handleAuthSuccess = () => {
+    // This function will be called after successful login/signup.
+    // We can now proceed with the trip creation.
+    handleCreateTripRequest();
+  };
 
 
   return (
@@ -322,18 +281,17 @@ export default function DashboardPage() {
                 </div>
               </CardContent>
               <CardFooter className="p-4 md:p-6 border-t border-border/60 flex flex-col gap-2">
-                 <Button size="lg" className="w-full bg-[#B19C7D] hover:bg-[#a18c6d] text-white" onClick={handlePriceRequest}>
+                 <Button size="lg" className="w-full bg-[#B19C7D] hover:bg-[#a18c6d] text-white" onClick={handleCreateTripRequest}>
                     طلب أسعار
-                </Button>
-                <Button size="lg" variant="destructive" className="w-full" onClick={handleCreateMockRequest}>
-                    <TestTube2 className="ml-2 h-5 w-5" />
-                    إنشاء طلب وهمي ومتابعة
                 </Button>
               </CardFooter>
             </Card>
           </div>
         </div>
       </div>
+      <AuthRedirectDialog isOpen={isAuthRedirectOpen} onOpenChange={setIsAuthRedirectOpen} onLoginSuccess={handleAuthSuccess} />
     </AppLayout>
   );
 }
+
+    
