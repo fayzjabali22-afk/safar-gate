@@ -214,7 +214,6 @@ export default function DashboardPage() {
                       </div>
                     )}
                     <RadioGroup defaultValue="all" className="flex items-center gap-4 flex-wrap" onValueChange={setFilterVehicle}>
-                        <Label>نوع المركبة:</Label>
                         <div className="flex items-center space-x-2 space-x-reverse">
                           <RadioGroupItem value="all" id="r-all-req" />
                           <Label htmlFor="r-all-req">الكل</Label>
@@ -386,6 +385,8 @@ export default function DashboardPage() {
       <LegalDisclaimerDialog isOpen={isLegalDisclaimerOpen} onOpenChange={setIsLegalDisclaimerOpen} onContinue={handleLegalConfirm} />
     </AppLayout>
   );
+
+    
 
     
 
