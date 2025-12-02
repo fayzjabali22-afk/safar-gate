@@ -211,7 +211,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   className="-ml-4 mb-4 flex items-center gap-2 text-lg font-semibold"
                 >
                   <Image
-                    src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png"
+                    src="/logo.png"
                     alt="Safar Carrier Logo"
                     width={145}
                     height={110}
@@ -250,7 +250,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             className="flex items-center gap-2 text-lg font-semibold"
           >
             <Image
-              src="https://i.postimg.cc/zvbhTsXV/Iwjw-sfryat.png"
+              src="/logo.png"
               alt="Safar Carrier Logo"
               width={145}
               height={110}
