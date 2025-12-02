@@ -13,7 +13,6 @@ service cloud.firestore {
     
     match /users/{userId} {
       // The user can read and write their own profile document.
-      // Any subcollections are secured by the rules below.
       allow read, write: if isOwner(userId);
     }
     
@@ -23,11 +22,13 @@ service cloud.firestore {
     }
 
     match /notifications/{notificationId} {
-      // Users can list notifications intended for them.
-      allow list: if isSignedIn() && request.query.userId == request.auth.uid;
-      // Users can read and update notifications intended for them.
+      // Allow a user to list notifications where their UID is the 'userId'.
+      allow list: if isSignedIn() && request.query.where.userId == request.auth.uid;
+      
+      // Allow a user to read or update their own specific notification.
       allow read, update: if isSignedIn() && resource.data.userId == request.auth.uid;
-      // Any signed-in user can create a notification.
+      
+      // Allow any signed-in user to create a notification.
       allow create: if isSignedIn();
     }
 

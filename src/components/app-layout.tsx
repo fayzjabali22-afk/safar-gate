@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -38,7 +39,7 @@ import type { Notification } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { signOut, deleteUser, sendEmailVerification } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
@@ -82,23 +83,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const { data: userProfile } = useDoc(userProfileRef);
 
-// ✅ FIX: استخدام الوسائط المفصلة لضمان توجيه المسار إلى المجموعة الفرعية الصحيحة
+  // ✅ FIX: Simplified query to only filter by userId to comply with security rules.
+  // Filtering and sorting is now done on the client-side.
   const notificationsQuery = useMemoFirebase(() => {
-    // نتحقق من وجود المعرف uid لضمان عدم طلب مسار خاطئ
     if (!firestore || !user?.uid) return null;
-    
     return query(
-        // استخدام الفواصل بدلاً من الشرطات المائلة يضمن بناء المسار بشكل سليم 100%
         collection(firestore, 'notifications'), 
-        where("userId", "==", user.uid),
-        where("isRead", "==", false),
-        orderBy("createdAt", "desc"),
-        limit(10) 
+        where("userId", "==", user.uid)
     );
   }, [firestore, user]);
 
-  const { data: notifications } = useCollection<Notification>(notificationsQuery);
-  const unreadCount = notifications?.length || 0;
+  const { data: allNotifications } = useCollection<Notification>(notificationsQuery);
+
+  const unreadNotifications = useMemo(() => {
+    if (!allNotifications) return [];
+    return allNotifications
+      .filter(n => !n.isRead)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 10);
+  }, [allNotifications]);
+  
+  const unreadCount = unreadNotifications.length;
   
   const handleNotificationClick = (notification: Notification) => {
     if (firestore && user && !notification.isRead) {
@@ -284,8 +289,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuContent align="end" className="w-80">
                   <DropdownMenuLabel className="text-right">الإشعارات</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {notifications && notifications.length > 0 ? (
-                    notifications.map((notif) => (
+                  {unreadNotifications && unreadNotifications.length > 0 ? (
+                    unreadNotifications.map((notif) => (
                       <DropdownMenuItem key={notif.id} onClick={() => handleNotificationClick(notif)} className={`flex flex-col items-end gap-1 cursor-pointer text-right`}>
                         <p className={cn("text-sm", !notif.isRead ? 'font-bold' : '')}>{notif.title}</p>
                         <p className="text-xs text-muted-foreground">{notif.message}</p>
