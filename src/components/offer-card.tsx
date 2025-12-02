@@ -4,12 +4,14 @@ import type { Offer, CarrierProfile, Trip } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
-import { HandCoins, MessageCircle, Star, Car, Send, Loader2, MessageSquarePlus } from 'lucide-react';
+import { HandCoins, Star, Car, Loader2, MessageSquarePlus } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
+import { useDoc, useFirestore, useMemoFirebase, addDocumentNonBlocking, useUser } from '@/firebase';
+import { doc, collection, writeBatch } from 'firebase/firestore';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 interface OfferCardProps {
   offer: Offer;
@@ -17,6 +19,17 @@ interface OfferCardProps {
   onAccept: () => void;
   isAccepting: boolean;
 }
+
+const formatCurrency = (value: number) => {
+    if (isNaN(value)) return 'N/A';
+    return new Intl.NumberFormat('ar-JO', {
+        style: 'currency',
+        currency: 'JOD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(value);
+};
+
 
 const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
   const firestore = useFirestore();
@@ -39,6 +52,8 @@ const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
       </div>
     );
   }
+  
+  const rating = carrier?.averageRating ? carrier.averageRating.toFixed(1) : 'جديد';
 
   return (
     <div className="flex items-center gap-3">
@@ -54,11 +69,11 @@ const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
       </Avatar>
       <div>
         <p className="font-bold text-md text-foreground">
-          {carrier?.name || 'Unknown Carrier'}
+          {carrier?.name || 'ناقل غير معروف'}
         </p>
         <div className="flex items-center text-xs text-muted-foreground gap-1">
           <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" aria-hidden="true" />
-          <span>{carrier?.averageRating || 'New'}</span>
+          <span>{rating}</span>
         </div>
       </div>
     </div>
@@ -66,11 +81,53 @@ const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
 };
 
 export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps) {
-  const handleAcceptClick = () => {
-    onAccept();
+  const router = useRouter();
+  const firestore = useFirestore();
+  const { user } = useUser();
+  const { toast } = useToast();
+
+  const handleStartChat = async () => {
+    if (!firestore || !user) {
+        toast({ variant: 'destructive', title: 'خطأ', description: 'يجب تسجيل الدخول لبدء محادثة.'});
+        return;
+    }
+
+    onAccept(); // This will set the loading state in the parent
+
+    try {
+        const batch = writeBatch(firestore);
+
+        // 1. Create a new chat document
+        const chatId = `${trip.id}_${user.uid}_${offer.carrierId}`;
+        const chatRef = doc(firestore, 'chats', chatId);
+
+        batch.set(chatRef, {
+            tripId: trip.id,
+            participants: [user.uid, offer.carrierId],
+            updatedAt: new Date().toISOString(),
+            lastMessage: "بدأت المحادثة...",
+        }, { merge: true }); // Use merge to not overwrite if chat exists
+
+        // 2. Create the first message
+        const messageRef = doc(collection(firestore, 'chats', chatId, 'messages'));
+        batch.set(messageRef, {
+            senderId: user.uid,
+            content: `مرحبًا، أنا مهتم بعرضكم لرحلة ${trip.origin} إلى ${trip.destination}.`,
+            timestamp: new Date().toISOString(),
+        });
+        
+        await batch.commit();
+
+        router.push(`/chats/${chatId}`);
+    } catch (error) {
+        console.error("Error starting chat:", error);
+        toast({ variant: 'destructive', title: 'فشل بدء المحادثة', description: 'حدث خطأ ما، يرجى المحاولة مرة أخرى.' });
+        // Reset loading state in parent if there's an error
+        onAccept(); 
+    }
   };
 
-  const depositAmount = (offer.price || 0) * ((offer.depositPercentage || 20) / 100);
+  const depositAmount = Math.max(0, (offer.price || 0) * ((offer.depositPercentage || 20) / 100));
   const vehicleImage = PlaceHolderImages.find((img) => img.id === 'car-placeholder');
 
   return (
@@ -91,67 +148,65 @@ export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps
           </div>
         )}
 
-        {/* Vehicle Details */}
         <div className="text-sm text-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">
           <p className="flex items-center gap-2 font-bold">
-            <Car className="h-4 w-4 text-accent" aria-hidden="true" /> Vehicle Details:
+            <Car className="h-4 w-4 text-accent" aria-hidden="true" /> تفاصيل المركبة:
           </p>
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pl-6">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs ps-6">
             <div>
-              <dt className="font-semibold">Type:</dt>
-              <dd>{offer.vehicleType || 'N/A'}</dd>
+              <dt className="font-semibold">النوع:</dt>
+              <dd>{offer.vehicleType ?? 'غير محدد'}</dd>
             </div>
             <div>
-              <dt className="font-semibold">Model Year:</dt>
-              <dd>{offer.vehicleModelYear || 'N/A'}</dd>
+              <dt className="font-semibold">سنة الموديل:</dt>
+              <dd>{offer.vehicleModelYear ?? 'غير محدد'}</dd>
             </div>
             <div>
-              <dt className="font-semibold">Category:</dt>
-              <dd>{offer.vehicleCategory || 'N/A'}</dd>
+              <dt className="font-semibold">الفئة:</dt>
+              <dd>{offer.vehicleCategory ?? 'غير محدد'}</dd>
             </div>
             <div>
-              <dt className="font-semibold">Seats:</dt>
-              <dd>{offer.availableSeats || 'N/A'}</dd>
+              <dt className="font-semibold">المقاعد:</dt>
+              <dd>{offer.availableSeats ?? 'غير محدد'}</dd>
             </div>
           </dl>
         </div>
 
-        {/* Price Details */}
         <div className="text-sm text-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">
             <p className='flex items-center gap-2 font-bold'>
-                <HandCoins className="h-4 w-4 text-accent" aria-hidden="true" /> Price Details:
+                <HandCoins className="h-4 w-4 text-accent" aria-hidden="true" /> تفاصيل السعر:
             </p>
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pl-6">
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs ps-6">
                 <div>
-                    <dt className="font-semibold">Total Price:</dt>
-                    <dd>{offer.price} JOD</dd>
+                    <dt className="font-semibold">السعر الكلي:</dt>
+                    <dd>{formatCurrency(offer.price)}</dd>
                 </div>
                  <div>
-                    <dt className="font-semibold">Deposit ({offer.depositPercentage || 20}%):</dt>
-                    <dd>{depositAmount.toFixed(2)} JOD</dd>
+                    <dt className="font-semibold">العربون ({offer.depositPercentage ?? 20}%):</dt>
+                    <dd>{formatCurrency(depositAmount)}</dd>
                 </div>
             </dl>
         </div>
 
         {offer.notes && (
-          <div className="text-sm text-muted-foreground p-3 bg-background/50 rounded-md border border-dashed border-border">
+          <div className="text-sm text-muted-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">
               <p className='flex gap-2 font-semibold text-foreground'>
-                  <MessageCircle className="h-4 w-4 mt-0.5" aria-hidden="true" /> Extras:
+                  ملاحظات الناقل:
               </p>
-              <p>{offer.notes}</p>
+              <p className="ps-2">{offer.notes}</p>
           </div>
         )}
       </CardContent>
       <CardFooter className="flex p-2 bg-background/30">
-          <Button className="w-full" onClick={handleAcceptClick} disabled={isAccepting}>
+          <Button className="w-full" onClick={handleStartChat} disabled={isAccepting}>
               {isAccepting ? (
                   <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      جار المعالجة...
+                      <Loader2 className="ms-2 h-4 w-4 animate-spin" />
+                      جاري المعالجة...
                   </>
               ) : (
                   <>
-                      <MessageSquarePlus className="mr-2 h-4 w-4" />
+                      <MessageSquarePlus className="ms-2 h-4 w-4" />
                       بدء محادثة مع الناقل
                   </>
               )}
@@ -160,5 +215,3 @@ export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps
     </Card>
   );
 }
-
-    
