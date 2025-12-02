@@ -23,7 +23,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Notification, Offer } from '@/lib/data';
-import { Bell, CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, RefreshCcw } from 'lucide-react';
+import { Bell, CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, RefreshCcw, Hourglass } from 'lucide-react';
 import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -33,18 +33,18 @@ import { BookingDialog } from '@/components/booking-dialog';
 // --- Helper Functions ---
 const statusMap: Record<string, string> = {
   'Awaiting-Offers': 'بانتظار العروض',
+  'Pending-Carrier-Confirmation': 'بانتظار تأكيد الناقل',
   'Planned': 'مؤكدة',
   'Completed': 'مكتملة',
   'Cancelled': 'ملغاة',
-  'Pending-Carrier-Confirmation': 'بانتظار تأكيد الناقل'
 };
 
 const statusVariantMap: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   'Awaiting-Offers': 'outline',
-  'Planned': 'secondary',
+  'Pending-Carrier-Confirmation': 'secondary',
+  'Planned': 'default',
   'Completed': 'default',
   'Cancelled': 'destructive',
-  'Pending-Carrier-Confirmation': 'secondary'
 };
 
 const safeDateFormat = (dateInput: any, formatStr: string = 'PPP'): string => {
@@ -80,13 +80,25 @@ export default function HistoryPage() {
     );
   }, [firestore, user]);
   const { data: awaitingTrips, isLoading: isLoadingAwaiting } = useCollection<Trip>(awaitingTripsQuery);
+  
+  const pendingConfirmationQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+      collection(firestore, 'trips'),
+      where('userId', '==', user.uid),
+      where('status', '==', 'Pending-Carrier-Confirmation'),
+      orderBy('departureDate', 'desc'),
+      limit(10)
+    );
+  }, [firestore, user]);
+  const { data: pendingConfirmationTrips, isLoading: isLoadingPending } = useCollection<Trip>(pendingConfirmationQuery);
 
   const confirmedTripsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'trips'),
       where('userId', '==', user.uid),
-      where('status', 'in', ['Planned', 'Pending-Carrier-Confirmation', 'Completed']),
+      where('status', 'in', ['Planned', 'Completed', 'Cancelled']),
       orderBy('departureDate', 'desc'),
       limit(10)
     );
@@ -94,6 +106,7 @@ export default function HistoryPage() {
   const { data: confirmedTrips, isLoading: isLoadingConfirmed } = useCollection<Trip>(confirmedTripsQuery);
 
   const hasAwaitingTrips = awaitingTrips && awaitingTrips.length > 0;
+  const hasPendingConfirmationTrips = pendingConfirmationTrips && pendingConfirmationTrips.length > 0;
   const hasConfirmedTrips = confirmedTrips && confirmedTrips.length > 0;
 
   const notifications: Notification[] = [];
@@ -104,11 +117,13 @@ export default function HistoryPage() {
   }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    if (isLoadingAwaiting || isLoadingConfirmed) return;
+    if (isLoadingAwaiting || isLoadingConfirmed || isLoadingPending) return;
+    // Set default open accordion based on priority
     if (hasAwaitingTrips) setOpenAccordion('awaiting');
+    else if (hasPendingConfirmationTrips) setOpenAccordion('pending');
     else if (hasConfirmedTrips) setOpenAccordion('confirmed');
     else setOpenAccordion(undefined);
-  }, [hasAwaitingTrips, hasConfirmedTrips, isLoadingAwaiting, isLoadingConfirmed]);
+  }, [hasAwaitingTrips, hasPendingConfirmationTrips, hasConfirmedTrips, isLoadingAwaiting, isLoadingConfirmed, isLoadingPending]);
 
   const handleAcceptOffer = (trip: Trip, offer: Offer) => {
     setSelectedOfferForBooking({ trip, offer });
@@ -155,7 +170,7 @@ export default function HistoryPage() {
       });
 
       await batch.commit();
-      toast({ title: 'تم إرسال طلب الحجز بنجاح!', description: 'بانتظار موافقة الناقل.' });
+      toast({ title: 'تم إرسال طلب الحجز بنجاح!', description: 'بانتظار موافقة الناقل. تم نقل الطلب إلى قسم "حجوزات بانتظار التأكيد".' });
       setIsBookingDialogOpen(false);
       setSelectedOfferForBooking(null);
     } catch {
@@ -167,9 +182,12 @@ export default function HistoryPage() {
 
   const renderSkeleton = () => (
     <div className="space-y-4" role="status" aria-label="جار التحميل">
-      {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-48 w-full" />)}
+      {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40 w-full" />)}
     </div>
   );
+  
+  const totalLoading = isUserLoading || isLoadingAwaiting || isLoadingPending || isLoadingConfirmed;
+  const noTripsAtAll = !hasAwaitingTrips && !hasPendingConfirmationTrips && !hasConfirmedTrips;
 
   if (isUserLoading) return <AppLayout>{renderSkeleton()}</AppLayout>;
 
@@ -181,7 +199,7 @@ export default function HistoryPage() {
            <CardHeader className="p-4 md:p-6 flex flex-row justify-between items-center">
             <div>
               <CardTitle>إدارة الحجز</CardTitle>
-              <CardDescription>تابع العروض والحجوزات من هنا</CardDescription>
+              <CardDescription>تابع عروضك وحجوزاتك من هنا</CardDescription>
             </div>
             
             <DropdownMenu>
@@ -212,7 +230,7 @@ export default function HistoryPage() {
         </Card>
 
         {/* Empty State */}
-        {!isLoadingAwaiting && !isLoadingConfirmed && !hasAwaitingTrips && !hasConfirmedTrips && (
+        {!totalLoading && noTripsAtAll && (
           <div className="text-center py-16 border-2 border-dashed rounded-lg bg-card/50">
             <CalendarX className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" aria-hidden="true" />
             <h3 className="text-xl font-bold">لا يوجد سجل رحلات</h3>
@@ -252,6 +270,41 @@ export default function HistoryPage() {
               </Card>
             </AccordionItem>
           )}
+          
+          {/* Pending Confirmation */}
+          {isLoadingPending ? renderSkeleton() : hasPendingConfirmationTrips && (
+             <AccordionItem value="pending" className="border-none">
+              <Card>
+                <AccordionTrigger className="p-6 text-lg hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <Hourglass className="h-6 w-6 text-yellow-500" aria-hidden="true" />
+                    <CardTitle>حجوزات بانتظار التأكيد ({pendingConfirmationTrips.length})</CardTitle>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="space-y-6 pt-6">
+                    {pendingConfirmationTrips.map(trip => (
+                      <Card key={trip.id} className="bg-background/50 border-yellow-500/50">
+                        <CardHeader>
+                          <div className="flex justify-between items-center">
+                            <CardTitle className="text-base font-bold">رحلة {trip.origin} إلى {trip.destination}</CardTitle>
+                            <Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="flex flex-col items-center justify-center text-center space-y-2 p-6">
+                            <AlertCircle className="h-8 w-8 text-yellow-500" aria-hidden="true" />
+                            <p className="font-bold">بانتظار موافقة الناقل</p>
+                            <p className="text-sm text-muted-foreground">
+                              تم إرسال طلبك للناقل "{trip.carrierName || 'غير معروف'}". سيتم إعلامك فور تأكيد الحجز.
+                            </p>
+                          </CardContent>
+                      </Card>
+                    ))}
+                  </CardContent>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          )}
 
           {/* Confirmed Trips */}
           {isLoadingConfirmed ? renderSkeleton() : hasConfirmedTrips && (
@@ -266,7 +319,7 @@ export default function HistoryPage() {
                 <AccordionContent>
                   <CardContent className="space-y-6 pt-6">
                     {confirmedTrips.map(trip => (
-                      <Card key={trip.id} className="bg-background/50 border-border/50">
+                      <Card key={trip.id} className="bg-background/50 border-green-500/50">
                         <CardHeader>
                           <div className="flex justify-between items-center">
                             <CardTitle className="text-base font-bold">رحلة {trip.origin} إلى {trip.destination}</CardTitle>
@@ -280,21 +333,12 @@ export default function HistoryPage() {
                             <p><strong>الناقل:</strong> {trip.carrierName || 'جاري التعيين'}</p>
                             <p><strong>تاريخ الرحلة:</strong> {safeDateFormat(trip.departureDate)}</p>
                             <p><strong>القيمة:</strong> {trip.price ? `${trip.price} ريال` : 'غير محدد'}</p>
-                            <p><strong>الحالة:</strong> {statusMap[trip.status]}</p>
                           </div>
                           {/* Status */}
                           <div className="p-4 border rounded-lg bg-card/50 flex flex-col items-center justify-center text-center space-y-2">
-                            {trip.status === 'Pending-Carrier-Confirmation' ? (
-                              <>
-                                <AlertCircle className="h-8 w-8 text-yellow-500" aria-hidden="true" />
-                                <p className="font-bold text-sm">بانتظار موافقة الناقل</p>
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-8 w-8 text-green-500" aria-hidden="true" />
-                                <p className="font-bold text-sm">رحلة مؤكدة</p>
-                              </>
-                            )}
+                            <CheckCircle className="h-8 w-8 text-green-500" aria-hidden="true" />
+                            <p className="font-bold text-sm">رحلة مؤكدة</p>
+                            <p className="text-sm text-muted-foreground">نتمنى لك رحلة سعيدة!</p>
                           </div>
                         </CardContent>
                       </Card>
