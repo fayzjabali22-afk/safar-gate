@@ -33,7 +33,7 @@ import {
   setDocumentNonBlocking,
   useAuth,
 } from '@/firebase';
-import { doc, collection, query, where } from 'firebase/firestore';
+import { doc, collection, query, where, orderBy } from 'firebase/firestore';
 import type { Notification } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { signOut, deleteUser, sendEmailVerification } from 'firebase/auth';
@@ -84,7 +84,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
-    return query(collection(firestore, `users/${user.uid}/notifications`), where("isRead", "==", false));
+    return query(
+        collection(firestore, `users/${user.uid}/notifications`), 
+        where("isRead", "==", false),
+        orderBy("createdAt", "desc")
+    );
   }, [firestore, user]);
 
   const { data: notifications } = useCollection<Notification>(notificationsQuery);
@@ -273,8 +277,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <DropdownMenuSeparator />
                   {notifications && notifications.length > 0 ? (
                     notifications.map((notif) => (
-                      <DropdownMenuItem key={notif.id} onClick={() => handleNotificationClick(notif)} className={`flex flex-col items-start gap-1 ${!notif.isRead ? 'font-bold' : ''}`}>
-                        <p>{notif.title}</p>
+                      <DropdownMenuItem key={notif.id} onClick={() => handleNotificationClick(notif)} className={`flex flex-col items-start gap-1 cursor-pointer`}>
+                        <p className={!notif.isRead ? 'font-bold' : ''}>{notif.title}</p>
                         <p className="text-xs text-muted-foreground">{notif.message}</p>
                       </DropdownMenuItem>
                     ))
