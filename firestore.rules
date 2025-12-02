@@ -16,15 +16,15 @@ service cloud.firestore {
 
       match /notifications/{notificationId} {
         allow read, list: if isOwner(userId);
-        // Allow any signed-in user to create notifications for themselves.
-        allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+        // Allow any signed-in user to create notifications for other users (for carrier notifications)
+        allow create: if isSignedIn();
         allow write: if isOwner(userId);
       }
     }
     
     match /carriers/{carrierId} {
       allow read: if true;
-      allow write: if isSignedIn();
+      allow write: if isSignedIn(); // For dev, allow any user to create/update carriers
     }
 
     match /trips/{tripId} {
@@ -34,20 +34,16 @@ service cloud.firestore {
       allow delete: if isSignedIn() && isOwner(resource.data.userId);
 
       match /offers/{offerId} {
-        allow read, list: if true; // Allow anyone to read offers for dev
+        allow read, list: if true; 
         allow create: if isSignedIn();
-        // Allow any signed in user to update an offer
         allow update: if isSignedIn();
         allow delete: if false;
       }
     }
 
     match /bookings/{bookingId} {
-      // Allow any signed-in user to create their own booking.
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
-      // Allow user who created booking OR the carrier to read it.
       allow read: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.carrierId));
-      // Allow user who created booking to cancel it.
       allow delete: if isSignedIn() && isOwner(resource.data.userId);
       // Allow any signed-in user to update the booking for development purposes (simulating carrier confirmation).
       allow update: if isSignedIn();

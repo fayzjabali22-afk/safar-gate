@@ -5,7 +5,7 @@ import type { Offer, CarrierProfile, Trip } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
-import { HandCoins, MessageCircle, Star, ThumbsUp, Car, Calendar, Users, Percent, Send } from 'lucide-react';
+import { HandCoins, MessageCircle, Star, ThumbsUp, Car, Calendar, Users, Percent, Send, Loader2 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
@@ -16,6 +16,7 @@ interface OfferCardProps {
   offer: Offer;
   trip: Trip;
   onAccept: () => void;
+  isAccepting: boolean;
 }
 
 const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
@@ -57,13 +58,13 @@ const CarrierInfo = ({ carrierId }: { carrierId: string }) => {
     )
 }
 
-export function OfferCard({ offer, trip, onAccept }: OfferCardProps) {
+export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps) {
   
   const handleAcceptClick = () => {
     onAccept();
   };
   
-  const depositAmount = offer.price * (offer.depositPercentage / 100);
+  const depositAmount = offer.price * ((offer.depositPercentage || 20) / 100);
 
   return (
     
@@ -88,7 +89,7 @@ export function OfferCard({ offer, trip, onAccept }: OfferCardProps) {
                     <p className='flex items-center gap-2 font-bold'><HandCoins className="h-4 w-4 text-accent" /> تفاصيل السعر:</p>
                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pl-6">
                         <p><strong>السعر الإجمالي:</strong> {offer.price} JOD</p>
-                        <p><strong>العربون ({offer.depositPercentage}%):</strong> {depositAmount.toFixed(2)} JOD</p>
+                        <p><strong>العربون ({offer.depositPercentage || 20}%):</strong> {depositAmount.toFixed(2)} JOD</p>
                     </div>
                 </div>
 
@@ -100,9 +101,18 @@ export function OfferCard({ offer, trip, onAccept }: OfferCardProps) {
               )}
             </CardContent>
             <CardFooter className="flex p-2 bg-background/30">
-                <Button className="w-full" onClick={handleAcceptClick}>
-                    <Send className="ml-2 h-4 w-4" />
-                    إرسال طلب الحجز
+                <Button className="w-full" onClick={handleAcceptClick} disabled={isAccepting}>
+                    {isAccepting ? (
+                        <>
+                            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                            جاري الإرسال...
+                        </>
+                    ) : (
+                        <>
+                            <Send className="ml-2 h-4 w-4" />
+                            إرسال طلب الحجز
+                        </>
+                    )}
                 </Button>
             </CardFooter>
         </Card>
@@ -111,3 +121,4 @@ export function OfferCard({ offer, trip, onAccept }: OfferCardProps) {
   );
 }
 
+    

@@ -136,7 +136,7 @@ export default function DashboardPage() {
     return scheduledTrips.filter(trip => {
       const originMatch = !filterOrigin || trip.origin === filterOrigin;
       const destinationMatch = !filterDestination || trip.destination === filterDestination;
-      const carrierMatch = !filterCarrier || (trip.carrierName && trip.carrierName.includes(filterCarrier));
+      const carrierMatch = !filterCarrier || (trip.carrierName && trip.carrierName.toLowerCase().includes(filterCarrier.toLowerCase()));
       // This part will need actual vehicle type data in the trip object later
       // const vehicleMatch = filterVehicle === 'all' || (trip.vehicleType === filterVehicle); 
       return originMatch && destinationMatch && carrierMatch;
@@ -285,7 +285,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="seats">عدد المقاعد</Label>
-                    <Select onValueChange={(val) => setSearchSeats(parseInt(val))} value={String(searchSeats)}>
+                    <Select onValueChange={(val) => setSearchSeats(parseInt(val))} defaultValue={String(searchSeats)}>
                       <SelectTrigger id="seats">
                         <SelectValue placeholder="1" />
                       </SelectTrigger>
@@ -324,13 +324,15 @@ export default function DashboardPage() {
                 <Select onValueChange={setFilterOrigin}>
                   <SelectTrigger><SelectValue placeholder="أي نقطة انطلاق" /></SelectTrigger>
                   <SelectContent>
-                    {Object.values(cities).map(city => <SelectItem key={city} value={Object.keys(cities).find(key => cities[key] === city)!}>{city}</SelectItem>)}
+                     <SelectItem value="">أي نقطة انطلاق</SelectItem>
+                    {Object.entries(cities).map(([key, city]) => <SelectItem key={key} value={key}>{city}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <Select onValueChange={setFilterDestination}>
                   <SelectTrigger><SelectValue placeholder="أي نقطة وصول" /></SelectTrigger>
                   <SelectContent>
-                    {Object.values(cities).map(city => <SelectItem key={city} value={Object.keys(cities).find(key => cities[key] === city)!}>{city}</SelectItem>)}
+                    <SelectItem value="">أي نقطة وصول</SelectItem>
+                    {Object.entries(cities).map(([key, city]) => <SelectItem key={key} value={key}>{city}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 <div className="relative">
@@ -381,6 +383,13 @@ export default function DashboardPage() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {filteredScheduledTrips.length === 0 && (
+                    <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                            لا توجد رحلات مجدولة تطابق بحثك.
+                        </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -392,3 +401,5 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+
+    

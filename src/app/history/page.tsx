@@ -65,7 +65,7 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
     const { toast } = useToast();
     const firestore = useFirestore();
     const { user } = useUser();
-    const [isAccepting, setIsAccepting] = useState(false);
+    const [isAccepting, setIsAccepting] = useState<string | null>(null);
     const [showWaitingScreen, setShowWaitingScreen] = useState(false);
 
     const offersQuery = useMemoFirebase(() => {
@@ -74,7 +74,7 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
     }, [firestore, trip.id]);
 
     const { data: offers, isLoading: isLoadingOffers } = useCollection<Offer>(offersQuery);
-
+    
     const acceptedOfferRef = useMemoFirebase(() => {
         if (!firestore || !trip.acceptedOfferId) return null;
         return doc(firestore, `trips/${trip.id}/offers`, trip.acceptedOfferId);
@@ -89,68 +89,90 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
 
     const { data: booking, isLoading: isLoadingBooking } = useDoc<Booking>(bookingRef);
 
-    const handleAcceptOffer = async (selectedOffer: Offer) => {
+    const handleAcceptOffer = (selectedOffer: Offer) => {
         if (!firestore || !user || isAccepting) return;
+
+        setIsAccepting(selectedOffer.id);
+        toast({ title: "جاري إرسال طلب الحجز...", description: "سنقوم بإعلام الناقل بطلبك." });
         
-        setIsAccepting(true);
-        toast({ title: "جاري إرسال طلب الحجز...", description: "سنقوم بإعلام الناقل بطلبك."});
-        setShowWaitingScreen(true); // Show the waiting screen immediately
+        const bookingRef = doc(collection(firestore, 'bookings'));
+        const carrierNotifRef = doc(collection(firestore, `users/${selectedOffer.carrierId}/notifications`));
+        const tripRef = doc(firestore, 'trips', trip.id);
+        const offerRef = doc(firestore, `trips/${trip.id}/offers`, selectedOffer.id);
+        
+        const requestBatch = writeBatch(firestore);
 
-        const batch = writeBatch(firestore);
-        const newBookingRef = doc(collection(firestore, 'bookings'));
+        const newBooking: Omit<Booking, 'id'> = {
+            tripId: trip.id,
+            userId: user.uid,
+            carrierId: selectedOffer.carrierId,
+            seats: trip.passengers || 1,
+            status: 'Pending-Carrier-Confirmation',
+            totalPrice: selectedOffer.price,
+        };
+        requestBatch.set(bookingRef, newBooking);
+        
+        requestBatch.update(tripRef, { 
+            acceptedOfferId: selectedOffer.id,
+            currentBookingId: bookingRef.id,
+        });
 
-        try {
-            // Simplified Flow for dev: Immediately set to Pending-Payment
-            const newBooking: Omit<Booking, 'id'> = {
-                tripId: trip.id,
-                userId: user.uid,
-                carrierId: selectedOffer.carrierId,
-                seats: trip.passengers || 1,
-                status: 'Pending-Payment', // Directly set to Pending-Payment
-                totalPrice: selectedOffer.price,
-            };
-            batch.set(newBookingRef, newBooking);
+        const carrierNotification: Partial<Notification> = {
+            userId: selectedOffer.carrierId,
+            title: "طلب حجز جديد!",
+            message: `لديك طلب حجز جديد لرحلة من ${cities[trip.origin]} إلى ${cities[trip.destination]}.`,
+            type: 'new_booking_request',
+            isRead: false,
+            createdAt: serverTimestamp() as unknown as string,
+            link: `/carrier/bookings` // Example link
+        };
+        requestBatch.set(carrierNotifRef, carrierNotification);
+
+        requestBatch.commit().then(() => {
+            setShowWaitingScreen(true);
             
-            const tripRef = doc(firestore, 'trips', trip.id);
-            batch.update(tripRef, {
-                acceptedOfferId: selectedOffer.id,
-                currentBookingId: newBookingRef.id,
-                status: 'Planned' // This is the status for "waiting for payment"
-            });
-            
-            const offerRef = doc(firestore, `trips/${trip.id}/offers`, selectedOffer.id);
-            batch.update(offerRef, { status: 'Accepted' });
+            // --- The "Fake Carrier" Logic ---
+            setTimeout(() => {
+                const approveBatch = writeBatch(firestore);
+                
+                // 1. Update Booking status
+                approveBatch.update(bookingRef, { status: 'Pending-Payment' });
+                // 2. Update Trip status
+                approveBatch.update(tripRef, { status: 'Planned' });
+                // 3. Update Offer status
+                approveBatch.update(offerRef, { status: 'Accepted' });
+                // 4. Create notification for the user
+                const userNotifRef = doc(collection(firestore, `users/${user.uid}/notifications`));
+                const userNotification: Partial<Notification> = {
+                    userId: user.uid,
+                    title: "تم تأكيد طلب الحجز!",
+                    message: "تم تأكيد حجزك من قبل الناقل. يمكنك الآن الدفع.",
+                    type: 'booking_confirmed',
+                    isRead: false,
+createdAt: serverTimestamp() as any,
+                    link: `/history`
+                };
+                approveBatch.set(userNotifRef, userNotification);
+                
+                // Commit the approval
+                approveBatch.commit().catch(error => {
+                    console.error("Error during fake carrier approval:", error);
+                    const permissionError = new FirestorePermissionError({
+                        path: 'batch write for fake carrier approval',
+                        operation: 'write',
+                        requestResourceData: { bookingId: bookingRef.id, tripId: trip.id },
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
+                });
 
-            // Notification for the user about the confirmation
-            const userNotifRef = doc(collection(firestore, `users/${user.uid}/notifications`));
-            const userNotification: Partial<Notification> = {
-                userId: user.uid,
-                title: "تم تأكيد طلب الحجز!",
-                message: "تم تأكيد حجزك من قبل الناقل. يمكنك الآن الدفع.",
-                type: 'booking_confirmed',
-                isRead: false,
-                createdAt: serverTimestamp() as unknown as string,
-                link: `/history`
-            };
-            batch.set(userNotifRef, userNotification);
+            }, 5000); // 5-second delay to simulate carrier response
 
-            await batch.commit();
-
-            toast({
-                title: "تم تأكيد الحجز بنجاح",
-                description: "يمكنك الآن المتابعة إلى الدفع.",
-            });
-
-        } catch (error) {
-             console.error("Error accepting offer:", error);
-             const permissionError = new FirestorePermissionError({
-                path: `batch write including bookings, trips, offers, and notifications`,
+        }).catch((error) => {
+            console.error("Error sending booking request:", error);
+            const permissionError = new FirestorePermissionError({
+                path: `batch write including bookings, trips, and notifications`,
                 operation: 'write',
-                requestResourceData: { 
-                    bookingStatus: 'Pending-Carrier-Confirmation', 
-                    tripId: trip.id,
-                    offerId: selectedOffer.id,
-                },
+                requestResourceData: { tripId: trip.id, offerId: selectedOffer.id },
             });
             errorEmitter.emit('permission-error', permissionError);
 
@@ -159,29 +181,15 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
                 description: "لم نتمكن من إرسال طلب الحجز. يرجى المحاولة مرة أخرى.",
                 variant: "destructive",
             });
-            setShowWaitingScreen(false); // Hide waiting screen on error
-        } finally {
-            setIsAccepting(false);
-            // Don't hide waiting screen on success, let the UI transition naturally
-        }
+            setIsAccepting(null);
+        });
     };
     
-    // If there's an active booking, show the trip report card
     if (trip.status === 'Planned' && booking && acceptedOffer) {
         return <TripReportCard trip={trip} booking={booking} offer={acceptedOffer} />;
     }
     
-    // If we are loading booking information, show a loader
-    if (isLoadingBooking || isLoadingOffer) {
-        return (
-            <div className="flex justify-center items-center p-8">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="mr-4">جاري تحميل بيانات الحجز...</p>
-            </div>
-        )
-    }
-
-    if (showWaitingScreen) {
+    if (isLoadingBooking || isLoadingOffer || (trip.currentBookingId && showWaitingScreen)) {
         return (
             <div className="flex flex-col items-center justify-center p-8 text-center">
                 <Hourglass className="h-12 w-12 text-primary animate-bounce mb-4" />
@@ -207,7 +215,7 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
                 ) : availableOffers.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {availableOffers.map(offer => (
-                            <OfferCard key={offer.id} offer={offer} trip={trip} onAccept={() => handleAcceptOffer(offer)} />
+                            <OfferCard key={offer.id} offer={offer} trip={trip} onAccept={() => handleAcceptOffer(offer)} isAccepting={isAccepting === offer.id} />
                         ))}
                     </div>
                 ) : (
@@ -304,7 +312,7 @@ export default function HistoryPage() {
           </CardHeader>
         </Card>
 
-        <Accordion type="multiple" className="w-full space-y-6 px-0 md:px-0" value={openAccordion} onValueChange={setOpenAccordion}>
+        <Accordion type="multiple" className="w-full space-y-6 px-0 md:px-0" defaultValue={['awaiting', 'planned', 'past']}>
           
           {(isLoading && !allUserTrips) && renderSkeleton()}
           
@@ -350,7 +358,7 @@ export default function HistoryPage() {
              <AccordionItem value="planned" className="border-none">
               <Card className="rounded-none md:rounded-lg">
                 <AccordionTrigger className="p-6 text-lg hover:no-underline">
-                  <div className='flex items-center gap-2'><Hourglass className="h-6 w-6 text-yellow-500" /><CardTitle>حجوزات بانتظار الدفع</CardTitle></div>
+                  <div className='flex items-center gap-2'><Hourglass className="h-6 w-6 text-yellow-500" /><CardTitle>حجوزات بانتظar الدفع</CardTitle></div>
                 </AccordionTrigger>
                 <AccordionContent className="p-0">
                     <CardDescription className="mb-4 px-6">
@@ -383,15 +391,15 @@ export default function HistoryPage() {
           )}
           
           
-          {hasPastTrips && (
-              <AccordionItem value="confirmed" className="border-none">
-                <Card className="rounded-none md:rounded-lg">
-                  <AccordionTrigger className="p-6 text-lg hover:no-underline">
-                    <div className='flex items-center gap-2'><CheckCircle className="h-6 w-6 text-green-500" /><CardTitle>رحلاتي السابقة</CardTitle></div>
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <CardContent className="space-y-6 p-4 md:p-6">
-                      <CardDescription className="mb-4">سجل رحلاتك المكتملة أو الملغاة.</CardDescription>
+          <AccordionItem value="past" className="border-none">
+            <Card className="rounded-none md:rounded-lg">
+              <AccordionTrigger className="p-6 text-lg hover:no-underline">
+                <div className='flex items-center gap-2'><CheckCircle className="h-6 w-6 text-green-500" /><CardTitle>رحلاتي السابقة</CardTitle></div>
+              </AccordionTrigger>
+              <AccordionContent>
+                <CardContent className="space-y-6 p-4 md:p-6">
+                  <CardDescription className="mb-4">سجل رحلاتك المكتملة أو الملغاة.</CardDescription>
+                   {hasPastTrips ? (
                       <Table>
                         <TableHeader>
                             <TableRow>
@@ -414,12 +422,14 @@ export default function HistoryPage() {
                             ))}
                         </TableBody>
                       </Table>
-                    </CardContent>
-                  </AccordionContent>
-                </Card>
-              </AccordionItem>
-            )
-          }
+                    ) : (
+                        <p className="text-center text-muted-foreground p-8">لا توجد رحلات سابقة.</p>
+                    )}
+                </CardContent>
+              </AccordionContent>
+            </Card>
+          </AccordionItem>
+
         </Accordion>
         
         {!isLoading && !allUserTrips?.length && (
@@ -435,6 +445,5 @@ export default function HistoryPage() {
     </AppLayout>
   );
 }
-
 
     

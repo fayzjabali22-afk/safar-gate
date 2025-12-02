@@ -164,5 +164,4 @@ export const mockOffers: Offer[] = [
     }
 ];
 
-// This is now empty as requested
-export const mockConfirmedTrips: Trip[] = [];
+    
