@@ -12,31 +12,25 @@ service cloud.firestore {
     }
     
     match /users/{userId} {
-      // The user can read and write their own profile document.
       allow read, write: if isOwner(userId);
     }
     
     match /carriers/{carrierId} {
       allow read: if true;
-      allow write: if isSignedIn(); // For dev, allow any user to create/update carriers
+      allow write: if isSignedIn();
     }
 
     match /notifications/{notificationId} {
-      // Allow a user to list notifications where their UID is the 'userId'.
-      allow list: if isSignedIn() && request.query.where.userId == request.auth.uid;
-      
-      // Allow a user to read or update their own specific notification.
+      allow list: if isSignedIn() && request.query.where[0][2] == request.auth.uid;
       allow read, update: if isSignedIn() && resource.data.userId == request.auth.uid;
-      
-      // Allow any signed-in user to create a notification.
       allow create: if isSignedIn();
     }
 
     match /trips/{tripId} {
-      // Allow a user to list trips where their UID is the 'userId'.
-      allow list, read: if isSignedIn() && (request.query.where.userId == request.auth.uid || resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && request.query.where[0][2] == request.auth.uid;
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
       allow create: if isSignedIn();
-      allow update: if isSignedIn(); // Allow any signed-in user to update for dev purposes
+      allow update: if isSignedIn();
       allow delete: if isSignedIn() && isOwner(resource.data.userId);
 
       match /offers/{offerId} {
@@ -51,7 +45,6 @@ service cloud.firestore {
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow read: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.carrierId));
       allow delete: if isSignedIn() && isOwner(resource.data.userId);
-      // Allow any signed-in user to update the booking for development purposes (simulating carrier confirmation).
       allow update: if isSignedIn();
     }
 

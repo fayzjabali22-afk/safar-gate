@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase'; // تمت إزالة addDocumentNonBlocking لعدم الحاجة إليها خارج الـ batch
-import { collection, query, where, doc, writeBatch, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, doc, writeBatch, limit } from 'firebase/firestore';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -62,13 +62,11 @@ export default function HistoryPage() {
   const [isProcessingBooking, setIsProcessingBooking] = useState(false);
 
   // --- Queries ---
-  // تمت إضافة limit(50) لحماية الأداء وفقاً لتوصيات التدقيق
   const userTripsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'trips'),
       where('userId', '==', user.uid),
-      orderBy('departureDate', 'desc'),
       limit(50) 
     );
   }, [firestore, user]);
@@ -79,9 +77,13 @@ export default function HistoryPage() {
     if (!allUserTrips) {
       return { awaitingTrips: [], pendingConfirmationTrips: [], confirmedTrips: [] };
     }
-    const awaiting = allUserTrips.filter(t => t.status === 'Awaiting-Offers');
-    const pending = allUserTrips.filter(t => t.status === 'Pending-Carrier-Confirmation');
-    const confirmed = allUserTrips.filter(t => ['Planned', 'Completed', 'Cancelled'].includes(t.status));
+    
+    // Sort all trips by date descending once, then filter
+    const sortedTrips = [...allUserTrips].sort((a, b) => new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime());
+
+    const awaiting = sortedTrips.filter(t => t.status === 'Awaiting-Offers');
+    const pending = sortedTrips.filter(t => t.status === 'Pending-Carrier-Confirmation');
+    const confirmed = sortedTrips.filter(t => ['Planned', 'Completed', 'Cancelled'].includes(t.status));
     
     return { 
         awaitingTrips: awaiting, 
@@ -124,7 +126,6 @@ export default function HistoryPage() {
     try {
       const batch = writeBatch(firestore);
       
-      // 1. مرجع الحجز
       const bookingRef = doc(collection(firestore, 'bookings'));
       batch.set(bookingRef, {
         id: bookingRef.id,
@@ -139,34 +140,33 @@ export default function HistoryPage() {
         createdAt: new Date().toISOString(),
       });
 
-      // 2. تحديث الرحلة
       batch.update(doc(firestore, 'trips', trip.id), {
         status: 'Pending-Carrier-Confirmation',
         acceptedOfferId: offer.id,
         currentBookingId: bookingRef.id,
         carrierId: offer.carrierId,
+        // Add carrierName to the trip for easier display
+        carrierName: offer.carrierName, // Assuming carrierName is on the offer
       });
 
-      // 3. إنشاء الإشعار (داخل الـ Batch لضمان التزامن)
       const notificationRef = doc(collection(firestore, 'notifications'));
       batch.set(notificationRef, {
         userId: offer.carrierId,
-        title: `طلب حجز جديد لرحلة ${trip.origin} - ${trip.destination}`,
+        title: `طلب حجز جديد لرحلة ${cities[trip.origin] || trip.origin} - ${cities[trip.destination] || trip.destination}`,
         message: `لديك طلب حجز جديد من المستخدم ${user.displayName || user.email}.`,
         type: 'new_booking_request',
         isRead: false,
         createdAt: new Date().toISOString(),
-        link: `/carrier-dashboard/bookings`, // تأكد أن هذا الرابط صحيح في لوحة تحكم الناقل
+        link: `/carrier/bookings`,
       });
 
-      // تنفيذ كل العمليات دفعة واحدة
       await batch.commit();
       
       toast({ title: 'تم إرسال طلب الحجز بنجاح!', description: 'بانتظار موافقة الناقل. تم نقل الطلب إلى قسم "حجوزات بانتظار التأكيد".' });
       setIsBookingDialogOpen(false);
       setSelectedOfferForBooking(null);
     } catch (error) {
-      console.error("Booking Error:", error); // إضافة سجل للخطأ لأغراض التصحيح
+      console.error("Booking Error:", error);
       toast({ variant: 'destructive', title: 'فشلت العملية', description: 'حدث خطأ أثناء الحجز، حاول لاحقاً.' });
     } finally {
       setIsProcessingBooking(false);
@@ -223,7 +223,7 @@ export default function HistoryPage() {
                   {awaitingTrips.map(trip => (
                     <CardContent key={trip.id} className="border-t pt-6">
                       <div className="mb-4">
-                        <CardTitle className="text-md">طلب رحلة: {trip.origin} إلى {trip.destination}</CardTitle>
+                        <CardTitle className="text-md">طلب رحلة: {cities[trip.origin] || trip.origin} إلى {cities[trip.destination] || trip.destination}</CardTitle>
                         <CardDescription className="text-xs">
                           تاريخ الطلب: {safeDateFormat(trip.departureDate)} | عدد الركاب: {trip.passengers || 'غير محدد'}
                         </CardDescription>
@@ -252,7 +252,7 @@ export default function HistoryPage() {
                       <Card key={trip.id} className="bg-background/50 border-yellow-500/50">
                         <CardHeader>
                           <div className="flex justify-between items-center">
-                            <CardTitle className="text-base font-bold">رحلة {trip.origin} إلى {trip.destination}</CardTitle>
+                            <CardTitle className="text-base font-bold">رحلة {cities[trip.origin] || trip.origin} إلى {cities[trip.destination] || trip.destination}</CardTitle>
                             <Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge>
                           </div>
                         </CardHeader>
@@ -287,7 +287,7 @@ export default function HistoryPage() {
                       <Card key={trip.id} className="bg-background/50 border-green-500/50">
                         <CardHeader>
                           <div className="flex justify-between items-center">
-                            <CardTitle className="text-base font-bold">رحلة {trip.origin} إلى {trip.destination}</CardTitle>
+                            <CardTitle className="text-base font-bold">رحلة {cities[trip.origin] || trip.origin} إلى {cities[trip.destination] || trip.destination}</CardTitle>
                             <Badge variant={statusVariantMap[trip.status] || 'outline'}>{statusMap[trip.status] || trip.status}</Badge>
                           </div>
                         </CardHeader>
