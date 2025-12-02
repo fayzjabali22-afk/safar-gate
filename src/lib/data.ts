@@ -34,6 +34,7 @@ export type Trip = {
   availableSeats?: number;
   depositPercentage?: number;
   vehicleType?: string;
+  vehicleCategory?: 'small' | 'bus';
   // New fields to track the booking process
   acceptedOfferId?: string | null;
   currentBookingId?: string | null;
@@ -105,11 +106,12 @@ export const scheduledTrips: Trip[] = [
         origin: 'riyadh',
         destination: 'amman',
         departureDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
-        status: 'Planned', // This status might be confusing for a scheduled trip, but let's keep it
+        status: 'Planned',
         price: 120,
         availableSeats: 3,
         depositPercentage: 25,
         vehicleType: 'GMC Yukon 2023',
+        vehicleCategory: 'small',
     },
     {
         id: 'TRIP-SCHEDULED-002',
@@ -124,6 +126,7 @@ export const scheduledTrips: Trip[] = [
         availableSeats: 5,
         depositPercentage: 20,
         vehicleType: 'Mercedes Sprinter 2022',
+        vehicleCategory: 'bus',
     },
      {
         id: 'TRIP-SCHEDULED-003',
@@ -138,11 +141,11 @@ export const scheduledTrips: Trip[] = [
         availableSeats: 6,
         depositPercentage: 30,
         vehicleType: 'Hyundai Staria 2024',
+        vehicleCategory: 'small',
     },
 ];
 
-
-export const tripHistory: Trip[] = [];
+export const tripHistory: Trip[] = scheduledTrips;
 
 export const mockOffers: Offer[] = [
     {

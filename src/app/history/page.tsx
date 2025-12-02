@@ -252,11 +252,12 @@ export default function HistoryPage() {
 
   const defaultOpenAccordion = useMemo(() => {
       if(isLoading) return [];
-      if(pendingConfirmationBookings.length > 0) return ['pendingConfirmation'];
-      if(pendingPaymentBookings.length > 0) return ['pendingPayment'];
-      if(awaitingTrips.length > 0) return ['awaiting'];
-      if(pastBookings.length > 0) return ['past'];
-      return [];
+      const openItems: string[] = [];
+      if(pendingConfirmationBookings.length > 0) openItems.push('pendingConfirmation');
+      if(pendingPaymentBookings.length > 0) openItems.push('pendingPayment');
+      if(awaitingTrips.length > 0) openItems.push('awaiting');
+      if(pastBookings.length > 0) openItems.push('past');
+      return openItems;
   }, [isLoading, awaitingTrips, pendingConfirmationBookings, pendingPaymentBookings, pastBookings]);
 
   
@@ -334,7 +335,7 @@ export default function HistoryPage() {
             </div>
         )}
 
-        <Accordion type="multiple" className="w-full space-y-6 px-0 md:px-0" defaultValue={defaultOpenAccordion}>
+        <Accordion type="multiple" className="w-full space-y-6 px-0 md:px-0" defaultValue={defaultOpenAccordion} value={defaultOpenAccordion}>
           
           {awaitingTrips.length > 0 && (
             <AccordionItem value="awaiting" className="border-none">
