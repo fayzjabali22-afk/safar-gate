@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -201,12 +202,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-secondary px-4 text-secondary-foreground md:px-6 shadow-md">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-[#B1B83D] px-4 text-black md:px-6 shadow-md">
         {/* Mobile: Left side (Menu) */}
         <div className="flex items-center md:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-white/10">
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-white/20">
                 <Menu className="h-4 w-4" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
@@ -221,13 +222,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   href="/dashboard"
                   className="-ml-4 mb-4 flex items-center gap-2 text-lg font-semibold"
                 >
-                  <Image
-                    src="/logo.png"
-                    alt="Safar Carrier Logo"
-                    width={145}
-                    height={110}
-                    className="object-contain"
-                  />
                   <span className="sr-only">Safar Carrier</span>
                 </Link>
                 {mobileMenuItems.map((item) => {
@@ -255,28 +249,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </Sheet>
         </div>
         
-        {/* Center Section: Logo (visible on all screens) */}
+        {/* Center Section: Title */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 text-lg font-semibold"
-          >
-            <Image
-              src="/logo.png"
-              alt="Safar Carrier Logo"
-              width={145}
-              height={110}
-              priority
-            />
-            <span className="sr-only">Safar Carrier</span>
-          </Link>
+            <h1 className="text-xl font-bold">Safar Carrier</h1>
         </div>
 
         {/* Desktop: Right Side Elements & Mobile: Far left user menu */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 ml-auto">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative hover:bg-white/10" aria-label="عرض الإشعارات">
+                  <Button variant="ghost" size="icon" className="relative hover:bg-white/20" aria-label="عرض الإشعارات">
                     <Bell className="h-5 w-5" aria-hidden="true" />
                     {unreadCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-xs bg-red-600 hover:bg-red-700">{unreadCount}</Badge>}
                   </Button>
@@ -301,7 +283,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="hidden md:flex">
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/20">
                     <Avatar className="h-10 w-10 border-2 border-accent">
                     {user?.photoURL && (
                         <AvatarImage
@@ -327,7 +309,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/20">
                     <Avatar className="h-8 w-8 border-2 border-accent">
                     {user?.photoURL && (
                         <AvatarImage
@@ -426,3 +408,5 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </TooltipProvider>
   );
 }
+
+    
