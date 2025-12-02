@@ -19,9 +19,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star, TestTube2, Bus, Car, ArrowDownUp, DollarSign } from 'lucide-react';
+import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star, TestTube2, Bus, Car, ArrowDownUp, DollarSign, Hourglass } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import type { Trip, Offer } from '@/lib/data';
+import type { Trip, Offer, Booking } from '@/lib/data';
 import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
@@ -39,6 +39,7 @@ import { scheduledTrips } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
+import { BookingDialog, PassengerDetails } from '@/components/booking-dialog';
 
 
 // Mock data for countries and cities
@@ -68,7 +69,6 @@ export default function DashboardPage() {
   const [isLegalDisclaimerOpen, setIsLegalDisclaimerOpen] = useState(false);
   const [tripRequestData, setTripRequestData] = useState<Omit<Trip, 'id' | 'userId' | 'status' | 'departureDate'> | null>(null);
 
-
   const [searchOriginCountry, setSearchOriginCountry] = useState('');
   const [searchOriginCity, setSearchOriginCity] = useState('');
   const [searchDestinationCountry, setSearchDestinationCountry] = useState('');
@@ -78,6 +78,9 @@ export default function DashboardPage() {
   const [filterVehicle, setFilterVehicle] = useState('all');
   const [carrierSearch, setCarrierSearch] = useState('');
   const [sortOrder, setSortOrder] = useState<'default' | 'date' | 'price'>('default');
+
+  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
+  const [selectedTripForBooking, setSelectedTripForBooking] = useState<Trip | null>(null);
   
   useEffect(() => {
     setSearchOriginCity('');
@@ -86,6 +89,46 @@ export default function DashboardPage() {
   useEffect(() => {
     setSearchDestinationCity('');
   }, [searchDestinationCountry]);
+
+  const handleBookNow = (trip: Trip) => {
+    if (!user) {
+        setIsAuthRedirectOpen(true);
+        return;
+    }
+    setSelectedTripForBooking(trip);
+    setIsBookingDialogOpen(true);
+  };
+  
+  const handleConfirmBooking = async (passengers: PassengerDetails[]) => {
+     if (!user || !firestore || !selectedTripForBooking) return;
+
+    toast({ title: "جاري إرسال طلب الحجز...", description: "سنقوم بإعلامك بموافقة الناقل." });
+
+    const bookingDocRef = doc(collection(firestore, 'bookings'));
+
+    const newBooking: Omit<Booking, 'id'> = {
+        tripId: selectedTripForBooking.id,
+        userId: user.uid,
+        carrierId: selectedTripForBooking.carrierId!,
+        seats: searchSeats,
+        passengersDetails: passengers,
+        status: 'Pending-Carrier-Confirmation',
+        totalPrice: (selectedTripForBooking.price || 0) * searchSeats,
+    };
+    
+     try {
+        await addDoc(collection(firestore, 'bookings'), newBooking);
+        toast({ title: "تم إرسال طلب الحجز بنجاح", description: "بانتظار موافقة الناقل." });
+        router.push('/history');
+    } catch (error) {
+        console.error("Error creating booking:", error);
+        toast({ title: "خطأ", description: "لم نتمكن من إنشاء الحجز.", variant: "destructive" });
+    } finally {
+        setIsBookingDialogOpen(false);
+        setSelectedTripForBooking(null);
+    }
+  };
+
 
   const handleLegalConfirm = async () => {
     setIsLegalDisclaimerOpen(false);
@@ -133,7 +176,9 @@ export default function DashboardPage() {
   };
 
   const handleAuthSuccess = () => {
-    handleCreateTripRequest();
+    // This function can be used to retry actions after login
+    // For now, we just close the dialog. User can click the button again.
+    setIsAuthRedirectOpen(false);
   };
 
   const filteredScheduledTrips = useMemo(() => {
@@ -335,7 +380,7 @@ export default function DashboardPage() {
               
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredScheduledTrips.map(trip => (
-                  <ScheduledTripCard key={trip.id} trip={trip} />
+                  <ScheduledTripCard key={trip.id} trip={trip} onBookNow={handleBookNow} />
                 ))}
               </div>
 
@@ -368,6 +413,17 @@ export default function DashboardPage() {
       </div>
       <AuthRedirectDialog isOpen={isAuthRedirectOpen} onOpenChange={setIsAuthRedirectOpen} onLoginSuccess={handleAuthSuccess} />
       <LegalDisclaimerDialog isOpen={isLegalDisclaimerOpen} onOpenChange={setIsLegalDisclaimerOpen} onContinue={handleLegalConfirm} />
+       {selectedTripForBooking && (
+            <BookingDialog
+                isOpen={isBookingDialogOpen}
+                onOpenChange={setIsBookingDialogOpen}
+                trip={selectedTripForBooking}
+                seatCount={searchSeats}
+                onConfirm={handleConfirmBooking}
+            />
+        )}
     </AppLayout>
   );
 }
+
+    

@@ -78,7 +78,7 @@ const CarrierInfo = ({ carrierId, carrierName }: { carrierId: string; carrierNam
   );
 };
 
-export function ScheduledTripCard({ trip }: { trip: Trip }) {
+export function ScheduledTripCard({ trip, onBookNow }: { trip: Trip; onBookNow: (trip: Trip) => void; }) {
   const depositAmount = (trip.price || 0) * ((trip.depositPercentage || 0) / 100);
   const vehicleImage = PlaceHolderImages.find((img) => img.id === 'car-placeholder');
 
@@ -125,10 +125,12 @@ export function ScheduledTripCard({ trip }: { trip: Trip }) {
         </div>
       </CardContent>
       <CardFooter className="flex p-2 bg-background/30 gap-2">
-        <Button size="sm" className="w-full">
+        <Button size="sm" className="w-full" onClick={() => onBookNow(trip)}>
             حجز الآن
         </Button>
       </CardFooter>
     </Card>
   );
 }
+
+    
