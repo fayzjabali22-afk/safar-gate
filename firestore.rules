@@ -13,9 +13,6 @@ service cloud.firestore {
     match /users/{userId} {
       allow read, write: if isOwner(userId);
 
-      // Allow any signed-in user to create a notification for another user
-      // (e.g. traveler notifying a carrier of a new booking request)
-      // The recipient can still only read/list their own notifications.
       match /notifications/{notificationId} {
         allow read, list: if isOwner(userId);
         allow create: if isSignedIn(); 
@@ -24,48 +21,39 @@ service cloud.firestore {
     }
     
     match /carriers/{carrierId} {
-      // Publicly readable, but only writable by authenticated users (e.g. the carrier themselves)
       allow read: if true;
-      allow write: if isSignedIn(); // Allow any signed-in user to become a carrier
+      allow write: if isSignedIn();
     }
 
     match /trips/{tripId} {
       allow read, list: if true;
-      // Allow any signed-in user (including anonymous) to create a trip, as long as they set themselves as the owner.
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
-      // Allow the user who owns the trip to update it (e.g. to add an accepted offer and booking ID)
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
+      allow update: if isSignedIn() && isOwner(resource.data.userId);
+      allow delete: if isSignedIn() && isOwner(resource.data.userId);
 
       match /offers/{offerId} {
-        // The user who created the trip can read the offers.
         allow read, list: if isOwner(get(/databases/$(database)/documents/trips/$(tripId)).data.userId);
-        
-        // Any authenticated user can create an offer (we'll assume this is a carrier).
         allow create: if isSignedIn();
-        
-        // Allow the user who created the trip (to accept/reject) or the carrier who made the offer to update it.
+        // Allow the user who owns the trip to update the offer (to accept/reject it)
+        // or the carrier who made the offer to update it (e.g. withdraw it).
         allow update: if isOwner(get(/databases/$(database)/documents/trips/$(tripId)).data.userId) || isOwner(resource.data.carrierId);
-        
-        allow delete: if false; // Offers should not be deleted.
+        allow delete: if false;
       }
     }
 
     match /bookings/{bookingId} {
-      // Allow signed-in user to create their own booking.
+      // Allow any signed-in user to create their own booking.
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
-      // Allow user who created booking OR the carrier to read it
+      // Allow user who created booking OR the carrier to read it.
       allow read: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.carrierId));
-      // Allow user who created booking to delete it (for cancellation).
+      // Allow user who created booking to cancel it.
       allow delete: if isSignedIn() && isOwner(resource.data.userId);
-      // Allow carrier to update the booking (e.g., to confirm it).
+      // Allow carrier to update the booking (e.g. to confirm it).
       allow update: if isSignedIn() && isOwner(resource.data.carrierId);
     }
 
     match /ratings/{ratingId} {
-      // Any signed-in user can create a rating.
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
-      // Ratings are public, but cannot be changed or deleted by users.
       allow read: if true;
       allow update, delete: if false;
     }
