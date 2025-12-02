@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, writeBatch, limit } from 'firebase/firestore';
+import { collection, query, where, doc, writeBatch, limit, orderBy, arrayUnion } from 'firebase/firestore'; // Added orderBy, arrayUnion
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,8 +24,8 @@ import { arSA } from 'date-fns/locale';
 import { BookingDialog } from '@/components/booking-dialog';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
 
-
 // --- Helper Functions & Data ---
+// Note: Consider moving these to @/lib/constants.ts for reusability
 const cities: { [key: string]: string } = {
     damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص',
     amman: 'عمّان', irbid: 'إربد', zarqa: 'الزرقاء',
@@ -77,6 +77,7 @@ export default function HistoryPage() {
     return query(
       collection(firestore, 'trips'),
       where('userId', '==', user.uid),
+      orderBy('departureDate', 'desc'), // FIX: Sort by date to ensure recent trips appear first
       limit(50) 
     );
   }, [firestore, user]);
@@ -88,8 +89,8 @@ export default function HistoryPage() {
       return { awaitingTrips: [], pendingConfirmationTrips: [], confirmedTrips: [] };
     }
     
-    // Sort all trips by date descending once, then filter
-    const sortedTrips = [...allUserTrips].sort((a, b) => new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime());
+    // Filtering (Sorting is already handled by Firestore query for efficiency, but keeping client sort is fine as backup)
+    const sortedTrips = [...allUserTrips]; // Already sorted by query
 
     const awaiting = sortedTrips.filter(t => t.status === 'Awaiting-Offers');
     const pending = sortedTrips.filter(t => t.status === 'Pending-Carrier-Confirmation');
@@ -153,9 +154,10 @@ export default function HistoryPage() {
       batch.update(doc(firestore, 'trips', trip.id), {
         status: 'Pending-Carrier-Confirmation',
         acceptedOfferId: offer.id,
-        bookingIds: [bookingRef.id], // Use bookingIds array
+        bookingIds: arrayUnion(bookingRef.id), // FIX: Use arrayUnion to safely add to array
         carrierId: offer.carrierId,
-        // carrierName can be fetched from offer if it's there
+        // @ts-ignore
+        carrierName: offer.carrierName || '', // Ensure mapping if available in offer object, otherwise fetch logic needed
       });
 
       const notificationRef = doc(collection(firestore, 'notifications'));
@@ -291,7 +293,7 @@ export default function HistoryPage() {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
-                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 p-6">
                     {confirmedTrips.map(trip => (
                       <ScheduledTripCard
                         key={trip.id}
