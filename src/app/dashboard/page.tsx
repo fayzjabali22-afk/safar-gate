@@ -101,23 +101,36 @@ export default function DashboardPage() {
   const handleConfirmBooking = async (passengers: PassengerDetails[]) => {
      if (!user || !firestore || !selectedTripForBooking) return;
 
-    toast({ title: "جاري إرسال طلب الحجز...", description: "سنقوم بإعلامك بموافقة الناقل." });
-
-    const bookingDocRef = doc(collection(firestore, 'bookings'));
+    toast({ title: "جاري إرسال طلب الحجز...", description: "سيتم توجيهك لمتابعة حالة الطلب." });
 
     const newBooking: Omit<Booking, 'id'> = {
         tripId: selectedTripForBooking.id,
         userId: user.uid,
         carrierId: selectedTripForBooking.carrierId!,
-        seats: searchSeats,
+        seats: passengers.length,
         passengersDetails: passengers,
         status: 'Pending-Carrier-Confirmation',
-        totalPrice: (selectedTripForBooking.price || 0) * searchSeats,
+        totalPrice: (selectedTripForBooking.price || 0) * passengers.length,
     };
     
      try {
         await addDoc(collection(firestore, 'bookings'), newBooking);
-        toast({ title: "تم إرسال طلب الحجز بنجاح", description: "بانتظار موافقة الناقل." });
+
+        // This is a simulation of notifying the carrier. In a real app, this would be a cloud function.
+        // For now, we'll create a notification for the user who booked.
+        const userNotifRef = doc(collection(firestore, `users/${user.uid}/notifications`));
+        await addDoc(collection(firestore, `users/${user.uid}/notifications`), {
+            userId: user.uid,
+            title: "تم إرسال طلب الحجز",
+            message: `طلبك لرحلة ${cities[selectedTripForBooking.origin]} قيد المراجعة من قبل الناقل.`,
+            type: 'new_booking_request',
+            isRead: false,
+            createdAt: serverTimestamp(),
+            link: `/history`
+        });
+
+
+        toast({ title: "تم إرسال طلب الحجز بنجاح", description: "بانتظار موافقة الناقل. يمكنك متابعة الطلب في صفحة إدارة الحجز." });
         router.push('/history');
     } catch (error) {
         console.error("Error creating booking:", error);
