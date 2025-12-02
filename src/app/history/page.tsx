@@ -7,6 +7,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -16,7 +23,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Notification, Offer } from '@/lib/data';
-import { Bell, CheckCircle, PackageOpen, AlertCircle, CalendarX, PlusCircle } from 'lucide-react';
+import { Bell, CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX } from 'lucide-react';
 import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -171,17 +178,33 @@ export default function HistoryPage() {
       <div className="bg-background/80 p-2 md:p-8 rounded-lg space-y-8">
         {/* Header */}
         <Card className="bg-card/90 border-border/50">
-          <CardHeader className="p-4 md:p-6 flex flex-row justify-between items-center">
+           <CardHeader className="p-4 md:p-6 flex flex-row justify-between items-center">
             <div>
               <CardTitle>إدارة الحجز</CardTitle>
               <CardDescription>تابع العروض والحجوزات من هنا</CardDescription>
             </div>
-            <Button variant="ghost" size="icon" className="relative" aria-label="عرض الإشعارات">
-              <Bell className="h-5 w-5" aria-hidden="true" />
-              {notificationCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-xs">{notificationCount}</Badge>
-              )}
-            </Button>
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative" aria-label="عرض الإشعارات">
+                  <Bell className="h-5 w-5" aria-hidden="true" />
+                  {notificationCount > 0 && (
+                    <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-xs">
+                      {notificationCount}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel>الإشعارات</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <div className="p-8 text-center text-muted-foreground flex flex-col items-center gap-2">
+                  <Bell className="h-8 w-8 opacity-20" aria-hidden="true" />
+                  <p className="text-sm">لا توجد إشعارات جديدة حالياً.</p>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
           </CardHeader>
         </Card>
 
@@ -294,4 +317,5 @@ export default function HistoryPage() {
       )}
     </AppLayout>
   );
-}
+
+    
