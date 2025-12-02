@@ -25,6 +25,7 @@ import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Badge } from './ui/badge';
 import Image from 'next/image';
+import { format } from 'date-fns';
 
 
 const cities: { [key: string]: string } = {
@@ -89,7 +90,7 @@ export function ScheduledTripCard({ trip, onBookNow }: { trip: Trip; onBookNow: 
         <div className="flex justify-between items-center pt-2">
             <Badge variant="secondary" className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                {new Date(trip.departureDate).toLocaleDateString()}
+                {format(new Date(trip.departureDate), "PPP")}
             </Badge>
             <div className="flex items-center gap-2 text-sm font-bold">
                <span>{cities[trip.origin]}</span>

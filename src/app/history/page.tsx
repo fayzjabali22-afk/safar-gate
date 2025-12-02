@@ -37,6 +37,7 @@ import { OfferCard } from '@/components/offer-card';
 import { useToast } from '@/hooks/use-toast';
 import { mockOffers, mockCarriers } from '@/lib/data';
 import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
+import { format } from 'date-fns';
 
 
 const statusMap: Record<string, string> = {
@@ -355,7 +356,7 @@ export default function HistoryPage() {
                                                 <div className="text-left">
                                                     <div className="flex items-center gap-3">
                                                         <p className="font-bold text-base">{cities[trip.origin as keyof typeof cities] || trip.origin} to {cities[trip.destination as keyof typeof cities] || trip.destination}</p>
-                                                        <p className="text-sm text-muted-foreground">({new Date(trip.departureDate).toLocaleDateString()})</p>
+                                                        <p className="text-sm text-muted-foreground">({format(new Date(trip.departureDate), "PPP")})</p>
                                                     </div>
                                                 </div>
                                             </div>
