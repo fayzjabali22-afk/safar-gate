@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -221,12 +220,12 @@ export default function SignupPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" className="w-full">
-                Create an account
-              </Button>
-              <Button variant="secondary" type="button" className="w-full" onClick={handleGuestSignIn}>
+              <Button type="button" className="w-full" onClick={handleGuestSignIn}>
                 <TestTube2 className="mr-2 h-5 w-5" />
                 Continue as Guest (Dev Mode)
+              </Button>
+              <Button variant="secondary" type="submit" className="w-full">
+                Create an account
               </Button>
             </form>
           </Form>
