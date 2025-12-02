@@ -1,3 +1,4 @@
+
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -339,7 +340,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Secondary Navigation Header */}
-      <nav className="sticky top-16 z-40 hidden h-12 items-center justify-center gap-8 border-b border-b-border/10 bg-secondary px-6 text-secondary-foreground md:flex shadow-sm">
+      <nav className="sticky top-16 z-40 hidden h-12 items-center justify-center gap-8 border-b border-b-border/10 bg-secondary px-6 text-secondary-foreground shadow-sm md:flex">
         {menuItems.map((item) => {
             const isDisabled = item.auth && !user;
             const linkClass = cn(
