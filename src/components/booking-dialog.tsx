@@ -17,8 +17,6 @@ import { useState, useEffect } from 'react';
 import type { Trip } from '@/lib/data';
 import { Send, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
-import { collection } from 'firebase/firestore';
 
 export interface PassengerDetails {
   name: string;
@@ -31,16 +29,17 @@ interface BookingDialogProps {
   trip: Trip;
   seatCount: number;
   onConfirm: (passengers: PassengerDetails[]) => void;
-  isProcessing: boolean;
+  isProcessing?: boolean; // Make optional for backward compatibility
 }
 
-export function BookingDialog({ isOpen, onOpenChange, trip, seatCount, onConfirm, isProcessing }: BookingDialogProps) {
+export function BookingDialog({ isOpen, onOpenChange, trip, seatCount, onConfirm, isProcessing = false }: BookingDialogProps) {
     const { toast } = useToast();
     const [passengers, setPassengers] = useState<PassengerDetails[]>([]);
 
     useEffect(() => {
         if (isOpen) {
-            setPassengers(Array(seatCount).fill({ name: '', type: 'adult' }));
+            // Initialize passengers array based on seatCount when dialog opens
+            setPassengers(Array.from({ length: seatCount }, () => ({ name: '', type: 'adult' })));
         }
     }, [isOpen, seatCount]);
 
@@ -76,7 +75,7 @@ export function BookingDialog({ isOpen, onOpenChange, trip, seatCount, onConfirm
                 
                 <ScrollArea className="max-h-[60vh] p-4">
                     <div className="space-y-6">
-                        {Array.from({ length: seatCount }).map((_, index) => (
+                        {passengers.map((_, index) => (
                         <div key={index} className="p-4 border rounded-lg space-y-4 bg-muted/50">
                             <Label className="font-bold">الراكب {index + 1}</Label>
                             <div className="grid gap-2">
@@ -86,6 +85,7 @@ export function BookingDialog({ isOpen, onOpenChange, trip, seatCount, onConfirm
                                     placeholder="أدخل الاسم الكامل للراكب"
                                     value={passengers[index]?.name || ''}
                                     onChange={(e) => handlePassengerChange(index, 'name', e.target.value)}
+                                    disabled={isProcessing}
                                 />
                             </div>
                             <div className="grid gap-2">
@@ -95,6 +95,7 @@ export function BookingDialog({ isOpen, onOpenChange, trip, seatCount, onConfirm
                                     className="flex gap-4"
                                     value={passengers[index]?.type || 'adult'}
                                     onValueChange={(value) => handlePassengerChange(index, 'type', value)}
+                                    disabled={isProcessing}
                                 >
                                     <div className="flex items-center space-x-2 rtl:space-x-reverse">
                                         <RadioGroupItem value="adult" id={`adult-${index}`} />
