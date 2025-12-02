@@ -23,10 +23,10 @@ service cloud.firestore {
     }
 
     match /notifications/{notificationId} {
-      // Users can list and read notifications intended for them.
-      // They can also update them (e.g., to mark as read).
-      allow list, read, update: if isOwner(resource.data.userId);
-
+      // Users can list notifications intended for them.
+      allow list: if isSignedIn() && request.query.userId == request.auth.uid;
+      // Users can read and update notifications intended for them.
+      allow read, update: if isSignedIn() && resource.data.userId == request.auth.uid;
       // Any signed-in user can create a notification.
       allow create: if isSignedIn();
     }

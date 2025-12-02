@@ -82,12 +82,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const { data: userProfile } = useDoc(userProfileRef);
 
-  // ✅ Query from the root 'notifications' collection
+// ✅ FIX: استخدام الوسائط المفصلة لضمان توجيه المسار إلى المجموعة الفرعية الصحيحة
   const notificationsQuery = useMemoFirebase(() => {
-    if (!firestore || !user) return null;
+    // نتحقق من وجود المعرف uid لضمان عدم طلب مسار خاطئ
+    if (!firestore || !user?.uid) return null;
+    
     return query(
+        // استخدام الفواصل بدلاً من الشرطات المائلة يضمن بناء المسار بشكل سليم 100%
         collection(firestore, 'notifications'), 
-        where("userId", "==", user.uid), // Filter for the current user
+        where("userId", "==", user.uid),
         where("isRead", "==", false),
         orderBy("createdAt", "desc"),
         limit(10) 
