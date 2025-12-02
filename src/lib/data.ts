@@ -30,6 +30,11 @@ export type Trip = {
   status: 'Planned' | 'In-Transit' | 'Completed' | 'Cancelled' | 'Awaiting-Offers';
   cargoDetails?: string;
   passengers?: number;
+  // Fields for scheduled trips
+  price?: number;
+  availableSeats?: number;
+  depositPercentage?: number;
+  vehicleType?: string;
   // New fields to track the booking process
   acceptedOfferId?: string | null;
   currentBookingId?: string | null;
@@ -102,6 +107,10 @@ export const scheduledTrips: Trip[] = [
         departureDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
         status: 'Planned',
         passengers: 4,
+        price: 120,
+        availableSeats: 3,
+        depositPercentage: 25,
+        vehicleType: 'GMC Yukon 2023',
     },
     {
         id: 'TRIP-SCHEDULED-002',
@@ -113,6 +122,25 @@ export const scheduledTrips: Trip[] = [
         departureDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
         status: 'Planned',
         passengers: 2,
+        price: 250,
+        availableSeats: 5,
+        depositPercentage: 20,
+        vehicleType: 'Mercedes Sprinter 2022',
+    },
+     {
+        id: 'TRIP-SCHEDULED-003',
+        userId: 'user789',
+        carrierId: 'carrier03',
+        carrierName: 'الناقل الدولي',
+        origin: 'damascus',
+        destination: 'amman',
+        departureDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
+        status: 'Planned',
+        passengers: 1,
+        price: 80,
+        availableSeats: 6,
+        depositPercentage: 30,
+        vehicleType: 'Hyundai Staria 2024',
     },
 ];
 
@@ -163,4 +191,3 @@ export const mockOffers: Offer[] = [
         depositPercentage: 25,
     }
 ];
-

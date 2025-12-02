@@ -1,4 +1,3 @@
-
 'use client';
 import { AppLayout } from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
@@ -10,14 +9,6 @@ import {
   CardDescription,
   CardFooter,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
@@ -47,6 +38,7 @@ import { useRouter } from 'next/navigation';
 import { scheduledTrips } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
+import { ScheduledTripCard } from '@/components/scheduled-trip-card';
 
 
 // Mock data for countries and cities
@@ -201,9 +193,7 @@ export default function DashboardPage() {
                       </Label>
                     </div>
                   </RadioGroup>
-                </div>
-                
-                 <div className="flex flex-col gap-3">
+                   <div className="flex flex-col gap-3 pt-4">
                     {searchMode === 'specific-carrier' && (
                       <div className="grid gap-2 animate-in fade-in-50">
                         <Label htmlFor="carrier-search">ابحث عن ناقلك المفضل بالاسم أو رقم الهاتف</Label>
@@ -228,8 +218,9 @@ export default function DashboardPage() {
                         </div>
                     </RadioGroup>
                  </div>
-
-                 <div className="grid gap-3 md:col-span-2">
+                </div>
+                
+                 <div className="grid gap-3 md:col-span-1">
                   <Label className="text-base">الخطوة الثانية: أدخل تفاصيل رحلتك</Label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="grid gap-2">
@@ -281,101 +272,73 @@ export default function DashboardPage() {
                       </Select>
                     </div>
                   </div>
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="travel-date">تاريخ السفر (تقريبي)</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant={"outline"}
+                            className={cn(
+                              "w-full justify-start text-left font-normal bg-background/50",
+                              !date && "text-muted-foreground"
+                            )}
+                          >
+                            <CalendarIcon className="ml-2 h-4 w-4 text-accent" />
+                            {date ? format(date, "PPP") : <span>اختر تاريخاً</span>}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                          <Calendar
+                            mode="single"
+                            selected={date}
+                            onSelect={setDate}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="seats">عدد المقاعد</Label>
+                      <Select onValueChange={(val) => setSearchSeats(parseInt(val))} defaultValue={String(searchSeats)}>
+                        <SelectTrigger id="seats">
+                          <SelectValue placeholder="1" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
+                            <SelectItem key={num} value={String(num)}>{num}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:col-span-2">
-                  <div className="grid gap-2">
-                    <Label htmlFor="travel-date">تاريخ السفر (تقريبي)</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal bg-background/50",
-                            !date && "text-muted-foreground"
-                          )}
-                        >
-                          <CalendarIcon className="ml-2 h-4 w-4 text-accent" />
-                          {date ? format(date, "PPP") : <span>اختر تاريخاً</span>}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={date}
-                          onSelect={setDate}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="seats">عدد المقاعد</Label>
-                    <Select onValueChange={(val) => setSearchSeats(parseInt(val))} defaultValue={String(searchSeats)}>
-                      <SelectTrigger id="seats">
-                        <SelectValue placeholder="1" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Array.from({ length: 9 }, (_, i) => i + 1).map(num => (
-                          <SelectItem key={num} value={String(num)}>{num}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>
           
             <div className="w-full max-w-4xl space-y-4">
+               <CardTitle className="text-cyan-400 text-center">يمكنك اختيار الرحلة المناسبة لك مباشرة</CardTitle>
               
-              <Card className="w-full shadow-lg rounded-lg border-border/60 bg-card/80 backdrop-blur-sm">
-                <CardHeader>
-                  <CardTitle className="text-cyan-400">يمكنك اختيار الرحلة المناسبة لك مباشرة</CardTitle>
-                </CardHeader>
-                <CardContent className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>الناقل</TableHead>
-                        <TableHead>الانطلاق</TableHead>
-                        <TableHead>الوجهة</TableHead>
-                        <TableHead>التاريخ</TableHead>
-                        <TableHead>الحالة</TableHead>
-                        <TableHead></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredScheduledTrips.map(trip => (
-                        <TableRow key={trip.id}>
-                          <TableCell>{trip.carrierName}</TableCell>
-                          <TableCell>{cities[trip.origin]}</TableCell>
-                          <TableCell>{cities[trip.destination]}</TableCell>
-                          <TableCell>{new Date(trip.departureDate).toLocaleDateString('ar-EG')}</TableCell>
-                          <TableCell><Badge variant="secondary">{trip.status}</Badge></TableCell>
-                          <TableCell>
-                            <Button variant="outline" size="sm">
-                              حجز
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {filteredScheduledTrips.length === 0 && (
-                        <TableRow>
-                            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                                لا توجد رحلات مجدولة تطابق بحثك. جرب تعديل الفلاتر أو قم بإنشاء طلب جديد.
-                            </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-                 <CardFooter className="p-4 md:p-6 border-t border-border/60 flex flex-col gap-2">
+               <div className="grid grid-cols-2 gap-4">
+                {filteredScheduledTrips.map(trip => (
+                  <ScheduledTripCard key={trip.id} trip={trip} />
+                ))}
+              </div>
+
+              {filteredScheduledTrips.length === 0 && (
+                  <div className="text-center text-muted-foreground py-8">
+                      <p>لا توجد رحلات مجدولة تطابق بحثك حالياً.</p>
+                      <p className="text-sm">جرب تعديل فلاتر البحث أو قم بإنشاء طلب جديد بالأسفل.</p>
+                  </div>
+              )}
+
+               <div className="pt-4">
                     <Button size="lg" className="w-full bg-[#B19C7D] hover:bg-[#a18c6d] text-white" onClick={handleCreateTripRequest}>
                         اطلب أسعار من الناقلين لرحلتك
                     </Button>
-                </CardFooter>
-              </Card>
+                </div>
             </div>
         </div>
 
@@ -385,9 +348,4 @@ export default function DashboardPage() {
       <LegalDisclaimerDialog isOpen={isLegalDisclaimerOpen} onOpenChange={setIsLegalDisclaimerOpen} onContinue={handleLegalConfirm} />
     </AppLayout>
   );
-
-    
-
-    
-
-    
+}
