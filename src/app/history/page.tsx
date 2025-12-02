@@ -231,6 +231,8 @@ export default function HistoryPage() {
   
   const userTripsQuery = useMemoFirebase(() => {
       if (!firestore || !user) return null;
+      // If user is not logged in for development, we can maybe show mock data.
+      // For now, let's just use the user's uid.
       return query(collection(firestore, 'trips'), where('userId', '==', user.uid));
   }, [firestore, user]);
 
@@ -249,11 +251,11 @@ export default function HistoryPage() {
   const { data: notifications } = useCollection<Notification>(notificationsQuery);
   const notificationCount = notifications?.length || 0;
 
-  useEffect(() => {
-    if (!isUserLoading && !user) {
-        router.push('/login');
-    }
-  }, [user, isUserLoading, router]);
+  // useEffect(() => {
+  //   if (!isUserLoading && !user) {
+  //       router.push('/login');
+  //   }
+  // }, [user, isUserLoading, router]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -272,7 +274,7 @@ export default function HistoryPage() {
     </div>
   );
 
-  if (isUserLoading) return <AppLayout>{renderSkeleton()}</AppLayout>;
+  if (isUserLoading && user) return <AppLayout>{renderSkeleton()}</AppLayout>;
 
 
   return (
@@ -313,7 +315,7 @@ export default function HistoryPage() {
 
         <Accordion type="multiple" className="w-full space-y-6 px-0 md:px-0" value={openAccordion} onValueChange={setOpenAccordion}>
           
-          {isLoading && renderSkeleton()}
+          {(isLoading && !allUserTrips) && renderSkeleton()}
           {hasAwaitingOffers && (
             <AccordionItem value="awaiting" className="border-none">
               <Card className="rounded-none md:rounded-lg">
@@ -352,7 +354,7 @@ export default function HistoryPage() {
             </AccordionItem>
           )}
           
-          {isLoading && renderSkeleton()}
+          {(isLoading && !allUserTrips) && renderSkeleton()}
           {hasConfirmedTrips && (
               <AccordionItem value="confirmed" className="border-none">
                 <Card className="rounded-none md:rounded-lg">
@@ -392,7 +394,7 @@ export default function HistoryPage() {
           }
         </Accordion>
         
-        {!isLoading && !hasAwaitingOffers && !hasConfirmedTrips && (
+        {!isLoading && !allUserTrips?.length && (
             <div className="text-center text-muted-foreground py-12">
                 <Ship className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
                 <p className="text-lg">لا يوجد لديك أي حجوزات أو طلبات حالياً.</p>
