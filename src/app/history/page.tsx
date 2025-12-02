@@ -32,7 +32,7 @@ import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Notification, Offer, Booking } from '@/lib/data';
 import { collection, query, where, doc, writeBatch, getDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
-import { Bell, CheckCircle, PackageOpen, Ship, Hourglass, XCircle, Info, Loader2 } from 'lucide-react';
+import { Bell, CheckCircle, PackageOpen, Ship, Hourglass, XCircle, Info, Loader2, CreditCard } from 'lucide-react';
 import { OfferCard } from '@/components/offer-card';
 import { useToast } from '@/hooks/use-toast';
 import { mockOffers } from '@/lib/data';
@@ -113,8 +113,23 @@ const BookingStatusManager = ({ trip, booking }: { trip: Trip; booking: Booking 
             </div>
         );
     }
+    
+    if (booking.status === 'Pending-Payment') {
+        return (
+            <div className="text-center p-8 space-y-4 bg-card/80 rounded-lg">
+                <CreditCard className="mx-auto h-12 w-12 text-green-500" />
+                <h3 className="text-xl font-bold text-foreground">تم تأكيد الحجز من قبل الناقل!</h3>
+                <p className="text-muted-foreground max-w-md mx-auto">
+                    الخطوة التالية هي دفع عربون الحجز لتأكيد مقاعدك بشكل نهائي.
+                </p>
+                <Button>
+                   الانتقال إلى الدفع
+                </Button>
+            </div>
+        );
+    }
 
-    // You can add more states here for 'Confirmed', 'Cancelled by Carrier', etc.
+    // Fallback for other statuses
     return (
         <div className="text-center p-8">
             <Info className="mx-auto h-12 w-12 text-blue-500" />
@@ -149,51 +164,75 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
         toast({ title: "جاري إرسال طلب الحجز...", description: "يرجى الانتظار."});
 
         const batch = writeBatch(firestore);
-
-        // 1. Create a new Booking document with 'Pending-Carrier-Confirmation' status
         const newBookingRef = doc(collection(firestore, 'bookings'));
-        const newBooking: Omit<Booking, 'id'> = {
-            tripId: trip.id,
-            userId: user.uid,
-            carrierId: selectedOffer.carrierId,
-            seats: trip.passengers || 1,
-            status: 'Pending-Carrier-Confirmation',
-            totalPrice: selectedOffer.price,
-        };
-        batch.set(newBookingRef, newBooking);
-        
-        // 2. Update the Trip document
-        const tripRef = doc(firestore, 'trips', trip.id);
-        batch.update(tripRef, {
-            acceptedOfferId: selectedOffer.id,
-            currentBookingId: newBookingRef.id,
-            status: 'Planned' // The trip is planned, just awaiting final seat confirmation
-        });
-        
-        // 3. Update the Offer document status to 'Accepted'
-        const offerRef = doc(firestore, `trips/${trip.id}/offers`, selectedOffer.id);
-        batch.update(offerRef, { status: 'Accepted' });
 
-        // 4. Create a notification for the carrier
-        const carrierNotifRef = doc(collection(firestore, `users/${selectedOffer.carrierId}/notifications`));
-        const notification: Partial<Notification> = {
-            userId: selectedOffer.carrierId,
-            title: "طلب حجز جديد!",
-            message: `عليك تفعيل شاشة الحجز`,
-            type: 'new_booking_request',
-            isRead: false,
-            createdAt: serverTimestamp() as unknown as string,
-            link: `/carrier/bookings/${newBookingRef.id}` // Example link for carrier dashboard
-        };
-        batch.set(carrierNotifRef, notification);
-
+        // Step 1: Create initial booking and notification for carrier
         try {
+            const newBooking: Omit<Booking, 'id'> = {
+                tripId: trip.id,
+                userId: user.uid,
+                carrierId: selectedOffer.carrierId,
+                seats: trip.passengers || 1,
+                status: 'Pending-Carrier-Confirmation',
+                totalPrice: selectedOffer.price,
+            };
+            batch.set(newBookingRef, newBooking);
+            
+            const tripRef = doc(firestore, 'trips', trip.id);
+            batch.update(tripRef, {
+                acceptedOfferId: selectedOffer.id,
+                currentBookingId: newBookingRef.id,
+                status: 'Planned'
+            });
+            
+            const offerRef = doc(firestore, `trips/${trip.id}/offers`, selectedOffer.id);
+            batch.update(offerRef, { status: 'Accepted' });
+
+            const carrierNotifRef = doc(collection(firestore, `users/${selectedOffer.carrierId}/notifications`));
+            const carrierNotification: Partial<Notification> = {
+                userId: selectedOffer.carrierId,
+                title: "طلب حجز جديد!",
+                message: `عليك تفعيل شاشة الحجز`,
+                type: 'new_booking_request',
+                isRead: false,
+                createdAt: serverTimestamp() as unknown as string,
+                link: `/carrier/bookings/${newBookingRef.id}`
+            };
+            batch.set(carrierNotifRef, carrierNotification);
+
             await batch.commit();
             toast({
                 title: "تم إرسال الطلب بنجاح",
-                description: "سيقوم الناقل بمراجعة طلبك.",
+                description: "بانتظار موافقة الناقل. سيتم تحديث الصفحة تلقائياً.",
             });
-            // The UI will update automatically because the trip's state (currentBookingId) has changed
+
+            // Step 2: Simulate carrier approval after 30 seconds
+            setTimeout(() => {
+                const approveBatch = writeBatch(firestore);
+                
+                // Update booking status
+                const bookingToApproveRef = doc(firestore, 'bookings', newBookingRef.id);
+                approveBatch.update(bookingToApproveRef, { status: 'Pending-Payment' });
+
+                // Send notification to user
+                const userNotifRef = doc(collection(firestore, `users/${user.uid}/notifications`));
+                const userNotification: Partial<Notification> = {
+                    userId: user.uid,
+                    title: "تم تأكيد طلب الحجز!",
+                    message: "تم تأكيد حجزك من قبل الناقل. يمكنك الآن الدفع.",
+                    type: 'booking_confirmed',
+                    isRead: false,
+                    createdAt: serverTimestamp() as unknown as string,
+                    link: `/history`
+                };
+                approveBatch.set(userNotifRef, userNotification);
+                
+                approveBatch.commit().catch(err => {
+                    console.error("Failed to simulate carrier approval:", err);
+                });
+
+            }, 30000); // 30 seconds delay
+
         } catch (error) {
             console.error("Failed to create pending booking:", error);
             toast({
@@ -276,11 +315,6 @@ export default function HistoryPage() {
   const { data: notifications } = useCollection<Notification>(notificationsQuery);
   const notificationCount = notifications?.filter(n => !n.isRead).length || 0;
 
-   // useEffect(() => {
-   //   if (!isUserLoading && !user) {
-   //       router.push('/signup');
-   //   }
-   // }, [user, isUserLoading, router]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -385,7 +419,7 @@ export default function HistoryPage() {
              <AccordionItem value="planned" className="border-none">
               <Card className="rounded-none md:rounded-lg">
                 <AccordionTrigger className="p-6 text-lg hover:no-underline">
-                  <div className='flex items-center gap-2'><Hourglass className="h-6 w-6 text-yellow-500" /><CardTitle>حجوزات بانتظار التأكيد</CardTitle></div>
+                  <div className='flex items-center gap-2'><Hourglass className="h-6 w-6 text-yellow-500" /><CardTitle>حجوزات بانتظار التأكيد أو الدفع</CardTitle></div>
                 </AccordionTrigger>
                 <AccordionContent className="p-0">
                     <Accordion type="single" collapsible className="w-full">
@@ -467,3 +501,4 @@ export default function HistoryPage() {
     </AppLayout>
   );
 }
+

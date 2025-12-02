@@ -110,3 +110,4 @@ export function OfferCard({ offer, trip, onAccept }: OfferCardProps) {
     
   );
 }
+
