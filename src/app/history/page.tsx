@@ -26,7 +26,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useDoc, errorEmitter, FirestorePermissionError } from '@/firebase';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -227,8 +227,16 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
                 };
                 approveBatch.set(userNotifRef, userNotification);
                 
-                approveBatch.commit().catch(err => {
-                    console.error("Failed to simulate carrier approval:", err);
+                approveBatch.commit().catch(serverError => {
+                    const permissionError = new FirestorePermissionError({
+                        path: `batch write including bookings/${newBookingRef.id} and users/${user.uid}/notifications`,
+                        operation: 'write',
+                        requestResourceData: { 
+                            bookingUpdate: { status: 'Pending-Payment' }, 
+                            notification: userNotification 
+                        },
+                    });
+                    errorEmitter.emit('permission-error', permissionError);
                 });
 
             }, 30000); // 30 seconds delay
@@ -501,4 +509,3 @@ export default function HistoryPage() {
     </AppLayout>
   );
 }
-
