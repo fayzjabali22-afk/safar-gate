@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -202,7 +201,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-[#B1B83D] px-4 text-black md:px-6 shadow-md">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-[#B89F3D] px-4 text-black md:px-6 shadow-md">
         {/* Mobile: Left side (Menu) */}
         <div className="flex items-center md:hidden">
           <Sheet>
@@ -408,5 +407,3 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </TooltipProvider>
   );
 }
-
-    
