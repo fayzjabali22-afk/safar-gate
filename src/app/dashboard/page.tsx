@@ -162,12 +162,12 @@ export default function DashboardPage() {
         <div className="flex flex-col items-center gap-8 p-2 lg:p-4">
           <header className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">أين وجهتك التالية؟</h1>
-            <p className="text-muted-foreground mt-2">املأ تفاصيل رحلتك واحصل على أفضل العروض أو ابحث عن رحلة مجدولة.</p>
+            <p className="text-muted-foreground mt-2">ابحث عن رحلة أو اطلب أسعارًا من أفضل شركات النقل.</p>
           </header>
 
           <Card className="w-full max-w-2xl shadow-lg rounded-lg border-border/60 bg-card/80 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle>بحث عن رحلة أو إنشاء طلب</CardTitle>
+              <CardTitle>ابحث عن رحلة أو أنشئ طلبًا</CardTitle>
               <CardDescription>استخدم النموذج التالي للبحث عن رحلات مجدولة أو لإنشاء طلب رحلة مخصصة.</CardDescription>
             </CardHeader>
             <CardContent className="p-4 md:p-6">
@@ -327,13 +327,8 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
           
-            {/* Section 2: Scheduled Trips */}
             <div className="w-full max-w-4xl space-y-4">
-              <header className="text-center">
-                <h2 className="text-2xl font-bold tracking-tight text-foreground">الرحلات المجدولة</h2>
-                <p className="text-muted-foreground mt-2">إذا وجدت رحلة مناسبة، يمكنك حجزها مباشرة.</p>
-              </header>
-
+              
               <Card className="w-full shadow-lg rounded-lg border-border/60 bg-card/80 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle>نتائج البحث للرحلات المجدولة</CardTitle>
@@ -376,7 +371,7 @@ export default function DashboardPage() {
                   </Table>
                 </CardContent>
                  <CardFooter className="p-4 md:p-6 border-t border-border/60 flex flex-col gap-2">
-                    <p className="text-sm text-muted-foreground text-center mb-2">لم تجد ما تبحث عنه؟</p>
+                    <p className="text-sm text-muted-foreground text-center mb-2">لم تجد رحلة مناسبة في الجدول أعلاه؟</p>
                     <Button size="lg" className="w-full bg-[#B19C7D] hover:bg-[#a18c6d] text-white" onClick={handleCreateTripRequest}>
                         اطلب أسعار من الناقلين لرحلتك
                     </Button>
@@ -392,5 +387,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
-    
