@@ -46,6 +46,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { scheduledTrips } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
+import { LegalDisclaimerDialog } from '@/components/legal-disclaimer-dialog';
 
 
 // Mock data for countries and cities
@@ -72,6 +73,9 @@ export default function DashboardPage() {
   const { user } = useUser();
   const firestore = useFirestore();
   const [isAuthRedirectOpen, setIsAuthRedirectOpen] = useState(false);
+  const [isLegalDisclaimerOpen, setIsLegalDisclaimerOpen] = useState(false);
+  const [tripRequestData, setTripRequestData] = useState<Omit<Trip, 'id' | 'userId' | 'status' | 'departureDate'> | null>(null);
+
 
   const [searchOriginCountry, setSearchOriginCountry] = useState('');
   const [searchOriginCity, setSearchOriginCity] = useState('');
@@ -95,6 +99,29 @@ export default function DashboardPage() {
     setSearchDestinationCity('');
   }, [searchDestinationCountry]);
 
+  const handleLegalConfirm = async () => {
+    setIsLegalDisclaimerOpen(false);
+    if (!user || !firestore || !tripRequestData || !date) return;
+
+    const newTrip: Omit<Trip, 'id'> = {
+        userId: user.uid,
+        origin: tripRequestData.origin,
+        destination: tripRequestData.destination,
+        departureDate: date.toISOString(),
+        status: 'Awaiting-Offers',
+        passengers: tripRequestData.passengers,
+    };
+    
+    try {
+        const tripRef = await addDoc(collection(firestore, 'trips'), newTrip);
+        toast({ title: "تم إرسال طلبك!", description: "تم إرسال طلب رحلتك إلى الناقلين." });
+        router.push('/history'); // Redirect to history to see the new request
+    } catch (error) {
+        console.error("Error creating trip request:", error);
+        toast({ title: "خطأ", description: "لم نتمكن من إنشاء طلب رحلتك.", variant: "destructive" });
+    }
+  };
+
 
   const handleCreateTripRequest = async () => {
     if (!user) {
@@ -102,33 +129,22 @@ export default function DashboardPage() {
         return;
     }
     
-    if (!firestore || !searchOriginCity || !searchDestinationCity || !date) {
-        toast({ title: "Incomplete Data", description: "Please fill all trip details.", variant: "destructive" });
+    if (!searchOriginCity || !searchDestinationCity || !date) {
+        toast({ title: "بيانات غير مكتملة", description: "الرجاء ملء جميع تفاصيل الرحلة.", variant: "destructive" });
         return;
     }
 
-    const newTrip: Omit<Trip, 'id'> = {
-        userId: user.uid,
+    const currentTripData = {
         origin: searchOriginCity,
         destination: searchDestinationCity,
-        departureDate: date.toISOString(),
-        status: 'Awaiting-Offers',
         passengers: searchSeats,
     };
     
-    try {
-        const tripRef = await addDoc(collection(firestore, 'trips'), newTrip);
-        toast({ title: "Request Sent!", description: "Your trip request has been sent to carriers." });
-        router.push('/history'); // Redirect to history to see the new request
-    } catch (error) {
-        console.error("Error creating trip request:", error);
-        toast({ title: "Error", description: "Could not create your trip request.", variant: "destructive" });
-    }
+    setTripRequestData(currentTripData);
+    setIsLegalDisclaimerOpen(true);
   };
 
   const handleAuthSuccess = () => {
-    // This function will be called after successful login/signup.
-    // We can now proceed with the trip creation.
     handleCreateTripRequest();
   };
 
@@ -320,6 +336,21 @@ export default function DashboardPage() {
               <CardTitle>تصفية الرحلات</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+                <RadioGroup defaultValue="all" className="flex items-center gap-4" onValueChange={setFilterVehicle}>
+                <Label>نوع المركبة:</Label>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="all" id="r-all" />
+                  <Label htmlFor="r-all">الكل</Label>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="small" id="r-car" />
+                  <Label htmlFor="r-car" className="flex items-center gap-2"><Car/>سيارة</Label>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="bus" id="r-bus" />
+                  <Label htmlFor="r-bus" className="flex items-center gap-2"><Bus/>حافلة</Label>
+                </div>
+              </RadioGroup>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <Select onValueChange={setFilterOrigin} value={filterOrigin}>
                   <SelectTrigger><SelectValue placeholder="أي نقطة انطلاق" /></SelectTrigger>
@@ -338,21 +369,6 @@ export default function DashboardPage() {
                   <Input placeholder="البحث عن ناقل..." className="pl-10" onChange={e => setFilterCarrier(e.target.value)} />
                 </div>
               </div>
-              <RadioGroup defaultValue="all" className="flex items-center gap-4" onValueChange={setFilterVehicle}>
-                <Label>نوع المركبة:</Label>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="all" id="r-all" />
-                  <Label htmlFor="r-all">الكل</Label>
-                </div>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="small" id="r-car" />
-                  <Label htmlFor="r-car" className="flex items-center gap-2"><Car/>سيارة</Label>
-                </div>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="bus" id="r-bus" />
-                  <Label htmlFor="r-bus" className="flex items-center gap-2"><Bus/>حافلة</Label>
-                </div>
-              </RadioGroup>
             </CardContent>
             <CardContent>
               <Table>
@@ -396,6 +412,7 @@ export default function DashboardPage() {
 
       </div>
       <AuthRedirectDialog isOpen={isAuthRedirectOpen} onOpenChange={setIsAuthRedirectOpen} onLoginSuccess={handleAuthSuccess} />
+      <LegalDisclaimerDialog isOpen={isLegalDisclaimerOpen} onOpenChange={setIsLegalDisclaimerOpen} onContinue={handleLegalConfirm} />
     </AppLayout>
   );
 }

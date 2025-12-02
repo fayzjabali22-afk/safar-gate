@@ -9,7 +9,7 @@ import {
   GoogleAuthProvider,
   signInWithPopup,
 } from 'firebase/auth';
-import { Firestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { Firestore, doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { toast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/data';
 import { actionCodeSettings } from './config';
@@ -71,7 +71,8 @@ export async function initiateEmailSignUp(
     // Step 2: Create the user's profile document in Firestore
     try {
         const userRef = doc(firestore, 'users', user.uid);
-        await setDoc(userRef, profileData, { merge: true });
+        // Add serverTimestamp for creation date if needed for user profile
+        await setDoc(userRef, { ...profileData, createdAt: serverTimestamp() });
     } catch (firestoreError: any) {
         toast({
             variant: "destructive",
@@ -145,7 +146,7 @@ export async function initiateGoogleSignIn(auth: Auth, firestore: Firestore): Pr
         email: user.email!,
         phoneNumber: user.phoneNumber || '',
       };
-      await setDoc(userRef, newUserProfile);
+      await setDoc(userRef, { ...newUserProfile, createdAt: serverTimestamp() });
     }
     
     // After sign-in (and profile creation if needed), user is redirected by the auth state listener.
@@ -167,5 +168,3 @@ export async function initiateGoogleSignIn(auth: Auth, firestore: Firestore): Pr
     return false;
   }
 }
-
-    

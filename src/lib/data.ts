@@ -55,12 +55,12 @@ export type Offer = {
     status: 'Pending' | 'Accepted' | 'Rejected';
     createdAt: string; // ISO 8601 format
     // Vehicle details provided in the offer
-    vehicleType: string;
-    vehicleCategory: 'small' | 'bus';
-    vehicleModelYear: number;
-    availableSeats: number;
+    vehicleType?: string;
+    vehicleCategory?: 'small' | 'bus';
+    vehicleModelYear?: number;
+    availableSeats?: number;
     // New deposit field
-    depositPercentage: number;
+    depositPercentage?: number;
 };
 
 export type Notification = {
@@ -163,3 +163,4 @@ export const mockOffers: Offer[] = [
         depositPercentage: 25,
     }
 ];
+
