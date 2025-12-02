@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { CarrierProfile, Trip } from '@/lib/data';
@@ -50,7 +51,7 @@ const CarrierInfo = ({ carrierId, carrierName }: { carrierId: string; carrierNam
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-3">
+      <div class="flex items-center gap-3">
         <Skeleton className="h-10 w-10 rounded-full" />
         <div className="space-y-2">
           <Skeleton className="h-4 w-[120px]" />
