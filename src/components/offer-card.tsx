@@ -5,7 +5,7 @@ import type { Offer, CarrierProfile, Trip } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
-import { HandCoins, MessageCircle, Star, ThumbsUp, Car, Calendar, Users, Percent } from 'lucide-react';
+import { HandCoins, MessageCircle, Star, ThumbsUp, Car, Calendar, Users, Percent, Send } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
@@ -100,7 +100,10 @@ export function OfferCard({ offer, trip, onAccept }: OfferCardProps) {
               )}
             </CardContent>
             <CardFooter className="flex p-2 bg-background/30">
-                
+                <Button className="w-full" onClick={handleAcceptClick}>
+                    <Send className="ml-2 h-4 w-4" />
+                    إرسال طلب الحجز
+                </Button>
             </CardFooter>
         </Card>
 

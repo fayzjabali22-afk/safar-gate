@@ -31,7 +31,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Notification, Offer, Booking } from '@/lib/data';
-import { collection, query, where, doc, writeBatch, getDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, doc, writeBatch, getDoc, serverTimestamp, updateDoc, deleteDoc } from 'firebase/firestore';
 import { Bell, CheckCircle, PackageOpen, Ship, Hourglass, XCircle, Info, Loader2 } from 'lucide-react';
 import { OfferCard } from '@/components/offer-card';
 import { useToast } from '@/hooks/use-toast';
@@ -62,9 +62,13 @@ const cities: { [key: string]: string } = {
 
 const BookingStatusManager = ({ trip, booking }: { trip: Trip; booking: Booking }) => {
     const firestore = useFirestore();
+    const { toast } = useToast();
 
     const handleCancelRequest = async () => {
-        if (!firestore || !trip.acceptedOfferId || !trip.currentBookingId) return;
+        if (!firestore || !trip.id || !trip.acceptedOfferId || !trip.currentBookingId) {
+            toast({ title: "خطأ", description: "بيانات الرحلة غير مكتملة.", variant: "destructive"});
+            return;
+        };
 
         const batch = writeBatch(firestore);
 
@@ -75,10 +79,11 @@ const BookingStatusManager = ({ trip, booking }: { trip: Trip; booking: Booking 
         // 1. Delete the booking document
         batch.delete(bookingRef);
         
-        // 2. Update the trip document to remove booking/offer references
+        // 2. Update the trip document to remove booking/offer references and revert status
         batch.update(tripRef, {
             acceptedOfferId: null,
             currentBookingId: null,
+            status: 'Awaiting-Offers'
         });
 
         // 3. Revert the offer status to 'Pending'
@@ -86,9 +91,11 @@ const BookingStatusManager = ({ trip, booking }: { trip: Trip; booking: Booking 
 
         try {
             await batch.commit();
+            toast({ title: "تم الإلغاء", description: "تم إلغاء طلب الحجز بنجاح."});
             // The UI will automatically update as the state changes
         } catch (error) {
             console.error("Failed to cancel booking:", error);
+            toast({ title: "خطأ", description: "فشل إلغاء طلب الحجز.", variant: "destructive"});
         }
     };
     
@@ -98,9 +105,8 @@ const BookingStatusManager = ({ trip, booking }: { trip: Trip; booking: Booking 
                 <Hourglass className="mx-auto h-12 w-12 text-primary animate-pulse" />
                 <h3 className="text-xl font-bold text-foreground">بانتظار تأكيد الناقل</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                    سفريات بانتظar تأكيد المقاعد من الناقل. فور موافقة الناقل وفتح شاشة الحجز، سيصلك إشعار فوري لتتمكن من إكمال الحجز بسهولة. يحرص فريق سفريات على تنظيم العملية وعدم تراكم الحجوزات لدى الناقل.
+                    تم إرسال طلبك بنجاح. سيقوم الناقل بمراجعة طلبك وتفعيل شاشة الدفع لإتمام الحجز. سيصلك إشعار فور تأكيد الناقل.
                 </p>
-                <p className="text-sm text-accent">قوم بمتابعة اعملك دقائق ويصلك الاشعار</p>
                 <Button variant="destructive" onClick={handleCancelRequest}>
                     إلغاء الطلب
                 </Button>
@@ -139,13 +145,14 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
 
     const handleAcceptOffer = async (selectedOffer: Offer) => {
         if (!firestore || !user) return;
+        
+        toast({ title: "جاري إرسال طلب الحجز...", description: "يرجى الانتظار."});
 
         const batch = writeBatch(firestore);
 
         // 1. Create a new Booking document with 'Pending-Carrier-Confirmation' status
         const newBookingRef = doc(collection(firestore, 'bookings'));
-        const newBooking: Booking = {
-            id: newBookingRef.id,
+        const newBooking: Omit<Booking, 'id'> = {
             tripId: trip.id,
             userId: user.uid,
             carrierId: selectedOffer.carrierId,
@@ -163,7 +170,7 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
             status: 'Planned' // The trip is planned, just awaiting final seat confirmation
         });
         
-        // 3. Update the Offer document
+        // 3. Update the Offer document status to 'Accepted'
         const offerRef = doc(firestore, `trips/${trip.id}/offers`, selectedOffer.id);
         batch.update(offerRef, { status: 'Accepted' });
 
@@ -172,16 +179,20 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
         const notification: Partial<Notification> = {
             userId: selectedOffer.carrierId,
             title: "طلب حجز جديد!",
-            message: `لديك طلب حجز جديد لرحلة من ${cities[trip.origin] || trip.origin} إلى ${cities[trip.destination] || trip.destination}. الرجاء التأكيد.`,
+            message: `عليك تفعيل شاشة الحجز`,
             type: 'new_booking_request',
             isRead: false,
             createdAt: serverTimestamp() as unknown as string,
-            link: `/carrier/bookings/${newBookingRef.id}` // Example link
+            link: `/carrier/bookings/${newBookingRef.id}` // Example link for carrier dashboard
         };
         batch.set(carrierNotifRef, notification);
 
         try {
             await batch.commit();
+            toast({
+                title: "تم إرسال الطلب بنجاح",
+                description: "سيقوم الناقل بمراجعة طلبك.",
+            });
             // The UI will update automatically because the trip's state (currentBookingId) has changed
         } catch (error) {
             console.error("Failed to create pending booking:", error);
@@ -194,9 +205,20 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
     };
     
     // If there's an active booking, show the status manager
-    if (booking && trip.currentBookingId) {
+    if (trip.currentBookingId && booking) {
         return <BookingStatusManager trip={trip} booking={booking} />;
     }
+    
+    // If we are loading booking information, show a loader
+    if (isLoadingBooking) {
+        return (
+            <div className="flex justify-center items-center p-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="mr-4">جاري تحميل بيانات الحجز...</p>
+            </div>
+        )
+    }
+
 
     const availableOffers = offers && offers.length > 0 ? offers : mockOffers.filter(o => o.tripId === trip.id);
 
@@ -231,8 +253,6 @@ export default function HistoryPage() {
   
   const userTripsQuery = useMemoFirebase(() => {
       if (!firestore || !user) return null;
-      // If user is not logged in for development, we can maybe show mock data.
-      // For now, let's just use the user's uid.
       return query(collection(firestore, 'trips'), where('userId', '==', user.uid));
   }, [firestore, user]);
 
@@ -249,13 +269,13 @@ export default function HistoryPage() {
     return query(collection(firestore, `users/${user.uid}/notifications`));
   }, [firestore, user]);
   const { data: notifications } = useCollection<Notification>(notificationsQuery);
-  const notificationCount = notifications?.length || 0;
+  const notificationCount = notifications?.filter(n => !n.isRead).length || 0;
 
-  // useEffect(() => {
-  //   if (!isUserLoading && !user) {
-  //       router.push('/login');
-  //   }
-  // }, [user, isUserLoading, router]);
+   // useEffect(() => {
+   //   if (!isUserLoading && !user) {
+   //       router.push('/signup');
+   //   }
+   // }, [user, isUserLoading, router]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -274,7 +294,7 @@ export default function HistoryPage() {
     </div>
   );
 
-  if (isUserLoading && user) return <AppLayout>{renderSkeleton()}</AppLayout>;
+  if (isUserLoading && !user) return <AppLayout>{renderSkeleton()}</AppLayout>;
 
 
   return (
@@ -316,6 +336,7 @@ export default function HistoryPage() {
         <Accordion type="multiple" className="w-full space-y-6 px-0 md:px-0" value={openAccordion} onValueChange={setOpenAccordion}>
           
           {(isLoading && !allUserTrips) && renderSkeleton()}
+          
           {hasAwaitingOffers && (
             <AccordionItem value="awaiting" className="border-none">
               <Card className="rounded-none md:rounded-lg">
@@ -353,8 +374,41 @@ export default function HistoryPage() {
                 </Card>
             </AccordionItem>
           )}
+
+          {allUserTrips?.filter(t => t.status === 'Planned').length > 0 && (
+             <AccordionItem value="planned" className="border-none">
+              <Card className="rounded-none md:rounded-lg">
+                <AccordionTrigger className="p-6 text-lg hover:no-underline">
+                  <div className='flex items-center gap-2'><Hourglass className="h-6 w-6 text-yellow-500" /><CardTitle>حجوزات بانتظار التأكيد</CardTitle></div>
+                </AccordionTrigger>
+                <AccordionContent className="p-0">
+                    <Accordion type="single" collapsible className="w-full">
+                        {allUserTrips?.filter(t => t.status === 'Planned').map(trip => (
+                            <AccordionItem value={trip.id} key={trip.id} className="border-none">
+                                 <Card className="overflow-hidden rounded-none">
+                                    <AccordionTrigger className="p-4 bg-card/80 hover:no-underline data-[state=closed]:rounded-b-none">
+                                        <div className="flex justify-between items-center w-full">
+                                            <div className="text-right">
+                                                <div className="flex items-center gap-3">
+                                                    <p className="font-bold text-base">{cities[trip.origin as keyof typeof cities] || trip.origin} إلى {cities[trip.destination as keyof typeof cities] || trip.destination}</p>
+                                                    <p className="text-sm text-muted-foreground">({new Date(trip.departureDate).toLocaleDateString('ar-SA')})</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="p-0">
+                                        <TripOfferManager trip={trip} />
+                                    </AccordionContent>
+                                </Card>
+                            </AccordionItem>
+                        ))}
+                    </Accordion>
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          )}
           
-          {(isLoading && !allUserTrips) && renderSkeleton()}
+          
           {hasConfirmedTrips && (
               <AccordionItem value="confirmed" className="border-none">
                 <Card className="rounded-none md:rounded-lg">

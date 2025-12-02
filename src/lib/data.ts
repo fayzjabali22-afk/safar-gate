@@ -68,7 +68,7 @@ export type Notification = {
     userId: string;
     title: string;
     message: string;
-    type: 'new_offer' | 'booking_confirmed' | 'trip_update' | 'payment_reminder';
+    type: 'new_offer' | 'booking_confirmed' | 'trip_update' | 'payment_reminder' | 'new_booking_request';
     isRead: boolean;
     createdAt: string; // ISO 8601 format
     link?: string;
