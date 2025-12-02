@@ -250,7 +250,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         
         {/* Center Section: Title */}
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <h1 className="text-xl font-bold">Safar Carrier</h1>
+             <Image 
+                src="https://i.postimg.cc/rzXN6mS5/lwjw-sfryat.png" 
+                alt="Safar Carrier Logo"
+                width={145}
+                height={110}
+                priority
+             />
         </div>
 
         {/* Desktop: Right Side Elements & Mobile: Far left user menu */}
