@@ -162,7 +162,7 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-0 md:p-4 bg-[#130609] rounded-lg space-y-12">
+      <div className="container mx-auto p-0 md:p-4 bg-[#130609] rounded-lg space-y-8">
         
         {/* Section 1: Trip Request Form */}
         <div className="flex flex-col items-center gap-8 p-2 lg:p-4">
@@ -220,21 +220,6 @@ export default function DashboardPage() {
                 )}
                  <div className="grid gap-3">
                   <Label className="text-base">الخطوة الثانية: أدخل تفاصيل رحلتك</Label>
-                <RadioGroup defaultValue="all" className="flex items-center gap-4" onValueChange={setFilterVehicle}>
-                <Label>نوع المركبة:</Label>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="all" id="r-all-req" />
-                  <Label htmlFor="r-all-req">الكل</Label>
-                </div>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="small" id="r-car-req" />
-                  <Label htmlFor="r-car-req" className="flex items-center gap-2"><Car/>سيارة</Label>
-                </div>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="bus" id="r-bus-req" />
-                  <Label htmlFor="r-bus-req" className="flex items-center gap-2"><Bus/>حافلة</Label>
-                </div>
-              </RadioGroup>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="origin-country">دولة الانطلاق</Label>
@@ -279,8 +264,8 @@ export default function DashboardPage() {
                         <SelectTrigger id="destination-city"><SelectValue placeholder="اختر مدينة الوصول" /></SelectTrigger>
                         <SelectContent>
                           {searchDestinationCountry && countries[searchDestinationCountry as keyof typeof countries]?.cities.map(cityKey => (
-                            <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
-                          ))}
+                              <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -327,7 +312,21 @@ export default function DashboardPage() {
                     </Select>
                   </div>
                 </div>
-                
+                 <RadioGroup defaultValue="all" className="flex items-center gap-4" onValueChange={setFilterVehicle}>
+                <Label>نوع المركبة:</Label>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="all" id="r-all-req" />
+                  <Label htmlFor="r-all-req">الكل</Label>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="small" id="r-car-req" />
+                  <Label htmlFor="r-car-req" className="flex items-center gap-2"><Car/>سيارة</Label>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="bus" id="r-bus-req" />
+                  <Label htmlFor="r-bus-req" className="flex items-center gap-2"><Bus/>حافلة</Label>
+                </div>
+              </RadioGroup>
               </div>
             </CardContent>
             <CardFooter className="p-4 md:p-6 border-t border-border/60 flex flex-col gap-2">
@@ -336,93 +335,98 @@ export default function DashboardPage() {
               </Button>
             </CardFooter>
           </Card>
+          
+           <div className="text-center my-8">
+                <p className="text-muted-foreground">أو يمكنك اختيار رحلتك من الرحلات المجدولة بالاسفل، قم باختيار المناسب لك.</p>
+            </div>
+
+            {/* Section 2: Scheduled Trips */}
+            <div className="w-full max-w-4xl space-y-8">
+              <header className="text-center">
+                <h2 className="text-2xl font-bold tracking-tight text-foreground">الرحلات المجدولة</h2>
+                <p className="text-muted-foreground mt-2">ابحث عن الرحلات المجدولة من قبل الناقلين واحجز مقعدك مباشرة.</p>
+              </header>
+
+              <Card className="w-full shadow-lg rounded-lg border-border/60 bg-card/80 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle>تصفية الرحلات</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <RadioGroup defaultValue="all" className="flex items-center gap-4" onValueChange={setFilterVehicle}>
+                    <Label>نوع المركبة:</Label>
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <RadioGroupItem value="all" id="r-all" />
+                      <Label htmlFor="r-all">الكل</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <RadioGroupItem value="small" id="r-car" />
+                      <Label htmlFor="r-car" className="flex items-center gap-2"><Car/>سيارة</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <RadioGroupItem value="bus" id="r-bus" />
+                      <Label htmlFor="r-bus" className="flex items-center gap-2"><Bus/>حافلة</Label>
+                    </div>
+                  </RadioGroup>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Select onValueChange={setFilterOrigin} value={filterOrigin}>
+                      <SelectTrigger><SelectValue placeholder="أي نقطة انطلاق" /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(cities).map(([key, city]) => <SelectItem key={key} value={key}>{city}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Select onValueChange={setFilterDestination} value={filterDestination}>
+                      <SelectTrigger><SelectValue placeholder="أي نقطة وصول" /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(cities).map(([key, city]) => <SelectItem key={key} value={key}>{city}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input placeholder="البحث عن ناقل..." className="pl-10" onChange={e => setFilterCarrier(e.target.value)} />
+                    </div>
+                  </div>
+                </CardContent>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>الناقل</TableHead>
+                        <TableHead>الانطلاق</TableHead>
+                        <TableHead>الوجهة</TableHead>
+                        <TableHead>التاريخ</TableHead>
+                        <TableHead>الحالة</TableHead>
+                        <TableHead></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredScheduledTrips.map(trip => (
+                        <TableRow key={trip.id}>
+                          <TableCell>{trip.carrierName}</TableCell>
+                          <TableCell>{cities[trip.origin]}</TableCell>
+                          <TableCell>{cities[trip.destination]}</TableCell>
+                          <TableCell>{new Date(trip.departureDate).toLocaleDateString('ar-EG')}</TableCell>
+                          <TableCell><Badge variant="secondary">{trip.status}</Badge></TableCell>
+                          <TableCell>
+                            <Button variant="outline" size="sm">
+                              حجز
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {filteredScheduledTrips.length === 0 && (
+                        <TableRow>
+                            <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                                لا توجد رحلات مجدولة تطابق بحثك.
+                            </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
         </div>
 
-        {/* Section 2: Scheduled Trips */}
-        <div className="space-y-8 p-2 lg:p-4">
-          <header className="text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-foreground">الرحلات المجدولة</h2>
-            <p className="text-muted-foreground mt-2">ابحث عن الرحلات المجدولة من قبل الناقلين واحجز مقعدك مباشرة.</p>
-          </header>
-
-          <Card className="w-full shadow-lg rounded-lg border-border/60 bg-card/80 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle>تصفية الرحلات</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <RadioGroup defaultValue="all" className="flex items-center gap-4" onValueChange={setFilterVehicle}>
-                <Label>نوع المركبة:</Label>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="all" id="r-all" />
-                  <Label htmlFor="r-all">الكل</Label>
-                </div>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="small" id="r-car" />
-                  <Label htmlFor="r-car" className="flex items-center gap-2"><Car/>سيارة</Label>
-                </div>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="bus" id="r-bus" />
-                  <Label htmlFor="r-bus" className="flex items-center gap-2"><Bus/>حافلة</Label>
-                </div>
-              </RadioGroup>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Select onValueChange={setFilterOrigin} value={filterOrigin}>
-                  <SelectTrigger><SelectValue placeholder="أي نقطة انطلاق" /></SelectTrigger>
-                  <SelectContent>
-                     {Object.entries(cities).map(([key, city]) => <SelectItem key={key} value={key}>{city}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Select onValueChange={setFilterDestination} value={filterDestination}>
-                  <SelectTrigger><SelectValue placeholder="أي نقطة وصول" /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(cities).map(([key, city]) => <SelectItem key={key} value={key}>{city}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="البحث عن ناقل..." className="pl-10" onChange={e => setFilterCarrier(e.target.value)} />
-                </div>
-              </div>
-            </CardContent>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>الناقل</TableHead>
-                    <TableHead>الانطلاق</TableHead>
-                    <TableHead>الوجهة</TableHead>
-                    <TableHead>التاريخ</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredScheduledTrips.map(trip => (
-                    <TableRow key={trip.id}>
-                      <TableCell>{trip.carrierName}</TableCell>
-                      <TableCell>{cities[trip.origin]}</TableCell>
-                      <TableCell>{cities[trip.destination]}</TableCell>
-                      <TableCell>{new Date(trip.departureDate).toLocaleDateString('ar-EG')}</TableCell>
-                      <TableCell><Badge variant="secondary">{trip.status}</Badge></TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm">
-                          حجز
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {filteredScheduledTrips.length === 0 && (
-                    <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                            لا توجد رحلات مجدولة تطابق بحثك.
-                        </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </div>
 
       </div>
       <AuthRedirectDialog isOpen={isAuthRedirectOpen} onOpenChange={setIsAuthRedirectOpen} onLoginSuccess={handleAuthSuccess} />
@@ -430,5 +434,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
-    
