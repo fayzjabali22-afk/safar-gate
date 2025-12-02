@@ -218,9 +218,23 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 )}
-
-                <div className="grid gap-3">
+                 <div className="grid gap-3">
                   <Label className="text-base">الخطوة الثانية: أدخل تفاصيل رحلتك</Label>
+                <RadioGroup defaultValue="all" className="flex items-center gap-4" onValueChange={setFilterVehicle}>
+                <Label>نوع المركبة:</Label>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="all" id="r-all-req" />
+                  <Label htmlFor="r-all-req">الكل</Label>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="small" id="r-car-req" />
+                  <Label htmlFor="r-car-req" className="flex items-center gap-2"><Car/>سيارة</Label>
+                </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <RadioGroupItem value="bus" id="r-bus-req" />
+                  <Label htmlFor="r-bus-req" className="flex items-center gap-2"><Bus/>حافلة</Label>
+                </div>
+              </RadioGroup>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="grid gap-2">
                         <Label htmlFor="origin-country">دولة الانطلاق</Label>
@@ -416,3 +430,5 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+
+    
