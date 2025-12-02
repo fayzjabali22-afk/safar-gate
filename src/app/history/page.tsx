@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, doc, writeBatch, orderBy, limit } from 'firebase/firestore';
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Notification, Offer } from '@/lib/data';
@@ -28,9 +28,7 @@ import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
-
-// Lazy load BookingDialog for performance optimization
-const BookingDialog = React.lazy(() => import('@/components/booking-dialog').then(module => ({ default: module.BookingDialog })));
+import { BookingDialog } from '@/components/booking-dialog';
 
 // --- Helper Functions ---
 const statusMap: Record<string, string> = {
@@ -311,7 +309,6 @@ export default function HistoryPage() {
 
       {/* Booking Dialog */}
       {selectedOfferForBooking && (
-        <Suspense fallback={<div className="fixed inset-0 bg-background/80 flex items-center justify-center z-50"><p>جارٍ تحميل نافذة الحجز...</p></div>}>
           <BookingDialog
             isOpen={isBookingDialogOpen}
             onOpenChange={setIsBookingDialogOpen}
@@ -320,7 +317,6 @@ export default function HistoryPage() {
             onConfirm={handleConfirmBooking}
             isProcessing={isProcessingBooking}
           />
-        </Suspense>
       )}
     </AppLayout>
   );
