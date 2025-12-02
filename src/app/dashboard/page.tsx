@@ -83,13 +83,12 @@ export default function DashboardPage() {
   const [searchDestinationCity, setSearchDestinationCity] = useState('');
   const [searchSeats, setSearchSeats] = useState(1);
   const [searchMode, setSearchMode] = useState<'all-carriers' | 'specific-carrier'>('all-carriers');
+  const [filterVehicle, setFilterVehicle] = useState('all');
 
   // State for scheduled trips filtering
   const [filterOrigin, setFilterOrigin] = useState('');
   const [filterDestination, setFilterDestination] = useState('');
   const [filterCarrier, setFilterCarrier] = useState('');
-  const [filterVehicle, setFilterVehicle] = useState('all');
-
   
   useEffect(() => {
     setSearchOriginCity('');
@@ -164,7 +163,6 @@ export default function DashboardPage() {
     <AppLayout>
       <div className="container mx-auto p-0 md:p-4 bg-[#130609] rounded-lg space-y-8">
         
-        {/* Section 1: Trip Request Form */}
         <div className="flex flex-col items-center gap-8 p-2 lg:p-4">
           <header className="text-center">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">أين وجهتك التالية؟</h1>
@@ -218,6 +216,23 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 )}
+                
+                 <RadioGroup defaultValue="all" className="flex items-center gap-4" onValueChange={setFilterVehicle}>
+                    <Label>نوع المركبة:</Label>
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <RadioGroupItem value="all" id="r-all-req" />
+                      <Label htmlFor="r-all-req">الكل</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <RadioGroupItem value="small" id="r-car-req" />
+                      <Label htmlFor="r-car-req" className="flex items-center gap-2"><Car/>سيارة</Label>
+                    </div>
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <RadioGroupItem value="bus" id="r-bus-req" />
+                      <Label htmlFor="r-bus-req" className="flex items-center gap-2"><Bus/>حافلة</Label>
+                    </div>
+                </RadioGroup>
+
                  <div className="grid gap-3">
                   <Label className="text-base">الخطوة الثانية: أدخل تفاصيل رحلتك</Label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -312,21 +327,6 @@ export default function DashboardPage() {
                     </Select>
                   </div>
                 </div>
-                 <RadioGroup defaultValue="all" className="flex items-center gap-4" onValueChange={setFilterVehicle}>
-                <Label>نوع المركبة:</Label>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="all" id="r-all-req" />
-                  <Label htmlFor="r-all-req">الكل</Label>
-                </div>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="small" id="r-car-req" />
-                  <Label htmlFor="r-car-req" className="flex items-center gap-2"><Car/>سيارة</Label>
-                </div>
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <RadioGroupItem value="bus" id="r-bus-req" />
-                  <Label htmlFor="r-bus-req" className="flex items-center gap-2"><Bus/>حافلة</Label>
-                </div>
-              </RadioGroup>
               </div>
             </CardContent>
             <CardFooter className="p-4 md:p-6 border-t border-border/60 flex flex-col gap-2">
@@ -371,14 +371,12 @@ export default function DashboardPage() {
                     <Select onValueChange={setFilterOrigin} value={filterOrigin}>
                       <SelectTrigger><SelectValue placeholder="أي نقطة انطلاق" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">أي نقطة انطلاق</SelectItem>
                         {Object.entries(cities).map(([key, city]) => <SelectItem key={key} value={key}>{city}</SelectItem>)}
                       </SelectContent>
                     </Select>
                     <Select onValueChange={setFilterDestination} value={filterDestination}>
                       <SelectTrigger><SelectValue placeholder="أي نقطة وصول" /></SelectTrigger>
                       <SelectContent>
-                         <SelectItem value="">أي نقطة وصول</SelectItem>
                         {Object.entries(cities).map(([key, city]) => <SelectItem key={key} value={key}>{city}</SelectItem>)}
                       </SelectContent>
                     </Select>
