@@ -31,7 +31,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
         <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#1A202C" />
+        <meta name="theme-color" content="#111827" />
         <title>Safar Carrier</title>
       </head>
       <body className="font-body antialiased">
