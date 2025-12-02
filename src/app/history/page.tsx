@@ -18,8 +18,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, doc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,6 +30,7 @@ import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
+import { BookingDialog, type PassengerDetails } from '@/components/booking-dialog';
 
 // --- Helper Functions ---
 const statusMap: Record<string, string> = {
@@ -79,7 +80,11 @@ export default function HistoryPage() {
   const { toast } = useToast();
   
   const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
-  // Removed unused state: selectedTrip, isTicketDialogOpen
+  
+  // State for Booking Dialog
+  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
+  const [selectedOfferForBooking, setSelectedOfferForBooking] = useState<{trip: Trip, offer: Offer} | null>(null);
+
   
   // --- REAL DATA FETCHING ---
   const awaitingTripsQuery = useMemoFirebase(() => {
@@ -91,15 +96,24 @@ export default function HistoryPage() {
     );
   }, [firestore, user]);
   const { data: realAwaitingTrips, isLoading: isLoadingAwaiting } = useCollection<Trip>(awaitingTripsQuery);
+  
+  const confirmedTripsQuery = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return query(
+        collection(firestore, 'trips'),
+        where('userId', '==', user.uid),
+        where('status', '==', 'Planned')
+    );
+  }, [firestore, user]);
+  const { data: realConfirmedTrips, isLoading: isLoadingConfirmed } = useCollection<Trip>(confirmedTripsQuery);
 
-  // For now, confirmed trips still use dummy data
-  const confirmedTrips: Trip[] | null = dummyConfirmedTrips;
-  const isLoadingConfirmed = false;
-  const hasConfirmedTrips = !isLoadingConfirmed && confirmedTrips && confirmedTrips.length > 0;
   
   // --- FALLBACK LOGIC ---
   const awaitingTrips = (realAwaitingTrips && realAwaitingTrips.length > 0) ? realAwaitingTrips : dummyAwaitingTrips;
   const hasAwaitingSection = !isLoadingAwaiting && awaitingTrips && awaitingTrips.length > 0;
+  
+  const confirmedTrips = (realConfirmedTrips && realConfirmedTrips.length > 0) ? realConfirmedTrips : dummyConfirmedTrips;
+  const hasConfirmedTrips = !isLoadingConfirmed && confirmedTrips && confirmedTrips.length > 0;
 
   const notifications: Notification[] = []; 
   const notificationCount = notifications?.length || 0;
@@ -114,21 +128,79 @@ export default function HistoryPage() {
     if (isLoadingAwaiting || isLoadingConfirmed) return;
     
     // Auto-open logic
-    if (hasConfirmedTrips) {
-        setOpenAccordion('confirmed');
-    } else if (hasAwaitingSection) {
-        setOpenAccordion('awaiting');
+    if (awaitingTrips.length > 0 && awaitingTrips[0].id !== 'DUMMY01') {
+      setOpenAccordion('awaiting');
+    } else if (hasConfirmedTrips) {
+      setOpenAccordion('confirmed');
     } else {
-        setOpenAccordion(undefined);
+      setOpenAccordion(undefined);
     }
-  }, [hasAwaitingSection, hasConfirmedTrips, isLoadingAwaiting, isLoadingConfirmed]);
+  }, [awaitingTrips, hasConfirmedTrips, isLoadingAwaiting, isLoadingConfirmed]);
 
-  const handleAcceptOffer = (offer: Offer) => {
-    toast({
-      title: "قيد الإنشاء (المرحلة 3)",
-      description: `سيتم تفعيل قبول العرض ${offer.id} في المرحلة القادمة.`,
-    });
+  const handleAcceptOffer = (trip: Trip, offer: Offer) => {
+    // --- POLICY: DUMMY DATA CHECK ---
+    if (trip.id.startsWith('DUMMY')) {
+        toast({
+            title: "فحص العروض الوهمية",
+            description: "هذا إجراء وهمي للفحص. يتم إنشاء الحجوزات للعروض الحقيقية فقط.",
+        });
+        return;
+    }
+    
+    setSelectedOfferForBooking({ trip, offer });
+    setIsBookingDialogOpen(true);
   };
+  
+  const handleConfirmBooking = async (passengers: PassengerDetails[]) => {
+      if (!firestore || !user || !selectedOfferForBooking) return;
+      
+      const { trip, offer } = selectedOfferForBooking;
+      
+      const newBooking = {
+          tripId: trip.id,
+          offerId: offer.id,
+          userId: user.uid,
+          carrierId: offer.carrierId,
+          seats: passengers.length,
+          passengersDetails: passengers,
+          status: 'Pending-Carrier-Confirmation',
+          totalPrice: offer.price * passengers.length,
+          createdAt: new Date().toISOString(),
+      };
+      
+      // 1. Create the booking document
+      const bookingRef = await addDocumentNonBlocking(collection(firestore, 'bookings'), newBooking);
+      
+      // 2. Update the original trip request
+      const tripRef = doc(firestore, 'trips', trip.id);
+      updateDocumentNonBlocking(tripRef, {
+          status: 'Planned',
+          acceptedOfferId: offer.id,
+          currentBookingId: bookingRef.id,
+          carrierId: offer.carrierId, // Assign carrier to trip
+      });
+      
+      // 3. Send notification to the carrier
+      const carrierNotifRef = collection(firestore, `users/${offer.carrierId}/notifications`);
+      addDocumentNonBlocking(carrierNotifRef, {
+          userId: offer.carrierId,
+          title: `طلب حجز جديد لرحلة ${trip.origin} - ${trip.destination}`,
+          message: `لديك طلب حجز جديد من المستخدم ${user.displayName || user.email}. الرجاء مراجعة قسم الحجوزات للتأكيد.`,
+          type: 'new_booking_request',
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          link: `/carrier-dashboard/bookings`, // Future link
+      });
+      
+      toast({
+          title: 'تم إرسال طلب الحجز بنجاح!',
+          description: 'تم تحويل طلبك إلى حجز مؤكد وفي انتظار موافقة الناقل. سيتم إعلامك بالتحديثات.',
+      });
+      
+      setIsBookingDialogOpen(false);
+      setSelectedOfferForBooking(null);
+  };
+
 
   const renderSkeleton = () => (
     <div className="space-y-4">
@@ -191,7 +263,7 @@ export default function HistoryPage() {
                                     تاريخ الطلب: {safeDateFormat(trip.departureDate)} | عدد الركاب: {trip.passengers || 'غير محدد'}
                                 </CardDescription>
                             </div>
-                            <TripOffers trip={trip} onAcceptOffer={handleAcceptOffer} />
+                            <TripOffers trip={trip} onAcceptOffer={(offer) => handleAcceptOffer(trip, offer)} />
                           </CardContent>
                     ))}
                 </AccordionContent>
@@ -225,7 +297,6 @@ export default function HistoryPage() {
                                     <h3 className="font-bold border-b pb-2 mb-3">التذكرة الإلكترونية</h3>
                                     <div className="space-y-3 text-sm">
                                         <p><strong>الناقل:</strong> {trip.carrierName}</p>
-                                        {/* FIX: Removed Hydration Error (new Date), using static text or trip date */}
                                         <p><strong>تاريخ الحجز:</strong> {safeDateFormat(trip.departureDate)}</p>
                                         <p><strong>القيمة الإجمالية:</strong> {trip.price} ريال</p>
                                         <p><strong>الركاب:</strong> {trip.passengers} راكب</p>
@@ -288,6 +359,18 @@ export default function HistoryPage() {
           )}
         </Accordion>
       </div>
+
+    {selectedOfferForBooking && (
+        <BookingDialog 
+            isOpen={isBookingDialogOpen}
+            onOpenChange={setIsBookingDialogOpen}
+            trip={selectedOfferForBooking.trip}
+            // Use passengers from original trip, or available seats from offer as a fallback
+            seatCount={selectedOfferForBooking.trip.passengers || selectedOfferForBooking.offer.availableSeats || 1}
+            onConfirm={handleConfirmBooking}
+        />
+    )}
     </AppLayout>
   );
 }
+
