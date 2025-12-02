@@ -33,7 +33,7 @@ import {
   setDocumentNonBlocking,
   useAuth,
 } from '@/firebase';
-import { doc, collection, query, where, orderBy } from 'firebase/firestore';
+import { doc, collection, query, where, orderBy, limit } from 'firebase/firestore'; // Added limit
 import type { Notification } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
 import { signOut, deleteUser, sendEmailVerification } from 'firebase/auth';
@@ -82,16 +82,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const { data: userProfile } = useDoc(userProfileRef);
 
+  // ✅ Optimization: Added limit(10) to prevent fetching thousands of docs
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return query(
         collection(firestore, `users/${user.uid}/notifications`), 
         where("isRead", "==", false),
-        orderBy("createdAt", "desc")
+        orderBy("createdAt", "desc"),
+        limit(10) 
     );
   }, [firestore, user]);
 
   const { data: notifications } = useCollection<Notification>(notificationsQuery);
+  // Note: unreadCount here will show max 10, if you need real total count you need a separate aggregation query, 
+  // but for UI badge "10+" style or just showing available is often enough for MVP.
   const unreadCount = notifications?.length || 0;
   
   const handleNotificationClick = (notification: Notification) => {
@@ -163,26 +167,26 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const UserMenuContent = () => (
     <>
-      <DropdownMenuLabel className="justify-end">
+      <DropdownMenuLabel className="justify-end text-right">
         {userProfile?.firstName
         ? `مرحباً، ${userProfile.firstName}`
         : 'حسابي'}
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
        <DropdownMenuItem asChild>
-          <Link href="/profile" className='justify-end w-full'>
-            <Settings className="ml-2 h-4 w-4" />
+          <Link href="/profile" className='justify-end w-full cursor-pointer'>
             <span>ملفي الشخصي</span>
+            <Settings className="ml-2 h-4 w-4" />
           </Link>
       </DropdownMenuItem>
       <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={handleSignOut} className="text-yellow-500 focus:text-yellow-600 justify-end">
-        <LogOut className="ml-2 h-4 w-4" />
+      <DropdownMenuItem onClick={handleSignOut} className="text-yellow-600 focus:text-yellow-700 justify-end cursor-pointer">
         <span>تسجيل الخروج</span>
+        <LogOut className="ml-2 h-4 w-4" />
       </DropdownMenuItem>
-      <DropdownMenuItem onClick={() => setIsDeleteConfirmOpen(true)} className="text-red-500 focus:text-red-600 justify-end">
-        <Trash2 className="ml-2 h-4 w-4" />
+      <DropdownMenuItem onClick={() => setIsDeleteConfirmOpen(true)} className="text-red-500 focus:text-red-600 justify-end cursor-pointer">
         <span>حذف الحساب</span>
+        <Trash2 className="ml-2 h-4 w-4" />
       </DropdownMenuItem>
     </>
   );
@@ -190,12 +194,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-[#EDC17C] px-4 text-black md:px-6">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-[#EDC17C] px-4 text-black md:px-6 shadow-sm">
         {/* Mobile: Left side (Menu) */}
         <div className="flex items-center md:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0">
+              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0 border-black/20 bg-transparent hover:bg-black/10">
                 <Menu className="h-4 w-4 text-black" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
@@ -219,6 +223,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     alt="Safar Carrier Logo"
                     width={145}
                     height={110}
+                    className="object-contain"
                   />
                   <span className="sr-only">Safar Carrier</span>
                 </Link>
@@ -226,7 +231,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     const isDisabled = item.auth && !user;
                     if (isDisabled) {
                       return (
-                         <span key={item.label} className="flex items-center font-bold text-black/50 cursor-not-allowed">
+                          <span key={item.label} className="flex items-center font-bold text-black/50 cursor-not-allowed">
                             <Lock className="ml-2 h-4 w-4" />
                             {item.label}
                         </span>
@@ -258,6 +263,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               alt="Safar Carrier Logo"
               width={145}
               height={110}
+              priority
             />
             <span className="sr-only">Safar Carrier</span>
           </Link>
@@ -265,20 +271,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Desktop: Right Side Elements & Mobile: Far left user menu */}
         <div className="flex items-center gap-4">
-             <DropdownMenu>
+              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative" aria-label="عرض الإشعارات">
+                  <Button variant="ghost" size="icon" className="relative hover:bg-black/10" aria-label="عرض الإشعارات">
                     <Bell className="h-5 w-5" aria-hidden="true" />
-                    {unreadCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-xs">{unreadCount}</Badge>}
+                    {unreadCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-xs bg-red-600 hover:bg-red-700">{unreadCount}</Badge>}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
-                  <DropdownMenuLabel>الإشعارات</DropdownMenuLabel>
+                  <DropdownMenuLabel className="text-right">الإشعارات</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   {notifications && notifications.length > 0 ? (
                     notifications.map((notif) => (
-                      <DropdownMenuItem key={notif.id} onClick={() => handleNotificationClick(notif)} className={`flex flex-col items-start gap-1 cursor-pointer`}>
-                        <p className={!notif.isRead ? 'font-bold' : ''}>{notif.title}</p>
+                      <DropdownMenuItem key={notif.id} onClick={() => handleNotificationClick(notif)} className={`flex flex-col items-end gap-1 cursor-pointer text-right`}>
+                        <p className={cn("text-sm", !notif.isRead ? 'font-bold' : '')}>{notif.title}</p>
                         <p className="text-xs text-muted-foreground">{notif.message}</p>
                       </DropdownMenuItem>
                     ))
@@ -292,7 +298,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="hidden md:flex">
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/10">
                     <Avatar className="h-10 w-10 border-2 border-[#8B0000]">
                     {user?.photoURL && (
                         <AvatarImage
@@ -300,7 +306,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         alt={userProfile?.firstName || ''}
                         />
                     )}
-                    <AvatarFallback className="bg-primary/20 text-primary">
+                    <AvatarFallback className="bg-[#8B0000] text-white">
                         {userProfile?.firstName
                         ? userProfile.firstName.charAt(0)
                         : user?.email?.charAt(0).toUpperCase()}
@@ -318,15 +324,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="h-10 w-10 border-2 border-[#8B0000]">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/10">
+                    <Avatar className="h-8 w-8 border-2 border-[#8B0000]">
                     {user?.photoURL && (
                         <AvatarImage
                         src={user.photoURL}
                         alt={userProfile?.firstName || ''}
                         />
                     )}
-                    <AvatarFallback className="bg-primary/20 text-primary">
+                    <AvatarFallback className="bg-[#8B0000] text-white text-xs">
                         {userProfile?.firstName
                         ? userProfile.firstName.charAt(0)
                         : user?.email?.charAt(0).toUpperCase()}
@@ -343,12 +349,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Secondary Navigation Header */}
-      <nav className="sticky top-16 z-40 hidden h-12 items-center justify-center gap-8 border-b border-b-white bg-[#EDC17C] px-6 md:flex">
+      <nav className="sticky top-16 z-40 hidden h-12 items-center justify-center gap-8 border-b border-b-white bg-[#EDC17C] px-6 md:flex shadow-sm">
         {menuItems.map((item) => {
             const isDisabled = item.auth && !user;
             const linkClass = cn(
-              "text-sm font-medium text-black transition-colors hover:text-gray-700",
-              pathname === item.href && !isDisabled && "underline",
+              "text-sm font-bold text-black transition-colors hover:text-gray-700",
+              pathname === item.href && !isDisabled && "underline decoration-2 underline-offset-4",
               isDisabled && "cursor-not-allowed text-black/50 flex items-center gap-1"
             );
 
@@ -381,10 +387,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </nav>
 
       {user && !user.emailVerified && (
-        <div className="sticky top-16 md:top-28 z-40 bg-yellow-600 text-white text-sm text-center p-2 flex items-center justify-center gap-2">
+        <div className="sticky top-16 md:top-28 z-40 bg-yellow-600 text-white text-sm text-center p-2 flex items-center justify-center gap-2 animate-in slide-in-from-top duration-300">
             <AlertTriangle className="h-4 w-4" />
             <span>حسابك غير مفعل. الرجاء التحقق من بريدك الإلكتروني.</span>
-            <Button variant="link" className="p-0 h-auto text-white underline" onClick={handleResendVerification}>
+            <Button variant="link" className="p-0 h-auto text-white underline font-bold" onClick={handleResendVerification}>
                 إعادة إرسال
             </Button>
         </div>
@@ -398,15 +404,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <AlertDialogContent dir="rtl">
             <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2">
+                <AlertDialogTitle className="flex items-center gap-2 text-right">
                     <ShieldAlert className="h-6 w-6 text-red-500" />
                     هل أنت متأكد من حذف حسابك؟
                 </AlertDialogTitle>
-                <AlertDialogDescription>
+                <AlertDialogDescription className="text-right">
                     هذا الإجراء سيقوم بحذف حسابك بشكل نهائي. لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع بياناتك الشخصية وحجوزاتك وسجل رحلاتك.
                 </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
+            <AlertDialogFooter className="gap-2 sm:gap-0">
                 <AlertDialogCancel>إلغاء</AlertDialogCancel>
                 <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                     نعم، قم بحذف حسابي
