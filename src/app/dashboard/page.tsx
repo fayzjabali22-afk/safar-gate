@@ -19,7 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star, TestTube2, Bus, Car } from 'lucide-react';
+import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star, TestTube2, Bus, Car, ArrowDownUp, DollarSign } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import type { Trip, Offer } from '@/lib/data';
 import { Calendar } from "@/components/ui/calendar"
@@ -336,10 +336,20 @@ export default function DashboardPage() {
                   </div>
               )}
 
-               <div className="pt-4">
+               <div className="pt-4 space-y-2">
                     <Button size="lg" className="w-full bg-[#B19C7D] hover:bg-[#a18c6d] text-white" onClick={handleCreateTripRequest}>
                         اطلب أسعار من الناقلين لرحلتك
                     </Button>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                        <Button variant="outline" className="w-full">
+                            <ArrowDownUp className="ml-2 h-4 w-4" />
+                            أقرب التواريخ
+                        </Button>
+                        <Button variant="outline" className="w-full">
+                           <DollarSign className="ml-2 h-4 w-4" />
+                            فلترة أقل الأسعار
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -351,5 +361,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
-    
