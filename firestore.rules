@@ -1,9 +1,8 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // دوال مساعدة
+    // --- دوال مساعدة (Helper Functions) ---
     function isSignedIn() {
       return request.auth != null;
     }
@@ -12,77 +11,60 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
     
-    // التحقق من أن المستخدم طرف في البيانات الجديدة (للإنشاء)
     function isParticipant(data) {
        return isSignedIn() && (request.auth.uid in data.participants);
     }
 
-    // --- المستخدمون ---
+    // --- المستخدمون (Users) ---
     match /users/{userId} {
       allow read, write: if isOwner(userId);
-      
-      // تم توحيد الإشعارات في مجموعة جذرية
-      match /notifications/{notificationId} {
-        allow read, update, create, list: if isOwner(userId);
-      }
     }
     
-    // --- الناقلون ---
+    // --- الناقلون (Carriers) ---
     match /carriers/{carrierId} {
-      allow read: if true; // مسموح للجميع رؤية بروفايل الشركة
-      allow write: if isOwner(carrierId); // تصحيح: الكتابة لصاحب الشركة فقط
+      allow read: if true; 
+      allow write: if isOwner(carrierId); 
     }
 
-    // --- الإشعارات (الجذرية) ---
+    // --- الإشعارات (Notifications) ---
     match /notifications/{notificationId} {
-        // القائمة: فقط إشعاراتي (تعتمد على استعلام العميل)
-        allow list: if isSignedIn() && request.query.where.size() > 0 && request.query.where.userId == request.auth.uid;
-        // قراءة وتحديث لصاحب الإشعار فقط
-        allow read, update: if isSignedIn() && resource.data.userId == request.auth.uid;
-        // الإنشاء مسموح إذا كان الإشعار موجه لنفسي (أو يتم عبر الخادم)
-        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow read, list, update: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
 
-
-    // --- الرحلات (العصب الرئيسي) ---
+    // --- الرحلات (Trips) ---
     match /trips/{tripId} {
-      // القراءة: (تصحيح جوهري لعمل السوق)
-      // 1. صاحب الرحلة
-      // 2. أو الرحلة معروضة في السوق (Awaiting-Offers)
-      // 3. أو أنا الناقل المكلف بها
       allow read: if isSignedIn() && (
         isOwner(resource.data.userId) || 
         resource.data.status == 'Awaiting-Offers' ||
         resource.data.carrierId == request.auth.uid
       );
       
-      // القائمة: مسموح للجميع البحث (مع تطبيق فلاتر القراءة أعلاه تلقائياً)
       allow list: if isSignedIn(); 
 
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       
-      // تصحيح: التعديل للمالك فقط أو الناقل في حالات محددة
-      allow update: if isSignedIn() && (isOwner(resource.data.userId) || resource.data.carrierId == request.auth.uid);
+      allow update: if isSignedIn() && (
+        isOwner(resource.data.userId) || 
+        resource.data.carrierId == request.auth.uid
+      );
       
       allow delete: if isOwner(resource.data.userId);
 
-      // --- العروض ---
+      // --- العروض (Offers) ---
       match /offers/{offerId} {
-        // القراءة: صاحب الرحلة + صاحب العرض فقط (لمنع التجسس بين المنافسين)
         allow read, list: if isSignedIn() && (
            get(/databases/$(database)/documents/trips/$(tripId)).data.userId == request.auth.uid ||
            resource.data.carrierId == request.auth.uid
         );
         
         allow create: if isSignedIn() && isOwner(request.resource.data.carrierId);
-        
-        // تصحيح: التعديل لصاحب العرض فقط
         allow update: if isSignedIn() && isOwner(resource.data.carrierId);
         allow delete: if isSignedIn() && isOwner(resource.data.carrierId);
       }
     }
 
-    // --- الحجوزات ---
+    // --- الحجوزات (Bookings) ---
     match /bookings/{bookingId} {
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       
@@ -91,32 +73,29 @@ service cloud.firestore {
         isOwner(resource.data.carrierId)
       );
       
-      // تصحيح: التحديث لأطراف العقد فقط (العميل أو الناقل)
       allow update: if isSignedIn() && (
         isOwner(resource.data.userId) || 
         isOwner(resource.data.carrierId)
       );
       
-      allow delete: if false; // يفضل عدم حذف الحجوزات بل تغيير حالتها إلى ملغى
+      allow delete: if false; 
     }
 
-    // --- التقييمات ---
+    // --- التقييمات (Ratings) ---
     match /ratings/{ratingId} {
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow read: if true;
       allow update, delete: if false;
     }
 
-    // --- المحادثات ---
+    // --- المحادثات (Chats) ---
     match /chats/{chatId} {
-      // تصحيح: فصل الإنشاء عن التحديث
       allow create: if isParticipant(request.resource.data);
       allow read, update: if isSignedIn() && (request.auth.uid in resource.data.participants);
-       // السماح بسرد المحادثات التي يكون المستخدم طرفًا فيها.
-      allow list: if isSignedIn() && request.query.where[0][2] == request.auth.uid;
+      
+      allow list: if isSignedIn() && (request.auth.uid in resource.data.participants);
 
       match /messages/{messageId} {
-        // قراءة وإنشاء الرسائل فقط للمشاركين في المحادثة
         allow read, create: if isSignedIn() && 
           request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
         allow update, delete: if false;
