@@ -202,7 +202,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-[#B89F3D] px-4 text-black md:px-6 shadow-md">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-[#D4C87D] px-4 text-black md:px-6 shadow-md">
         {/* Mobile: Left side (Menu) */}
         <div className="flex items-center md:hidden">
           <Sheet>
@@ -262,28 +262,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* Desktop: Right Side Elements & Mobile: Far left user menu */}
         <div className="flex items-center gap-4 ml-auto">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative hover:bg-white/20" aria-label="عرض الإشعارات">
-                    <Bell className="h-5 w-5" aria-hidden="true" />
-                    {unreadCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-xs bg-red-600 hover:bg-red-700">{unreadCount}</Badge>}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
-                  <DropdownMenuLabel className="text-right">الإشعارات</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {unreadNotifications && unreadNotifications.length > 0 ? (
-                    unreadNotifications.map((notif) => (
-                      <DropdownMenuItem key={notif.id} onClick={() => handleNotificationClick(notif)} className={`flex flex-col items-end gap-1 cursor-pointer text-right`}>
-                        <p className={cn("text-sm", !notif.isRead ? 'font-bold' : '')}>{notif.title}</p>
-                        <p className="text-xs text-muted-foreground">{notif.message}</p>
-                      </DropdownMenuItem>
-                    ))
-                  ) : (
-                    <div className="p-4 text-center text-sm text-muted-foreground">لا توجد إشعارات جديدة.</div>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
           
           {/* Desktop User Menu */}
           <div className="hidden md:flex">
