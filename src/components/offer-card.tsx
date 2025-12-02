@@ -5,7 +5,7 @@ import type { Offer, CarrierProfile, Trip } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
-import { HandCoins, MessageCircle, Star, ThumbsUp } from 'lucide-react';
+import { HandCoins, MessageCircle, Star, ThumbsUp, Car, Calendar, Users, Percent } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
@@ -63,6 +63,8 @@ export function OfferCard({ offer, trip, onAccept }: OfferCardProps) {
     onAccept();
   };
   
+  const depositAmount = offer.price * (offer.depositPercentage / 100);
+
   return (
     
         <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2 border-border/60 flex flex-col justify-between" style={{backgroundColor: '#13060A'}}>
@@ -70,11 +72,25 @@ export function OfferCard({ offer, trip, onAccept }: OfferCardProps) {
                 <CarrierInfo carrierId={offer.carrierId} />
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex justify-center items-baseline gap-2 text-3xl font-bold text-accent">
-                  <HandCoins className="h-8 w-8" />
-                  <span>{offer.price}</span>
-                  <span className="text-lg font-normal text-muted-foreground">JOD</span>
-              </div>
+                {/* Vehicle Details */}
+                <div className="text-sm text-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">
+                    <p className='flex items-center gap-2 font-bold'><Car className="h-4 w-4 text-accent" /> بيانات المركبة:</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pl-6">
+                        <p><strong>النوع:</strong> {offer.vehicleType || 'غير محدد'}</p>
+                        <p><strong>الموديل:</strong> {offer.vehicleModelYear || 'غير محدد'}</p>
+                        <p><strong>الفئة:</strong> {offer.vehicleCategory || 'غير محدد'}</p>
+                        <p><strong>المقاعد:</strong> {offer.availableSeats || 'غير محدد'}</p>
+                    </div>
+                </div>
+
+                {/* Pricing Details */}
+                 <div className="text-sm text-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">
+                    <p className='flex items-center gap-2 font-bold'><HandCoins className="h-4 w-4 text-accent" /> تفاصيل السعر:</p>
+                     <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs pl-6">
+                        <p><strong>السعر الإجمالي:</strong> {offer.price} JOD</p>
+                        <p><strong>العربون ({offer.depositPercentage}%):</strong> {depositAmount.toFixed(2)} JOD</p>
+                    </div>
+                </div>
 
               {offer.notes && (
                 <div className="text-sm text-muted-foreground p-3 bg-background/50 rounded-md border border-dashed border-border">

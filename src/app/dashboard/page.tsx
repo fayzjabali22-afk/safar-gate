@@ -114,8 +114,7 @@ export default function DashboardPage() {
 
         // 1. Create a mock trip
         const newTripRef = doc(collection(firestore, "trips"));
-        const mockTrip: Trip = {
-            id: newTripRef.id,
+        const mockTrip: Omit<Trip, 'id'> = {
             userId: user.uid,
             origin: 'riyadh',
             destination: 'amman',
@@ -127,18 +126,20 @@ export default function DashboardPage() {
 
         // 2. Create 3 mock offers for the trip
         const mockCarriers = ['carrier01', 'carrier02', 'carrier03'];
-        const mockPrices = [100, 95, 110];
+        const mockOfferData = [
+            { price: 100, notes: 'عرض وهمي 1', vehicleType: 'GMC Yukon', vehicleCategory: 'small', vehicleModelYear: 2023, availableSeats: 7, depositPercentage: 20 },
+            { price: 95, notes: 'عرض وهمي 2', vehicleType: 'Hyundai Staria', vehicleCategory: 'small', vehicleModelYear: 2024, availableSeats: 8, depositPercentage: 15 },
+            { price: 110, notes: 'عرض وهمي 3', vehicleType: 'Mercedes-Benz Sprinter', vehicleCategory: 'bus', vehicleModelYear: 2022, availableSeats: 12, depositPercentage: 25 },
+        ];
         
         for (let i = 0; i < mockCarriers.length; i++) {
             const newOfferRef = doc(collection(firestore, `trips/${newTripRef.id}/offers`));
-            const mockOffer: Offer = {
-                id: newOfferRef.id,
+            const mockOffer: Omit<Offer, 'id'> = {
                 tripId: newTripRef.id,
                 carrierId: mockCarriers[i],
-                price: mockPrices[i],
                 status: 'Pending',
-                notes: `عرض وهمي ${i + 1} من ناقل وهمي.`,
                 createdAt: serverTimestamp() as unknown as string,
+                ...mockOfferData[i],
             };
             batch.set(newOfferRef, mockOffer);
         }
@@ -336,5 +337,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
-    

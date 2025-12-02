@@ -29,10 +29,6 @@ export type Trip = {
   arrivalDate?: string;
   status: 'Planned' | 'In-Transit' | 'Completed' | 'Cancelled' | 'Awaiting-Offers';
   cargoDetails?: string;
-  vehicleType?: string;
-  vehicleCategory?: 'small' | 'bus';
-  vehicleModelYear?: number;
-  availableSeats?: number;
   passengers?: number;
   // New fields to track the booking process
   acceptedOfferId?: string | null;
@@ -58,6 +54,13 @@ export type Offer = {
     notes?: string;
     status: 'Pending' | 'Accepted' | 'Rejected';
     createdAt: string; // ISO 8601 format
+    // Vehicle details provided in the offer
+    vehicleType: string;
+    vehicleCategory: 'small' | 'bus';
+    vehicleModelYear: number;
+    availableSeats: number;
+    // New deposit field
+    depositPercentage: number;
 };
 
 export type Notification = {
@@ -111,11 +114,6 @@ export const tripHistory: Trip[] = [
     destination: 'amman',
     departureDate: '2024-07-20T10:00:00Z',
     status: 'Planned',
-    cargoDetails: 'Electronics',
-    vehicleType: 'GMC Yukon',
-    vehicleCategory: 'small',
-    vehicleModelYear: 2023,
-    availableSeats: 3,
   },
   {
     id: 'TRIP011',
@@ -126,11 +124,6 @@ export const tripHistory: Trip[] = [
     destination: 'amman',
     departureDate: '2024-07-20T14:00:00Z',
     status: 'Planned',
-    cargoDetails: 'Personal Items',
-    vehicleType: 'Hyundai Staria',
-    vehicleCategory: 'small',
-    vehicleModelYear: 2024,
-    availableSeats: 7,
   },
   {
     id: 'TRIP002',
@@ -141,11 +134,6 @@ export const tripHistory: Trip[] = [
     destination: 'cairo',
     departureDate: '2024-07-22T18:30:00Z',
     status: 'Planned',
-    cargoDetails: 'Textiles',
-    vehicleType: 'Mercedes-Benz Sprinter',
-    vehicleCategory: 'bus',
-    vehicleModelYear: 2022,
-    availableSeats: 8,
   },
     {
     id: 'TRIP012',
@@ -156,11 +144,6 @@ export const tripHistory: Trip[] = [
     destination: 'cairo',
     departureDate: '2024-07-22T20:00:00Z',
     status: 'Planned',
-    cargoDetails: 'General Goods',
-    vehicleType: 'Toyota Coaster',
-    vehicleCategory: 'bus',
-    vehicleModelYear: 2021,
-    availableSeats: 15,
   },
   {
     id: 'TRIP003',
@@ -171,11 +154,6 @@ export const tripHistory: Trip[] = [
     destination: 'dubai',
     departureDate: '2024-07-25T09:15:00Z',
     status: 'Planned',
-    cargoDetails: 'Building Materials',
-    vehicleType: 'Toyota HiAce',
-    vehicleCategory: 'bus',
-    vehicleModelYear: 2024,
-    availableSeats: 5,
   },
     {
     id: 'TRIP004',
@@ -186,11 +164,6 @@ export const tripHistory: Trip[] = [
     destination: 'dubai',
     departureDate: '2024-07-28T14:00:00Z',
     status: 'Planned',
-    cargoDetails: 'Furniture',
-    vehicleType: 'Hyundai Staria',
-    vehicleCategory: 'small',
-    vehicleModelYear: 2023,
-    availableSeats: 6,
   },
   {
     id: 'TRIP005',
@@ -201,11 +174,6 @@ export const tripHistory: Trip[] = [
     destination: 'amman',
     departureDate: '2024-08-01T11:00:00Z',
     status: 'Completed',
-    cargoDetails: 'Personal Belongings',
-    vehicleType: 'GMC Yukon',
-    vehicleCategory: 'small',
-    vehicleModelYear: 2023,
-    availableSeats: 2,
   },
   {
     id: 'TRIP006',
@@ -216,11 +184,6 @@ export const tripHistory: Trip[] = [
     destination: 'amman',
     departureDate: '2024-08-02T15:00:00Z',
     status: 'Cancelled',
-    cargoDetails: 'Documents',
-    vehicleType: 'GMC Yukon',
-    vehicleCategory: 'small',
-    vehicleModelYear: 2023,
-    availableSeats: 7,
   }
 ];
 
@@ -233,6 +196,11 @@ export const mockOffers: Offer[] = [
         status: 'Pending',
         notes: 'يمكننا توفير مقاعد مريحة ووجبة خفيفة خلال الرحلة.',
         createdAt: new Date().toISOString(),
+        vehicleType: 'GMC Yukon',
+        vehicleCategory: 'small',
+        vehicleModelYear: 2023,
+        availableSeats: 7,
+        depositPercentage: 20,
     },
     {
         id: 'offer02',
@@ -242,6 +210,11 @@ export const mockOffers: Offer[] = [
         status: 'Pending',
         notes: 'لدينا رحلات يومية، السعر قابل للتفاوض البسيط.',
         createdAt: new Date().toISOString(),
+        vehicleType: 'Hyundai Staria',
+        vehicleCategory: 'small',
+        vehicleModelYear: 2024,
+        availableSeats: 8,
+        depositPercentage: 15,
     },
     {
         id: 'offer03',
@@ -251,5 +224,10 @@ export const mockOffers: Offer[] = [
         status: 'Pending',
         notes: 'نضمن لك الوصول في الموعد المحدد.',
         createdAt: new Date().toISOString(),
+        vehicleType: 'Mercedes-Benz Sprinter',
+        vehicleCategory: 'bus',
+        vehicleModelYear: 2022,
+        availableSeats: 12,
+        depositPercentage: 25,
     }
 ];
