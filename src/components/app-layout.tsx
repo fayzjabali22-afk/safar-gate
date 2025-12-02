@@ -1,4 +1,3 @@
-
 'use client';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -202,23 +201,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-white px-4 text-black md:px-6 shadow-sm">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-secondary px-4 text-secondary-foreground md:px-6 shadow-md">
         {/* Mobile: Left side (Menu) */}
         <div className="flex items-center md:hidden">
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon" className="h-8 w-8 shrink-0 border-black/20 bg-transparent hover:bg-black/10">
-                <Menu className="h-4 w-4 text-black" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-white/10">
+                <Menu className="h-4 w-4" />
                 <span className="sr-only">Toggle navigation menu</span>
               </Button>
             </SheetTrigger>
             <SheetContent
               side="left"
-              style={{
-                backgroundColor: '#FFFFFF',
-                borderRight: '2px solid #8B0000',
-              }}
-              className="w-full max-w-xs p-0 text-black"
+              className="w-full max-w-xs p-0 bg-secondary text-secondary-foreground"
             >
               <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle>
               <nav className="grid gap-6 text-lg font-medium p-6">
@@ -239,7 +234,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     const isDisabled = item.auth && !user;
                     if (isDisabled) {
                       return (
-                          <span key={item.label} className="flex items-center font-bold text-black/50 cursor-not-allowed">
+                          <span key={item.label} className="flex items-center font-bold text-white/50 cursor-not-allowed">
                             <Lock className="ml-2 h-4 w-4" />
                             {item.label}
                         </span>
@@ -249,7 +244,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         <Link
                             key={item.label}
                             href={item.href}
-                            className={cn("font-bold text-black hover:text-gray-700", pathname === item.href && "underline")}
+                            className={cn("font-bold text-white hover:text-white/80", pathname === item.href && "underline")}
                         >
                             {item.label}
                         </Link>
@@ -281,7 +276,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="flex items-center gap-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative hover:bg-black/10" aria-label="عرض الإشعارات">
+                  <Button variant="ghost" size="icon" className="relative hover:bg-white/10" aria-label="عرض الإشعارات">
                     <Bell className="h-5 w-5" aria-hidden="true" />
                     {unreadCount > 0 && <Badge className="absolute -top-1 -right-1 h-4 w-4 justify-center p-0 text-xs bg-red-600 hover:bg-red-700">{unreadCount}</Badge>}
                   </Button>
@@ -306,15 +301,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="hidden md:flex">
              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/10">
-                    <Avatar className="h-10 w-10 border-2 border-[#8B0000]">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10">
+                    <Avatar className="h-10 w-10 border-2 border-accent">
                     {user?.photoURL && (
                         <AvatarImage
                         src={user.photoURL}
                         alt={userProfile?.firstName || ''}
                         />
                     )}
-                    <AvatarFallback className="bg-[#8B0000] text-white">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
                         {userProfile?.firstName
                         ? userProfile.firstName.charAt(0)
                         : user?.email?.charAt(0).toUpperCase()}
@@ -332,15 +327,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center md:hidden">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/10">
-                    <Avatar className="h-8 w-8 border-2 border-[#8B0000]">
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/10">
+                    <Avatar className="h-8 w-8 border-2 border-accent">
                     {user?.photoURL && (
                         <AvatarImage
                         src={user.photoURL}
                         alt={userProfile?.firstName || ''}
                         />
                     )}
-                    <AvatarFallback className="bg-[#8B0000] text-white text-xs">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                         {userProfile?.firstName
                         ? userProfile.firstName.charAt(0)
                         : user?.email?.charAt(0).toUpperCase()}
@@ -357,13 +352,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       {/* Secondary Navigation Header */}
-      <nav className="sticky top-16 z-40 hidden h-12 items-center justify-center gap-8 border-b border-b-black/10 bg-white px-6 text-black md:flex shadow-sm">
+      <nav className="sticky top-16 z-40 hidden h-12 items-center justify-center gap-8 border-b border-b-border/10 bg-secondary px-6 text-secondary-foreground md:flex shadow-sm">
         {menuItems.map((item) => {
             const isDisabled = item.auth && !user;
             const linkClass = cn(
-              "text-sm font-bold text-black transition-colors hover:text-gray-700",
-              pathname === item.href && !isDisabled && "underline decoration-2 underline-offset-4",
-              isDisabled && "cursor-not-allowed text-black/50 flex items-center gap-1"
+              "text-sm font-bold transition-colors hover:text-white/80",
+              pathname === item.href && !isDisabled && "text-white underline decoration-2 underline-offset-4",
+              isDisabled && "cursor-not-allowed text-white/50 flex items-center gap-1"
             );
 
             if (isDisabled) {
