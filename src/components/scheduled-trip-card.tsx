@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { CarrierProfile, Trip } from '@/lib/data';
@@ -19,7 +20,7 @@ import {
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
-import { doc, Timestamp } from 'firebase/firestore'; // Added Timestamp for safe checking
+import { doc } from 'firebase/firestore';
 import { Badge } from './ui/badge';
 import Image from 'next/image';
 import { format } from 'date-fns';
@@ -70,7 +71,6 @@ const CarrierInfo = ({ carrierId, carrierName }: { carrierId: string; carrierNam
 
   if (isLoading) {
     return (
-      // FIX: Changed 'class' to 'className'
       <div className="flex items-center gap-3">
         <Skeleton className="h-10 w-10 rounded-full" />
         <div className="space-y-2">
@@ -119,14 +119,12 @@ export function ScheduledTripCard({ trip, onBookNow }: { trip: Trip; onBookNow: 
         <div className="flex justify-between items-center pt-2">
             <Badge variant="secondary" className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                {/* FIX: Safe date formatting */}
                 {safeDateFormat(trip.departureDate)}
             </Badge>
             <div className="flex items-center gap-2 text-sm font-bold">
-               {/* FIX: Case-insensitive city lookup */}
-               <span>{getCityName(trip.origin)}</span>
+               {getCityName(trip.origin)}
                <ArrowRight className="h-4 w-4 text-primary"/>
-               <span>{getCityName(trip.destination)}</span>
+               {getCityName(trip.destination)}
             </div>
         </div>
       </CardHeader>
