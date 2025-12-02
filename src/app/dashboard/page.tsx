@@ -84,11 +84,7 @@ export default function DashboardPage() {
   const [searchSeats, setSearchSeats] = useState(1);
   const [searchMode, setSearchMode] = useState<'all-carriers' | 'specific-carrier'>('all-carriers');
   const [filterVehicle, setFilterVehicle] = useState('all');
-
-  // State for scheduled trips filtering
-  const [filterOrigin, setFilterOrigin] = useState('');
-  const [filterDestination, setFilterDestination] = useState('');
-  const [filterCarrier, setFilterCarrier] = useState('');
+  const [carrierSearch, setCarrierSearch] = useState('');
   
   useEffect(() => {
     setSearchOriginCity('');
@@ -149,14 +145,14 @@ export default function DashboardPage() {
 
   const filteredScheduledTrips = useMemo(() => {
     return scheduledTrips.filter(trip => {
-      const originMatch = !filterOrigin || trip.origin === filterOrigin;
-      const destinationMatch = !filterDestination || trip.destination === filterDestination;
-      const carrierMatch = !filterCarrier || (trip.carrierName && trip.carrierName.toLowerCase().includes(filterCarrier.toLowerCase()));
+      const originMatch = !searchOriginCity || trip.origin === searchOriginCity;
+      const destinationMatch = !searchDestinationCity || trip.destination === searchDestinationCity;
+      const carrierMatch = !carrierSearch || (trip.carrierName && trip.carrierName.toLowerCase().includes(carrierSearch.toLowerCase()));
       // This part will need actual vehicle type data in the trip object later
       // const vehicleMatch = filterVehicle === 'all' || (trip.vehicleType === filterVehicle); 
       return originMatch && destinationMatch && carrierMatch;
     });
-  }, [filterOrigin, filterDestination, filterCarrier, filterVehicle]);
+  }, [searchOriginCity, searchDestinationCity, carrierSearch, filterVehicle]);
 
 
   return (
@@ -349,43 +345,8 @@ export default function DashboardPage() {
 
               <Card className="w-full shadow-lg rounded-lg border-border/60 bg-card/80 backdrop-blur-sm">
                 <CardHeader>
-                  <CardTitle>تصفية الرحلات</CardTitle>
+                  <CardTitle>نتائج البحث للرحلات المجدولة</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                    <RadioGroup defaultValue="all" className="flex items-center gap-4" onValueChange={setFilterVehicle}>
-                    <Label>نوع المركبة:</Label>
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <RadioGroupItem value="all" id="r-all" />
-                      <Label htmlFor="r-all">الكل</Label>
-                    </div>
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <RadioGroupItem value="small" id="r-car" />
-                      <Label htmlFor="r-car" className="flex items-center gap-2"><Car/>سيارة</Label>
-                    </div>
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <RadioGroupItem value="bus" id="r-bus" />
-                      <Label htmlFor="r-bus" className="flex items-center gap-2"><Bus/>حافلة</Label>
-                    </div>
-                  </RadioGroup>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Select onValueChange={setFilterOrigin} value={filterOrigin}>
-                      <SelectTrigger><SelectValue placeholder="أي نقطة انطلاق" /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(cities).map(([key, city]) => <SelectItem key={key} value={key}>{city}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select onValueChange={setFilterDestination} value={filterDestination}>
-                      <SelectTrigger><SelectValue placeholder="أي نقطة وصول" /></SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(cities).map(([key, city]) => <SelectItem key={key} value={key}>{city}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="البحث عن ناقل..." className="pl-10" onChange={e => setFilterCarrier(e.target.value)} />
-                    </div>
-                  </div>
-                </CardContent>
                 <CardContent>
                   <Table>
                     <TableHeader>
@@ -435,4 +396,3 @@ export default function DashboardPage() {
   );
 }
 
-    
