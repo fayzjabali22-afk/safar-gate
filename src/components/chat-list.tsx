@@ -48,7 +48,7 @@ function ChatListItem({ chat }: { chat: Chat }) {
             isActive && "bg-muted"
         )}>
             <Avatar>
-                <AvatarImage src={otherUser?.photoURL} alt={otherUser?.firstName || 'User'}/>
+                <AvatarImage src={(otherUser as any)?.photoURL} alt={otherUser?.firstName || 'User'}/>
                 <AvatarFallback>{otherUser?.firstName?.charAt(0) || 'U'}</AvatarFallback>
             </Avatar>
             <div className="flex-1 overflow-hidden">

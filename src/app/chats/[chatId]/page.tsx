@@ -40,7 +40,7 @@ function ChatHeader({ chat }: { chat: Chat }) {
   return (
     <div className="flex items-center gap-4 p-3 border-b bg-card" dir="rtl">
        <Avatar>
-            <AvatarImage src={otherUser?.photoURL} alt={otherUser?.firstName || 'User'} />
+            <AvatarImage src={(otherUser as any)?.photoURL} alt={otherUser?.firstName || 'User'} />
             <AvatarFallback>{otherUser?.firstName?.charAt(0) || 'U'}</AvatarFallback>
         </Avatar>
       <div className="flex flex-col">

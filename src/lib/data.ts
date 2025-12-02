@@ -7,6 +7,8 @@ export type UserProfile = {
   email: string;
   phoneNumber?: string;
   role?: 'traveler' | 'carrier';
+  createdAt?: any;
+  updatedAt?: any;
 };
 
 export type CarrierProfile = {
@@ -15,6 +17,8 @@ export type CarrierProfile = {
   contactEmail: string;
   phoneNumber?: string;
   averageRating?: number;
+  createdAt?: any;
+  updatedAt?: any;
 }
 
 export type Trip = {
@@ -26,7 +30,7 @@ export type Trip = {
   destination: string;
   departureDate: string; // ISO 8601 format: 'YYYY-MM-DDTHH:mm:ssZ'
   arrivalDate?: string;
-  status: 'Planned' | 'In-Transit' | 'Completed' | 'Cancelled' | 'Awaiting-Offers';
+  status: 'Planned' | 'In-Transit' | 'Completed' | 'Cancelled' | 'Awaiting-Offers' | 'Pending-Carrier-Confirmation';
   cargoDetails?: string;
   passengers?: number;
   // Fields for scheduled trips
@@ -37,7 +41,9 @@ export type Trip = {
   vehicleCategory?: 'small' | 'bus';
   // New fields to track the booking process
   acceptedOfferId?: string | null;
-  currentBookingId?: string | null;
+  bookingIds?: string[]; // Changed from currentBookingId
+  createdAt?: any;
+  updatedAt?: any;
 };
 
 export type Booking = {
@@ -49,6 +55,8 @@ export type Booking = {
     passengersDetails: { name: string; type: 'adult' | 'child' }[];
     status: 'Confirmed' | 'Pending-Payment' | 'Cancelled' | 'Completed' | 'Pending-Carrier-Confirmation';
     totalPrice: number;
+    createdAt?: any;
+    updatedAt?: any;
 };
 
 
@@ -74,10 +82,26 @@ export type Notification = {
     userId: string;
     title: string;
     message: string;
-    type: 'new_offer' | 'booking_confirmed' | 'trip_update' | 'payment_reminder' | 'new_booking_request';
+    type: 'new_offer' | 'booking_confirmed' | 'trip_update' | 'payment_reminder' | 'new_booking_request' | 'rating_request';
     isRead: boolean;
     createdAt: string; // ISO 8601 format
     link?: string;
+};
+
+export type Chat = {
+  id: string;
+  tripId: string;
+  participants: string[];
+  lastMessage: string;
+  updatedAt: string; // ISO 8601 format
+};
+
+export type Message = {
+  id: string;
+  chatId: string;
+  senderId: string;
+  content: string;
+  timestamp: string; // ISO 8601 format
 };
 
 
