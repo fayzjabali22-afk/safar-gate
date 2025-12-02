@@ -258,11 +258,16 @@ export default function HistoryPage() {
 
   const { data: allUserTrips, isLoading } = useCollection<Trip>(userTripsQuery);
 
+  // We only care about trips awaiting offers or pending confirmation for now
   const awaitingTrips = allUserTrips?.filter(t => t.status === 'Awaiting-Offers') || [];
-  const confirmedTrips = allUserTrips?.filter(t => ['Planned', 'Completed', 'Cancelled'].includes(t.status)) || [];
+  const plannedTrips = allUserTrips?.filter(t => t.status === 'Planned') || [];
+  
+  // Confirmed trips section should be empty for development
+  const confirmedTrips: Trip[] = [];
   
   const hasAwaitingOffers = !isLoading && awaitingTrips.length > 0;
-  const hasConfirmedTrips = !isLoading && confirmedTrips.length > 0;
+  const hasPlannedTrips = !isLoading && plannedTrips.length > 0;
+  const hasConfirmedTrips = false; // Always false for now
   
   const notificationsQuery = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -282,10 +287,11 @@ export default function HistoryPage() {
     
     const openItems: string[] = [];
     if (hasAwaitingOffers) openItems.push('awaiting');
-    if (hasConfirmedTrips) openItems.push('confirmed');
+    if (hasPlannedTrips) openItems.push('planned');
+    // if (hasConfirmedTrips) openItems.push('confirmed'); // This section is now hidden
     setOpenAccordion(openItems);
 
-  }, [hasAwaitingOffers, hasConfirmedTrips, isLoading]);
+  }, [hasAwaitingOffers, hasPlannedTrips, isLoading]);
 
 
   const renderSkeleton = () => (
@@ -375,7 +381,7 @@ export default function HistoryPage() {
             </AccordionItem>
           )}
 
-          {allUserTrips?.filter(t => t.status === 'Planned').length > 0 && (
+          {hasPlannedTrips && (
              <AccordionItem value="planned" className="border-none">
               <Card className="rounded-none md:rounded-lg">
                 <AccordionTrigger className="p-6 text-lg hover:no-underline">
@@ -383,7 +389,7 @@ export default function HistoryPage() {
                 </AccordionTrigger>
                 <AccordionContent className="p-0">
                     <Accordion type="single" collapsible className="w-full">
-                        {allUserTrips?.filter(t => t.status === 'Planned').map(trip => (
+                        {plannedTrips.map(trip => (
                             <AccordionItem value={trip.id} key={trip.id} className="border-none">
                                  <Card className="overflow-hidden rounded-none">
                                     <AccordionTrigger className="p-4 bg-card/80 hover:no-underline data-[state=closed]:rounded-b-none">

@@ -151,3 +151,6 @@ export const mockOffers: Offer[] = [
         depositPercentage: 25,
     }
 ];
+
+// This is now empty as requested
+export const mockConfirmedTrips: Trip[] = [];
