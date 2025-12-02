@@ -22,7 +22,6 @@ export type Trip = {
   userId: string;
   carrierId?: string; // Optional until a carrier accepts
   carrierName?: string;
-  carrierPhoneNumber?: string;
   origin: string;
   destination: string;
   departureDate: string; // ISO 8601 format: 'YYYY-MM-DDTHH:mm:ssZ'
@@ -46,6 +45,7 @@ export type Booking = {
     userId: string;
     carrierId: string;
     seats: number;
+    passengersDetails: { name: string; type: 'adult' | 'child' }[];
     status: 'Confirmed' | 'Pending-Payment' | 'Cancelled' | 'Completed' | 'Pending-Carrier-Confirmation';
     totalPrice: number;
 };
@@ -105,8 +105,7 @@ export const scheduledTrips: Trip[] = [
         origin: 'riyadh',
         destination: 'amman',
         departureDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), // 2 days from now
-        status: 'Planned',
-        passengers: 4,
+        status: 'Planned', // This status might be confusing for a scheduled trip, but let's keep it
         price: 120,
         availableSeats: 3,
         depositPercentage: 25,
@@ -121,7 +120,6 @@ export const scheduledTrips: Trip[] = [
         destination: 'jeddah',
         departureDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(), // 5 days from now
         status: 'Planned',
-        passengers: 2,
         price: 250,
         availableSeats: 5,
         depositPercentage: 20,
@@ -136,7 +134,6 @@ export const scheduledTrips: Trip[] = [
         destination: 'amman',
         departureDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // 3 days from now
         status: 'Planned',
-        passengers: 1,
         price: 80,
         availableSeats: 6,
         depositPercentage: 30,

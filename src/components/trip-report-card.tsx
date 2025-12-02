@@ -101,7 +101,7 @@ interface TripReportCardProps {
 export function TripReportCard({ trip, booking, offer }: TripReportCardProps) {
 
   const statusInfo = bookingStatusMap[booking.status] || { text: booking.status, icon: <AlertTriangle />, color: 'text-gray-500' };
-  const depositAmount = offer.price * (offer.depositPercentage / 100);
+  const depositAmount = offer.price * ((offer.depositPercentage || 20) / 100);
 
   return (
     <div className="p-4 md:p-6">

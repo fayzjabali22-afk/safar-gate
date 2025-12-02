@@ -130,6 +130,7 @@ const TripOfferManager = ({ trip }: { trip: Trip; }) => {
             seats: trip.passengers || 1,
             status: 'Pending-Payment', // Directly set to pending payment
             totalPrice: selectedOffer.price,
+            passengersDetails: [], // This should be populated based on user input, but empty for now
         });
 
         // 3. Update the accepted offer status

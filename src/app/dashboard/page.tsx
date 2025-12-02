@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter,
 } from '@/components/ui/card';
 import {
   Select,
@@ -425,5 +424,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
-    

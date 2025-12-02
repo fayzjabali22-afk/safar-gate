@@ -66,6 +66,10 @@
           "type": "string",
           "description": "ID of the carrier providing the trip."
         },
+        "carrierName": {
+            "type": "string",
+            "description": "The name of the carrier."
+        },
         "origin": {
           "type": "string",
           "description": "The starting point of the trip."
@@ -104,6 +108,18 @@
         "currentBookingId": {
             "type": "string",
             "description": "The ID of the current booking associated with this trip."
+        },
+        "price": {
+            "type": "number"
+        },
+        "availableSeats": {
+            "type": "number"
+        },
+        "depositPercentage": {
+            "type": "number"
+        },
+        "vehicleType": {
+            "type": "string"
         }
       },
       "required": [
@@ -112,8 +128,7 @@
         "origin",
         "destination",
         "departureDate",
-        "status",
-        "passengers"
+        "status"
       ]
     },
     "Booking": {
@@ -189,7 +204,12 @@
           "enum": ["Pending", "Accepted", "Rejected"],
           "description": "The current status of the offer."
         },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "vehicleType": { "type": "string" },
+        "vehicleCategory": { "type": "string", "enum": ["small", "bus"] },
+        "vehicleModelYear": { "type": "number" },
+        "availableSeats": { "type": "number" },
+        "depositPercentage": { "type": "number" }
       },
       "required": ["id", "tripId", "carrierId", "price", "status", "createdAt"]
     },
@@ -365,5 +385,3 @@
     ]
   }
 }
-
-    
