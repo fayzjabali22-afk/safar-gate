@@ -202,7 +202,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
     <div className="flex min-h-screen w-full flex-col bg-background">
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-[#D4C87D] px-4 text-black md:px-6 shadow-md">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-sidebar-primary px-4 text-sidebar-primary-foreground md:px-6 shadow-md">
         
         {/* Left side: User Menu */}
         <div className="flex items-center gap-4">

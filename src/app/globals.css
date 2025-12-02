@@ -44,7 +44,7 @@
     /* Sidebar */
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 222.2 47.4% 11.2%;
-    --sidebar-primary: 220 90% 56%;
+    --sidebar-primary: 51 61% 65%; /* #D4C87D */
     --sidebar-primary-foreground: 210 40% 98%;
     --sidebar-accent: 210 40% 96%;
     --sidebar-accent-foreground: 222.2 47.4% 11.2%;
@@ -88,8 +88,8 @@
     /* Sidebar */
     --sidebar-background: 319 41% 6%;
     --sidebar-foreground: 0 0% 96%;
-    --sidebar-primary: 46 60% 50%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 51 61% 65%; /* #D4C87D */
+    --sidebar-primary-foreground: 0 0% 0%; /* Black text for better contrast on the new primary color */
     --sidebar-accent: 318 48% 13%;
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 318 48% 13%;
