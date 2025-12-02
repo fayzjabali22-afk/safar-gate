@@ -165,19 +165,19 @@ export default function DashboardPage() {
             <p className="text-muted-foreground mt-2">ابحث عن رحلة أو اطلب أسعارًا من أفضل شركات النقل.</p>
           </header>
 
-          <Card className="w-full max-w-2xl shadow-lg rounded-lg border-border/60 bg-card/80 backdrop-blur-sm">
+          <Card className="w-full max-w-4xl shadow-lg rounded-lg border-border/60 bg-card/80 backdrop-blur-sm">
             <CardHeader>
               <CardTitle>ابحث عن رحلة أو أنشئ طلبًا</CardTitle>
               <CardDescription>استخدم النموذج التالي للبحث عن رحلات مجدولة أو لإنشاء طلب رحلة مخصصة.</CardDescription>
             </CardHeader>
             <CardContent className="p-4 md:p-6">
-              <div className="grid grid-cols-1 gap-6">
-
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
                 <div className="grid gap-3">
                   <Label className="text-base">الخطوة الأولى: اختر طريقة الطلب</Label>
                   <RadioGroup
                       defaultValue="all-carriers"
-                      className="grid grid-cols-2 gap-4"
+                      className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                       onValueChange={(value) => setSearchMode(value as 'specific-carrier' | 'all-carriers')}
                   >
                     <div>
@@ -202,34 +202,35 @@ export default function DashboardPage() {
                     </div>
                   </RadioGroup>
                 </div>
-
-                {searchMode === 'specific-carrier' && (
-                  <div className="grid gap-2 animate-in fade-in-50">
-                    <Label htmlFor="carrier-search">ابحث عن ناقلك المفضل بالاسم أو رقم الهاتف</Label>
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="carrier-search" placeholder="مثال: شركة النقل السريع..." className="pl-10" onChange={(e) => setCarrierSearch(e.target.value)} />
-                    </div>
-                  </div>
-                )}
                 
-                 <RadioGroup defaultValue="all" className="flex items-center gap-4" onValueChange={setFilterVehicle}>
-                    <Label>نوع المركبة:</Label>
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <RadioGroupItem value="all" id="r-all-req" />
-                      <Label htmlFor="r-all-req">الكل</Label>
-                    </div>
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <RadioGroupItem value="small" id="r-car-req" />
-                      <Label htmlFor="r-car-req" className="flex items-center gap-2"><Car/>سيارة</Label>
-                    </div>
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <RadioGroupItem value="bus" id="r-bus-req" />
-                      <Label htmlFor="r-bus-req" className="flex items-center gap-2"><Bus/>حافلة</Label>
-                    </div>
-                </RadioGroup>
+                 <div className="flex flex-col gap-3">
+                    {searchMode === 'specific-carrier' && (
+                      <div className="grid gap-2 animate-in fade-in-50">
+                        <Label htmlFor="carrier-search">ابحث عن ناقلك المفضل بالاسم أو رقم الهاتف</Label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input id="carrier-search" placeholder="مثال: شركة النقل السريع..." className="pl-10" onChange={(e) => setCarrierSearch(e.target.value)} />
+                        </div>
+                      </div>
+                    )}
+                    <RadioGroup defaultValue="all" className="flex items-center gap-4 flex-wrap" onValueChange={setFilterVehicle}>
+                        <Label>نوع المركبة:</Label>
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <RadioGroupItem value="all" id="r-all-req" />
+                          <Label htmlFor="r-all-req">الكل</Label>
+                        </div>
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <RadioGroupItem value="small" id="r-car-req" />
+                          <Label htmlFor="r-car-req" className="flex items-center gap-2"><Car/>سيارة</Label>
+                        </div>
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <RadioGroupItem value="bus" id="r-bus-req" />
+                          <Label htmlFor="r-bus-req" className="flex items-center gap-2"><Bus/>حافلة</Label>
+                        </div>
+                    </RadioGroup>
+                 </div>
 
-                 <div className="grid gap-3">
+                 <div className="grid gap-3 md:col-span-2">
                   <Label className="text-base">الخطوة الثانية: أدخل تفاصيل رحلتك</Label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="grid gap-2">
@@ -283,7 +284,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:col-span-2">
                   <div className="grid gap-2">
                     <Label htmlFor="travel-date">تاريخ السفر (تقريبي)</Label>
                     <Popover>
@@ -333,7 +334,7 @@ export default function DashboardPage() {
                 <CardHeader>
                   <CardTitle className="text-cyan-400">يمكنك اختيار الرحلة المناسبة لك مباشرة</CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -385,5 +386,7 @@ export default function DashboardPage() {
       <LegalDisclaimerDialog isOpen={isLegalDisclaimerOpen} onOpenChange={setIsLegalDisclaimerOpen} onContinue={handleLegalConfirm} />
     </AppLayout>
   );
+
+    
 
     
