@@ -53,13 +53,13 @@ const menuItems = [
   {
     href: '/history',
     label: 'إدارة الحجز',
-    auth: true,
+    auth: false, // DEV MODE: Auth check disabled
     icon: null,
   },
   {
     href: '/chats',
     label: 'الدردشات',
-    auth: true,
+    auth: false, // DEV MODE: Auth check disabled
     icon: MessageSquare,
   }
 ];
