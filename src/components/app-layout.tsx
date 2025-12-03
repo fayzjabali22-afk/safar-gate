@@ -85,6 +85,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile, isLoading: isProfileLoading } = useUserProfile();
   const [isSwitchingRole, setIsSwitchingRole] = useState(false);
 
+  const isCarrierPath = pathname.startsWith('/carrier');
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -234,12 +235,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <div className="flex min-h-screen w-full flex-col bg-background" dir="rtl">
-        <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-sidebar-primary px-4 text-sidebar-primary-foreground md:px-6 shadow-md">
+        <header className={cn(
+          "sticky top-0 z-50 flex h-16 items-center justify-between border-b px-4 shadow-md md:px-6",
+          isCarrierPath ? "bg-white text-black" : "bg-sidebar-primary text-sidebar-primary-foreground"
+        )}>
 
           <div className="flex items-center md:hidden">
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-white/20">
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-black/10">
                   <Menu className="h-4 w-4" />
                   <span className="sr-only">القائمة الرئيسية</span>
                 </Button>
@@ -300,7 +304,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                        <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="rounded-full hover:bg-white/20 relative"
+                            className="rounded-full hover:bg-black/10 relative"
                             onClick={handleSwitchRole}
                             disabled={isSwitchingRole || isProfileLoading}
                         >
@@ -316,7 +320,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {user && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/20 relative">
+                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/10 relative">
                             <Bell className="h-5 w-5" />
                             {unreadCount > 0 && (
                                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
@@ -359,7 +363,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="hidden md:flex">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full hover:bg-white/20">
+                  <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/10">
                     <Avatar className="h-9 w-9 border-2 border-accent">
                       {user?.photoURL && (
                         <AvatarImage
@@ -367,7 +371,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                           alt={profile?.firstName || ''}
                         />
                       )}
-                      <AvatarFallback className="bg-primary text-primary-foreground">
+                      <AvatarFallback className={cn(isCarrierPath ? "bg-gray-200 text-black" : "bg-primary text-primary-foreground")}>
                         {profile?.firstName
                           ? profile.firstName.charAt(0)
                           : user?.email?.charAt(0).toUpperCase()}
@@ -458,5 +462,3 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     </TooltipProvider>
   );
 }
-
-    
