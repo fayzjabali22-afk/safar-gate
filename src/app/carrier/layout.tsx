@@ -15,34 +15,10 @@ function LoadingSpinner() {
         <div className="flex h-screen w-full items-center justify-center bg-background">
             <div className="flex flex-col items-center gap-4">
                 <Ship className="h-16 w-16 animate-pulse text-primary" />
-                <p className="font-bold text-lg text-muted-foreground">جاري التحقق من صلاحيات الناقل...</p>
+                <p className="font-bold text-lg text-muted-foreground">جاري تحميل واجهة الناقل...</p>
             </div>
         </div>
     );
-}
-
-function AccessDenied() {
-  const router = useRouter();
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      router.replace('/dashboard');
-    }, 3000); // 3-second delay
-    return () => clearTimeout(timer);
-  }, [router]);
-
-  return (
-    <AppLayout>
-      <div className="flex h-[calc(100vh-200px)] items-center justify-center text-center p-8">
-          <div className="flex flex-col items-center gap-4">
-              <ShieldAlert className="h-16 w-16 text-destructive" />
-              <h1 className="text-2xl font-bold text-destructive">الوصول مرفوض</h1>
-              <p className="text-muted-foreground max-w-md">
-                  هذه المنطقة مخصصة للناقلين فقط. يتم الآن إعادة توجيهك...
-              </p>
-          </div>
-      </div>
-    </AppLayout>
-  );
 }
 
 const sidebarNavLinks = [
@@ -63,13 +39,14 @@ export default function CarrierLayout({
   const { user, profile, isLoading } = useUserProfile();
   const pathname = usePathname();
   
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
+  // DEV MODE: Bypassing role check
+  // if (isLoading) {
+  //   return <LoadingSpinner />;
+  // }
 
-  if (!user || profile?.role !== 'carrier') {
-    return <AccessDenied />;
-  }
+  // if (!user || profile?.role !== 'carrier') {
+  //   return <AccessDenied />;
+  // }
 
   return (
     <AppLayout>
@@ -99,6 +76,30 @@ export default function CarrierLayout({
                 {children}
             </div>
         </main>
+      </div>
+    </AppLayout>
+  );
+}
+
+function AccessDenied() {
+  const router = useRouter();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.replace('/dashboard');
+    }, 3000); // 3-second delay
+    return () => clearTimeout(timer);
+  }, [router]);
+
+  return (
+    <AppLayout>
+      <div className="flex h-[calc(100vh-200px)] items-center justify-center text-center p-8">
+          <div className="flex flex-col items-center gap-4">
+              <ShieldAlert className="h-16 w-16 text-destructive" />
+              <h1 className="text-2xl font-bold text-destructive">الوصول مرفوض</h1>
+              <p className="text-muted-foreground max-w-md">
+                  هذه المنطقة مخصصة للناقلين فقط. يتم الآن إعادة توجيهك...
+              </p>
+          </div>
       </div>
     </AppLayout>
   );
