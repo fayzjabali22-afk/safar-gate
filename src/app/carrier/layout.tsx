@@ -4,7 +4,7 @@ import { useUserProfile } from '@/hooks/use-user-profile';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ShieldAlert, Ship, LayoutDashboard, FilePlus, Route, Briefcase, Wallet } from 'lucide-react';
+import { ShieldAlert, Ship, LayoutDashboard, FilePlus, Route, Briefcase, Wallet, MessageSquare } from 'lucide-react';
 import { AppLayout } from '@/components/app-layout';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -50,6 +50,7 @@ const sidebarNavLinks = [
     { href: '/carrier/requests', label: 'سوق الطلبات', icon: FilePlus, exact: false },
     { href: '/carrier/trips', label: 'رحلاتي المجدولة', icon: Route, exact: false },
     { href: '/carrier/bookings', label: 'الحجوزات الواردة', icon: Briefcase, exact: false },
+    { href: '/carrier/chats', label: 'المحادثات', icon: MessageSquare, exact: false },
     { href: '/carrier/wallet', label: 'المحفظة المالية', icon: Wallet, exact: false }
 ];
 
@@ -94,7 +95,7 @@ export default function CarrierLayout({
         </aside>
 
         <main className="flex-1 overflow-y-auto bg-muted/30">
-             <div className="p-2 md:p-4 min-h-[200px]">
+             <div className="p-0 md:p-0 min-h-[calc(100vh-128px)]">
                 {children}
             </div>
         </main>
