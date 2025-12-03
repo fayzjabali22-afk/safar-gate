@@ -78,17 +78,20 @@ export default function CarrierRequestsPage() {
 
   const tripsQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(
-        collection(firestore, 'trips'),
-        where('status', '==', 'Awaiting-Offers')
-      );
+    
+    let q = query(
+      collection(firestore, 'trips'),
+      where('status', '==', 'Awaiting-Offers')
+    );
+  
+    return q;
   }, [firestore]);
 
   const { data: allRequests, isLoading: isLoadingRequests } = useCollection<Trip>(tripsQuery);
   
   const filteredRequests = useMemo(() => {
     if (!allRequests) return [];
-    if (filterBySpecialization && carrierProfile?.primaryRoute) {
+    if (filterBySpecialization && carrierProfile?.primaryRoute?.origin && carrierProfile.primaryRoute.destination) {
       const from = carrierProfile.primaryRoute.origin.toLowerCase();
       const to = carrierProfile.primaryRoute.destination.toLowerCase();
       return allRequests.filter(req => 
