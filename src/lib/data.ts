@@ -13,10 +13,15 @@ export type UserProfile = {
   email: string;
   phoneNumber?: string;
   role?: 'traveler' | 'carrier' | 'admin';
-  bankDetails?: BankDetails; // Added for Carrier Wallet
+  bankDetails?: BankDetails; 
   createdAt?: any;
   updatedAt?: any;
 };
+
+export type CarrierSpecialization = {
+    from: string;
+    to: string;
+}
 
 export type CarrierProfile = {
   id: string;
@@ -24,6 +29,9 @@ export type CarrierProfile = {
   contactEmail: string;
   phoneNumber?: string;
   averageRating?: number;
+  photoURL?: string;
+  vehicleCategory?: 'small' | 'bus';
+  specialization?: CarrierSpecialization;
   bankDetails?: BankDetails;
   createdAt?: any;
   updatedAt?: any;
@@ -106,3 +114,4 @@ export type Message = {
   content: string;
   timestamp: string;
 };
+    
