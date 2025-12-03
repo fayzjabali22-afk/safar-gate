@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShieldAlert, Ship } from 'lucide-react';
+import { redirect } from 'next/navigation';
 import { AppLayout } from '@/components/app-layout';
-
 
 function LoadingSpinner() {
     return (
@@ -25,32 +25,14 @@ export default function CarrierLayout({
   children: React.ReactNode;
 }) {
   const { user, profile, isLoading } = useUserProfile();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isLoading && (!user || profile?.role !== 'carrier')) {
-        router.replace('/dashboard');
-    }
-  }, [isLoading, user, profile, router]);
-
+  
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
   if (!user || profile?.role !== 'carrier') {
-    return (
-       <AppLayout>
-        <div className="flex h-[calc(100vh-200px)] items-center justify-center text-center p-8">
-            <div className="flex flex-col items-center gap-4">
-                <ShieldAlert className="h-16 w-16 text-destructive" />
-                <h1 className="text-2xl font-bold text-destructive">الوصول مرفوض</h1>
-                <p className="text-muted-foreground max-w-md">
-                    يتم توجيهك الآن...
-                </p>
-            </div>
-        </div>
-      </AppLayout>
-    );
+      redirect('/dashboard');
+      return null;
   }
 
   // If user is a carrier, render the carrier-specific layout

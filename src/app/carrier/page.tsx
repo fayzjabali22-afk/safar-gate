@@ -17,7 +17,7 @@ export default function CarrierDashboardPage() {
             </p>
         )}
       </header>
-       <p>Carrier Portal - Secure Zone. Welcome {profile?.name}</p>
+       <p>Carrier Portal - Secure Zone. Welcome {profile?.firstName}</p>
     </div>
   );
 }
