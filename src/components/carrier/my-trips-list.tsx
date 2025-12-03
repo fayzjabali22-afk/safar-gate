@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useUser } from '@/firebase';
@@ -18,79 +17,6 @@ import {
 import { Button } from '../ui/button';
 import { EditTripDialog } from './edit-trip-dialog';
 import { useToast } from '@/hooks/use-toast';
-
-const mockTrips: Trip[] = [
-    {
-        id: 'mock_planned_1',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'amman',
-        destination: 'riyadh',
-        departureDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Planned',
-        price: 50,
-        availableSeats: 3,
-        vehicleType: 'GMC Yukon 2023',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'mock_planned_2',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'amman',
-        destination: 'damascus',
-        departureDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Planned',
-        price: 20,
-        availableSeats: 4,
-        vehicleType: 'Hyundai Staria 2024',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'mock_in_transit_1',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'jeddah',
-        destination: 'cairo',
-        departureDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'In-Transit',
-        price: 150,
-        availableSeats: 8,
-        vehicleType: 'Mercedes Bus 2022',
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-        id: 'mock_completed_1',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'damascus',
-        destination: 'amman',
-        departureDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Completed',
-        price: 25,
-        availableSeats: 0,
-        vehicleType: 'Toyota Coaster 2022',
-        createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-        id: 'mock_cancelled_1',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'cairo',
-        destination: 'jeddah',
-        departureDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Cancelled',
-        price: 120,
-        availableSeats: 15,
-        vehicleType: 'Mercedes Bus 2021',
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    }
-];
 
 
 const cities: { [key: string]: string } = {
@@ -187,9 +113,20 @@ function TripListItem({ trip, onEdit }: { trip: Trip, onEdit: (trip: Trip) => vo
 export function MyTripsList() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+    const { user } = useUser();
+    const firestore = useFirestore();
 
-    const trips = mockTrips;
-    const isLoading = false;
+    const tripsQuery = useMemo(() => {
+        if (!firestore || !user) return null;
+        return query(
+            collection(firestore, 'trips'),
+            where('carrierId', '==', user.uid),
+            orderBy('departureDate', 'desc')
+        );
+    }, [firestore, user]);
+
+    const { data: trips, isLoading } = useCollection<Trip>(tripsQuery);
+    
 
     const handleEditClick = (trip: Trip) => {
         setSelectedTrip(trip);
