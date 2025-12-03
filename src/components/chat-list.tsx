@@ -1,6 +1,6 @@
 'use client';
 
-import { useCollection, useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { useCollection, useDoc, useFirestore, useUser } from '@/firebase';
 import type { Chat, UserProfile } from '@/lib/data';
 import { collection, query, where, doc, orderBy } from 'firebase/firestore';
 import { useMemo } from 'react';
@@ -20,7 +20,7 @@ function ChatListItem({ chat }: { chat: Chat }) {
     return chat.participants.find(p => p !== user.uid);
   }, [chat.participants, user]);
 
-  const otherUserRef = useMemoFirebase(() => {
+  const otherUserRef = useMemo(() => {
     if (!firestore || !otherParticipantId) return null;
     return doc(firestore, 'users', otherParticipantId);
   }, [firestore, otherParticipantId]);
@@ -65,7 +65,7 @@ export function ChatList() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const chatsQuery = useMemoFirebase(() => {
+  const chatsQuery = useMemo(() => {
     if (!firestore || !user) return null;
     return query(
         collection(firestore, 'chats'), 

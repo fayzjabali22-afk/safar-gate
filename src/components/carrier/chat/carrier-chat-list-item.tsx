@@ -1,6 +1,6 @@
 'use client';
 
-import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import type { Chat, UserProfile } from '@/lib/data';
 import { doc } from 'firebase/firestore';
 import { useMemo } from 'react';
@@ -22,7 +22,7 @@ export function CarrierChatListItem({ chat }: { chat: Chat }) {
     return chat.participants.find(p => p !== user.uid);
   }, [chat.participants, user]);
 
-  const travelerUserRef = useMemoFirebase(() => {
+  const travelerUserRef = useMemo(() => {
     if (!firestore || !travelerId) return null;
     return doc(firestore, 'users', travelerId);
   }, [firestore, travelerId]);

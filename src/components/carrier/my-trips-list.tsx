@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { useFirestore, useCollection, useUser, useMemoFirebase } from '@/firebase';
+import { useState, useMemo } from 'react';
+import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { Trip } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -117,7 +117,7 @@ export function MyTripsList() {
     const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 
 
-    const tripsQuery = useMemoFirebase(() => 
+    const tripsQuery = useMemo(() => 
         firestore && user
         ? query(
             collection(firestore, 'trips'),

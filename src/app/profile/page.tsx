@@ -24,9 +24,9 @@ import {
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore, useMemoFirebase, setDocumentNonBlocking, useAuth } from '@/firebase';
+import { useUser, useFirestore, setDocumentNonBlocking, useAuth } from '@/firebase';
 import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { deleteUser, sendEmailVerification } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { ShieldAlert, Trash2, MailCheck, TestTube2, ArrowRightLeft, Loader2, Upload } from 'lucide-react';
@@ -57,7 +57,7 @@ export default function ProfilePage() {
   const { profile, isLoading } = useUserProfile();
   const [isSwitchingRole, setIsSwitchingRole] = useState(false);
 
-  const userProfileRef = useMemoFirebase(() => {
+  const userProfileRef = useMemo(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);

@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/accordion"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { useCollection, useFirestore, useUser, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { useCollection, useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import { AuthRedirectDialog } from '@/components/auth-redirect-dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -76,7 +76,7 @@ export default function DashboardPage() {
   const [selectedTripForBooking, setSelectedTripForBooking] = useState<Trip | null>(null);
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
 
-  const scheduledTripsQuery = useMemoFirebase(() => {
+  const scheduledTripsQuery = useMemo(() => {
     if (!firestore) return null;
     return query(
       collection(firestore, 'trips'),

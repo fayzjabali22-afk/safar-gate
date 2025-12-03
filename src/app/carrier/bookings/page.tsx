@@ -1,6 +1,6 @@
 'use client';
 import { useMemo } from 'react';
-import { useFirestore, useCollection, useUser, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { Booking } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -11,7 +11,7 @@ export default function CarrierBookingsPage() {
     const firestore = useFirestore();
     const { user } = useUser();
 
-    const bookingsQuery = useMemoFirebase(() =>
+    const bookingsQuery = useMemo(() =>
         firestore && user
         ? query(
             collection(firestore, 'bookings'),

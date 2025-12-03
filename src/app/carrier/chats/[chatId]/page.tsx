@@ -1,5 +1,5 @@
 'use client';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, addDocumentNonBlocking } from '@/firebase';
 import { doc, collection, query, orderBy, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState, useRef } from 'react';
@@ -30,12 +30,12 @@ function ChatHeader({ chat }: { chat: Chat }) {
     return chat.participants.find(p => p !== user?.uid);
   }, [chat, user]);
 
-  const travelerRef = useMemoFirebase(() => {
+  const travelerRef = useMemo(() => {
     if (!firestore || !travelerId) return null;
     return doc(firestore, 'users', travelerId);
   }, [firestore, travelerId]);
   
-  const tripRef = useMemoFirebase(() => {
+  const tripRef = useMemo(() => {
       if(!firestore || !chat.tripId) return null;
       return doc(firestore, 'trips', chat.tripId);
   }, [firestore, chat.tripId]);
@@ -88,14 +88,14 @@ export default function CarrierChatWindowPage() {
   const [newMessage, setNewMessage] = useState('');
   const messageEndRef = useRef<HTMLDivElement>(null);
 
-  const chatRef = useMemoFirebase(() => {
+  const chatRef = useMemo(() => {
     if (!firestore || !chatId) return null;
     return doc(firestore, 'chats', chatId);
   }, [firestore, chatId]);
 
   const { data: chat, isLoading: isChatLoading } = useDoc<Chat>(chatRef);
 
-  const messagesQuery = useMemoFirebase(() => {
+  const messagesQuery = useMemo(() => {
     if (!chatRef) return null;
     return query(collection(chatRef, 'messages'), orderBy('timestamp', 'asc'));
   }, [chatRef]);

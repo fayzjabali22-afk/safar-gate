@@ -28,7 +28,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   useUser,
   useFirestore,
-  useMemoFirebase,
   useCollection,
   setDocumentNonBlocking,
   useAuth,
@@ -87,12 +86,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const isCarrierPath = pathname.startsWith('/carrier');
 
-  const userProfileRef = useMemoFirebase(() => {
+  const userProfileRef = useMemo(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
-  const notificationsQuery = useMemoFirebase(() => {
+  const notificationsQuery = useMemo(() => {
     if (!firestore || !user?.uid) return null;
     return query(
       collection(firestore, 'notifications'),

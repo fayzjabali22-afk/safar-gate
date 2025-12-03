@@ -1,5 +1,5 @@
 'use client';
-import { useUser, useFirestore, useDoc, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useDoc, useCollection, addDocumentNonBlocking } from '@/firebase';
 import { doc, collection, query, orderBy } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
@@ -19,7 +19,7 @@ function ChatHeader({ chat }: { chat: Chat }) {
     return chat.participants.find(p => p !== user?.uid);
   }, [chat, user]);
 
-  const otherUserRef = useMemoFirebase(() => {
+  const otherUserRef = useMemo(() => {
     if (!firestore || !otherParticipantId) return null;
     return doc(firestore, 'users', otherParticipantId);
   }, [firestore, otherParticipantId]);
@@ -59,14 +59,14 @@ export default function ChatPage() {
   const router = useRouter();
   const [newMessage, setNewMessage] = useState('');
 
-  const chatRef = useMemoFirebase(() => {
+  const chatRef = useMemo(() => {
     if (!firestore || !chatId) return null;
     return doc(firestore, 'chats', chatId);
   }, [firestore, chatId]);
 
   const { data: chat, isLoading: isChatLoading } = useDoc<Chat>(chatRef);
 
-  const messagesQuery = useMemoFirebase(() => {
+  const messagesQuery = useMemo(() => {
     if (!chatRef) return null;
     return query(collection(chatRef, 'messages'), orderBy('timestamp', 'asc'));
   }, [chatRef]);

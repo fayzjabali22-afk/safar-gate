@@ -1,7 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Booking, Trip, UserProfile } from '@/lib/data';
-import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useFirestore, useDoc } from '@/firebase';
 import { doc, writeBatch, increment, serverTimestamp, collection } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,7 +31,7 @@ const statusMap: Record<string, { text: string; className: string }> = {
 
 function UserInfo({ userId }: { userId: string }) {
     const firestore = useFirestore();
-    const userRef = useMemoFirebase(() => userId ? doc(firestore, 'users', userId) : null, [firestore, userId]);
+    const userRef = useMemo(() => userId ? doc(firestore, 'users', userId) : null, [firestore, userId]);
     const { data: userProfile, isLoading } = useDoc<UserProfile>(userRef);
 
     if (isLoading) return <Skeleton className="h-6 w-32" />;
@@ -40,7 +40,7 @@ function UserInfo({ userId }: { userId: string }) {
 
 function TripInfo({ tripId }: { tripId: string }) {
     const firestore = useFirestore();
-    const tripRef = useMemoFirebase(() => tripId ? doc(firestore, 'trips', tripId) : null, [firestore, tripId]);
+    const tripRef = useMemo(() => tripId ? doc(firestore, 'trips', tripId) : null, [firestore, tripId]);
     const { data: trip, isLoading } = useDoc<Trip>(tripRef);
 
     if (isLoading) return <Skeleton className="h-5 w-48 mt-1" />;

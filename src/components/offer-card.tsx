@@ -7,12 +7,12 @@ import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card'
 import { HandCoins, Star, Car, Loader2, MessageSquarePlus } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
-import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { useDoc, useFirestore, useUser } from '@/firebase';
 import { doc, collection, writeBatch } from 'firebase/firestore';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 interface OfferCardProps {
   offer: Offer;
@@ -34,7 +34,7 @@ const formatCurrency = (value: number | undefined) => {
 
 const CarrierInfo = React.memo(({ carrierId }: { carrierId: string }) => {
   const firestore = useFirestore();
-  const carrierRef = useMemoFirebase(() => {
+  const carrierRef = useMemo(() => {
     if (!firestore) return null;
     return doc(firestore, 'carriers', carrierId);
   }, [firestore, carrierId]);

@@ -1,8 +1,9 @@
 'use client';
 
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { useUser, useFirestore, useDoc } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import type { UserProfile } from '@/lib/data';
+import { useMemo } from 'react';
 
 /**
  * Hook to get the full user profile data from Firestore.
@@ -16,7 +17,7 @@ export function useUserProfile() {
   const firestore = useFirestore();
 
   // Memoize the DocumentReference to prevent re-renders.
-  const userProfileRef = useMemoFirebase(() => {
+  const userProfileRef = useMemo(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user?.uid]);

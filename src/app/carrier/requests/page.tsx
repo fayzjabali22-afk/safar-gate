@@ -1,6 +1,6 @@
 'use client';
 import { RequestCard } from '@/components/carrier/request-card';
-import { useFirestore, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, where, doc, getDoc } from 'firebase/firestore';
 import { PackageOpen, Settings, AlertTriangle, ListFilter } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -81,7 +81,7 @@ export default function CarrierRequestsPage() {
   }, [firestore, user]);
 
 
-  const tripsQuery = useMemoFirebase(() => {
+  const tripsQuery = useMemo(() => {
     if (!firestore) return null;
     
     let q = query(

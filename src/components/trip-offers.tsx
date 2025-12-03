@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
+import { useState, useMemo } from 'react';
+import { useCollection, useFirestore } from '@/firebase';
 import { collection, query, orderBy } from 'firebase/firestore'; // Added orderBy for better sorting
 import type { Offer, Trip } from '@/lib/data';
 import { OfferCard } from '@/components/offer-card';
@@ -19,7 +19,7 @@ export function TripOffers({ trip, onAcceptOffer }: TripOffersProps) {
   // State to track which offer is currently being processed
   const [acceptingOfferId, setAcceptingOfferId] = useState<string | null>(null);
 
-  const offersQuery = useMemoFirebase(() => {
+  const offersQuery = useMemo(() => {
     if (!firestore || !trip?.id) return null;
     // Added orderBy to show newest offers first or by price (optional, defaulted to price here or creation time)
     return query(

@@ -10,7 +10,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useCollection, addDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, doc, writeBatch, arrayUnion } from 'firebase/firestore'; 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -72,7 +72,7 @@ export default function HistoryPage() {
   const [isProcessingBooking, setIsProcessingBooking] = useState(false);
 
   // --- Queries ---
-  const userTripsQuery = useMemoFirebase(() => {
+  const userTripsQuery = useMemo(() => {
     if (!firestore || !user) return null;
     return query(
       collection(firestore, 'trips'),
@@ -249,7 +249,7 @@ export default function HistoryPage() {
                           تاريخ الطلب: {safeDateFormat(trip.departureDate)} | عدد الركاب: {trip.passengers || 'غير محدد'}
                         </CardDescription>
                       </div>
-                      <TripOffers trip={trip} onAcceptOffer={handleAcceptOffer} />
+                      <TripOffers trip={trip} onAcceptOffer={() => {}} />
                     </CardContent>
                   ))}
                 </AccordionContent>

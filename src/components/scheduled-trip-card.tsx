@@ -22,12 +22,13 @@ import {
 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
-import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Badge } from './ui/badge';
 import Image from 'next/image';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
 
 // Helper to safely format dates whether they are Strings, Dates, or Firestore Timestamps
 const safeDateFormat = (dateInput: any): string => {
@@ -69,7 +70,7 @@ const statusMap: Record<string, { text: string; icon: React.ElementType; color: 
 
 const CarrierInfo = ({ carrierId, carrierName }: { carrierId?: string; carrierName?: string; }) => {
   const firestore = useFirestore();
-  const carrierRef = useMemoFirebase(() => {
+  const carrierRef = useMemo(() => {
     if (!firestore || !carrierId) return null;
     return doc(firestore, 'carriers', carrierId);
   }, [firestore, carrierId]);
@@ -179,4 +180,3 @@ export function ScheduledTripCard({ trip, onBookNow, context = 'dashboard' }: { 
     </Card>
   );
 }
-

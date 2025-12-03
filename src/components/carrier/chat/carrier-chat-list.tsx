@@ -1,18 +1,19 @@
 'use client';
 
-import { useCollection, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { useCollection, useFirestore, useUser } from '@/firebase';
 import type { Chat } from '@/lib/data';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { CarrierChatListItem } from './carrier-chat-list-item';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageSquareOff } from 'lucide-react';
+import { useMemo } from 'react';
 
 
 export function CarrierChatList() {
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const chatsQuery = useMemoFirebase(() => {
+  const chatsQuery = useMemo(() => {
     if (!firestore || !user) return null;
     return query(
         collection(firestore, 'chats'), 
