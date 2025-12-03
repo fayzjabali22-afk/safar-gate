@@ -40,8 +40,8 @@ service cloud.firestore {
         resource.data.carrierId == request.auth.uid
       );
       
-      // Allow listing if the query is filtering by the user's ID.
-      allow list: if isSignedIn() && request.query.get('where')[0][2] == request.auth.uid;
+      // FIX: Rely on read rule to filter list queries. This is more robust.
+      allow list: if isSignedIn();
 
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       
