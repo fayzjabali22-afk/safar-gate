@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import type { Booking, Trip, UserProfile } from '@/lib/data';
 import { useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, writeBatch, increment, serverTimestamp } from 'firebase/firestore';
+import { doc, writeBatch, increment, serverTimestamp, collection } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
