@@ -173,7 +173,7 @@ export default function SignupPage() {
                   <FormItem className="grid gap-2">
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
-                      <Input placeholder="+966 50 123 4567" {...field} />
+                      <Input dir="ltr" placeholder="+966 50 123 4567" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
