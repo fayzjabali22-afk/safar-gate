@@ -11,6 +11,7 @@ import { Check, X, Calendar, Users, ArrowRight, Loader2, Info } from 'lucide-rea
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { logEvent } from '@/lib/analytics';
 
 const cities: { [key: string]: string } = {
     damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص',
@@ -79,6 +80,16 @@ export function BookingActionCard({ booking }: { booking: Booking }) {
                 createdAt: serverTimestamp(),
                 link: '/history',
             });
+
+            // Log the analytics event
+            logEvent('BOOKING_CONFIRMED', {
+                carrierId: booking.carrierId,
+                tripId: booking.tripId,
+                bookingId: booking.id,
+                totalPrice: booking.totalPrice,
+                seats: booking.seats,
+            });
+
         } else { // Reject
             batch.update(bookingRef, { status: 'Cancelled' });
             batch.set(notificationRef, {

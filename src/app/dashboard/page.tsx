@@ -43,6 +43,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { BookingDialog, type PassengerDetails } from '@/components/booking-dialog';
+import { logEvent } from '@/lib/analytics';
 
 
 // Mock data for countries and cities
@@ -260,6 +261,16 @@ export default function DashboardPage() {
           });
           return;
       }
+
+      logEvent('TRIP_SEARCH', {
+        userId: user.uid,
+        origin: searchOriginCity,
+        destination: searchDestinationCity,
+        date: date ? date.toISOString().split('T')[0] : null,
+        seats: searchSeats,
+        searchMode: searchMode,
+        carrierId: searchMode === 'specific-carrier' ? selectedCarrier?.id : null,
+      });
 
     // Mode-specific logic
     if (searchMode === 'all-carriers') {

@@ -39,6 +39,7 @@ import { Loader2, CalendarIcon, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from "date-fns";
 import { Label } from '@/components/ui/label';
+import { logEvent } from '@/lib/analytics';
 
 const countries: { [key: string]: { name: string; cities: string[] } } = {
   syria: { name: 'سوريا', cities: ['damascus', 'aleppo', 'homs'] },
@@ -92,7 +93,7 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
     setIsSubmitting(true);
     try {
       const tripsCollection = collection(firestore, 'trips');
-      await addDocumentNonBlocking(tripsCollection, {
+      const tripData = {
         ...data,
         departureDate: data.departureDate.toISOString(),
         userId: user.uid,
@@ -101,7 +102,20 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
         status: 'Planned',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
+      };
+      await addDocumentNonBlocking(tripsCollection, tripData);
+
+      // Log the analytics event
+      logEvent('TRIP_PUBLISHED', {
+        carrierId: user.uid,
+        origin: data.origin,
+        destination: data.destination,
+        departureDate: data.departureDate.toISOString().split('T')[0], // YYYY-MM-DD
+        vehicleType: data.vehicleType,
+        price: data.price,
+        availableSeats: data.availableSeats,
       });
+
       toast({ title: 'تمت إضافة الرحلة بنجاح!', description: 'رحلتك الآن متاحة للمسافرين للحجز.' });
       onOpenChange(false);
       form.reset();

@@ -27,7 +27,7 @@ function NoSpecializationState() {
             <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500/80 mb-4" />
             <h3 className="text-xl font-bold">يرجى تحديد تخصصك أولاً</h3>
             <p className="text-muted-foreground mt-2 max-w-md">
-              لعرض الطلبات المناسبة لك، يرجى الذهاب إلى صفحة الملف الشخصي وتحديد "تخصص خط النقل" الذي تعمل عليه عادةً.
+              للاستفادة من الفلترة الذكية، يرجى الذهاب إلى صفحة الملف الشخصي وتحديد "خط السير المفضل" الذي تعمل عليه.
             </p>
             <Button asChild className="mt-6">
                 <Link href="/profile">
@@ -88,10 +88,12 @@ export default function CarrierRequestsPage() {
   
   const filteredRequests = useMemo(() => {
     if (!allRequests) return [];
-    if (filterBySpecialization && carrierProfile?.specialization) {
+    if (filterBySpecialization && carrierProfile?.primaryRoute) {
+      const from = carrierProfile.primaryRoute.origin.toLowerCase();
+      const to = carrierProfile.primaryRoute.destination.toLowerCase();
       return allRequests.filter(req => 
-        req.origin.toLowerCase() === carrierProfile.specialization!.from.toLowerCase() &&
-        req.destination.toLowerCase() === carrierProfile.specialization!.to.toLowerCase()
+        req.origin.toLowerCase() === from &&
+        req.destination.toLowerCase() === to
       );
     }
     return allRequests;
@@ -103,17 +105,17 @@ export default function CarrierRequestsPage() {
     return <LoadingState />;
   }
   
-  if (!carrierProfile?.specialization?.from || !carrierProfile?.specialization?.to) {
-      return <NoSpecializationState />
-  }
+  const canFilter = !!(carrierProfile?.primaryRoute?.origin && carrierProfile?.primaryRoute?.destination);
 
-  const canFilter = !!(carrierProfile?.specialization?.from && carrierProfile?.specialization?.to);
+  if (!canFilter && filterBySpecialization) {
+    return <NoSpecializationState />
+  }
 
   return (
     <div className="space-y-4">
         {canFilter && (
             <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse p-4 bg-card rounded-lg border">
-                <Label htmlFor="filter-switch" className="font-semibold text-sm">عرض الطلبات المطابقة لتخصصي فقط</Label>
+                <Label htmlFor="filter-switch" className="font-semibold text-sm">عرض الطلبات المطابقة لخط سيري فقط</Label>
                 <Switch
                     id="filter-switch"
                     checked={filterBySpecialization}
@@ -135,5 +137,3 @@ export default function CarrierRequestsPage() {
     </div>
   );
 }
-
-    
