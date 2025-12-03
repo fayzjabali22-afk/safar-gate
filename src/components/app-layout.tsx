@@ -234,7 +234,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           "sticky top-0 z-50 flex h-16 items-center justify-between px-4 shadow-md md:px-6",
           isCarrierPath 
             ? "bg-[#F9F4FB] text-black border-b-4 border-blue-500" 
-            : "bg-sidebar-primary text-sidebar-primary-foreground border-b border-border"
+            : "bg-accent text-accent-foreground border-b border-border/10"
         )}>
 
           <div className="flex items-center md:hidden">
@@ -353,7 +353,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/10">
-                    <Avatar className="h-9 w-9 border-2 border-accent">
+                    <Avatar className="h-9 w-9 border-2 border-background">
                       {user?.photoURL && (
                         <AvatarImage
                           src={user.photoURL}
