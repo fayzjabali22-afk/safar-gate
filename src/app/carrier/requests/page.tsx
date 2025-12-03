@@ -1,15 +1,26 @@
 'use client';
-
-import { useState } from 'react';
 import { RequestCard } from '@/components/carrier/request-card';
-import { mockTripRequests } from '@/lib/data'; // Using mock data as ordered
+import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, orderBy } from 'firebase/firestore';
 import { PackageOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Trip } from '@/lib/data';
 
 export default function CarrierRequestsPage() {
-  // In a real scenario, this would come from a hook like useCollection
-  const [requests, setRequests] = useState(mockTripRequests);
-  const [isLoading, setIsLoading] = useState(false); // Set to false for mock data
+  const firestore = useFirestore();
+
+  // Query: Get trips where status is 'Awaiting-Offers'
+  const tripsQuery = useMemoFirebase(() => 
+    firestore
+    ? query(
+        collection(firestore, 'trips'),
+        where('status', '==', 'Awaiting-Offers')
+        // Note: orderBy requires an index, we might add it later
+      )
+    : null,
+  [firestore]);
+
+  const { data: requests, isLoading } = useCollection<Trip>(tripsQuery);
 
   if (isLoading) {
     return (
@@ -27,7 +38,7 @@ export default function CarrierRequestsPage() {
         <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
         <h3 className="text-xl font-bold">لا توجد طلبات متاحة حالياً</h3>
         <p className="text-muted-foreground mt-2">
-          عد لاحقاً للتحقق من وجود طلبات جديدة من المسافرين.
+          السوق هادئ حالياً. عد لاحقاً للتحقق من طلبات المسافرين الجديدة.
         </p>
       </div>
     );
