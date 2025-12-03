@@ -9,9 +9,9 @@ export default function CarrierTripsPage() {
     const [isAddTripDialogOpen, setIsAddTripDialogOpen] = useState(false);
 
     return (
-        <div className="space-y-4">
-            <header className="flex flex-col sm:flex-row justify-between items-center gap-4 p-2 rounded-lg bg-card shadow">
-                <div>
+        <div className="p-2 md:p-6 lg:p-8 space-y-4">
+            <header className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 rounded-lg bg-card shadow-sm border">
+                <div className="text-right w-full sm:w-auto">
                     <h1 className="text-xl md:text-2xl font-bold">رحلاتي المجدولة</h1>
                     <p className="text-muted-foreground text-xs md:text-sm">
                         أدرْ رحلاتك المنشورة، وأضف رحلات جديدة ليعثر عليها المسافرون.
