@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo } from 'react';
 import { useFirestore, useCollection, useUser } from '@/firebase';
@@ -17,6 +18,51 @@ import {
 import { Button } from '../ui/button';
 import { EditTripDialog } from './edit-trip-dialog';
 import { useToast } from '@/hooks/use-toast';
+
+const mockTrips: Trip[] = [
+    {
+        id: 'mock_planned_1',
+        userId: 'carrier_user_id',
+        carrierId: 'carrier_user_id',
+        origin: 'amman',
+        destination: 'riyadh',
+        departureDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Planned',
+        price: 50,
+        availableSeats: 3,
+        vehicleType: 'GMC Yukon 2023',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    },
+    {
+        id: 'mock_completed_1',
+        userId: 'carrier_user_id',
+        carrierId: 'carrier_user_id',
+        origin: 'damascus',
+        destination: 'amman',
+        departureDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Completed',
+        price: 25,
+        availableSeats: 0,
+        vehicleType: 'Toyota Coaster 2022',
+        createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'mock_cancelled_1',
+        userId: 'carrier_user_id',
+        carrierId: 'carrier_user_id',
+        origin: 'cairo',
+        destination: 'jeddah',
+        departureDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Cancelled',
+        price: 120,
+        availableSeats: 15,
+        vehicleType: 'Mercedes Bus 2021',
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    }
+];
 
 
 const cities: { [key: string]: string } = {
@@ -111,23 +157,11 @@ function TripListItem({ trip, onEdit }: { trip: Trip, onEdit: (trip: Trip) => vo
 }
 
 export function MyTripsList() {
-    const firestore = useFirestore();
-    const { user } = useUser();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 
-
-    const tripsQuery = useMemo(() => 
-        firestore && user
-        ? query(
-            collection(firestore, 'trips'),
-            where('carrierId', '==', user.uid),
-            orderBy('departureDate', 'desc')
-          )
-        : null,
-    [firestore, user]);
-
-    const { data: trips, isLoading } = useCollection<Trip>(tripsQuery);
+    const trips = mockTrips;
+    const isLoading = false;
 
     const handleEditClick = (trip: Trip) => {
         setSelectedTrip(trip);

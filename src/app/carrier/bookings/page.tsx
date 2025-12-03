@@ -1,36 +1,81 @@
+
 'use client';
 import { useMemo } from 'react';
 import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
-import { Booking } from '@/lib/data';
+import { Booking, Trip, UserProfile } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Inbox, History, Hourglass } from 'lucide-react';
 import { BookingActionCard } from '@/components/carrier/booking-action-card';
 
+const mockPendingBookings: Booking[] = [
+    {
+        id: 'mock_booking_1',
+        tripId: 'mock_trip_1',
+        userId: 'mock_user_1',
+        carrierId: 'carrier_user_id',
+        seats: 2,
+        passengersDetails: [
+            { name: 'أحمد الصالح', type: 'adult' },
+            { name: 'سارة الصالح', type: 'adult' },
+        ],
+        status: 'Pending-Carrier-Confirmation',
+        totalPrice: 100,
+        createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'mock_booking_2',
+        tripId: 'mock_trip_2',
+        userId: 'mock_user_2',
+        carrierId: 'carrier_user_id',
+        seats: 1,
+        passengersDetails: [
+            { name: 'فاطمة العلي', type: 'adult' },
+        ],
+        status: 'Pending-Carrier-Confirmation',
+        totalPrice: 25,
+        createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    }
+];
+
+const mockHistoricalBookings: Booking[] = [
+    {
+        id: 'mock_hist_booking_1',
+        tripId: 'mock_hist_trip_1',
+        userId: 'mock_user_3',
+        carrierId: 'carrier_user_id',
+        seats: 1,
+        passengersDetails: [{ name: 'خالد المصري', type: 'adult' }],
+        status: 'Confirmed',
+        totalPrice: 50,
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'mock_hist_booking_2',
+        tripId: 'mock_hist_trip_2',
+        userId: 'mock_user_4',
+        carrierId: 'carrier_user_id',
+        seats: 3,
+        passengersDetails: [
+            { name: 'عمر حداد', type: 'adult' },
+            { name: 'ليلى حداد', type: 'adult' },
+            { name: 'كريم حداد', type: 'child' },
+        ],
+        status: 'Completed',
+        totalPrice: 150,
+        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    }
+];
+
+
 export default function CarrierBookingsPage() {
-    const firestore = useFirestore();
-    const { user } = useUser();
-
-    const bookingsQuery = useMemo(() =>
-        firestore && user
-        ? query(
-            collection(firestore, 'bookings'),
-            where('carrierId', '==', user.uid),
-            orderBy('createdAt', 'desc')
-        )
-        : null,
-    [firestore, user]);
-
-    const { data: allBookings, isLoading } = useCollection<Booking>(bookingsQuery);
-
-    const { pendingBookings, historicalBookings } = useMemo(() => {
-        if (!allBookings) {
-            return { pendingBookings: [], historicalBookings: [] };
-        }
-        const pending = allBookings.filter(b => b.status === 'Pending-Carrier-Confirmation');
-        const historical = allBookings.filter(b => b.status !== 'Pending-Carrier-Confirmation');
-        return { pendingBookings: pending, historicalBookings: historical };
-    }, [allBookings]);
+    const isLoading = false;
+    const pendingBookings = mockPendingBookings;
+    const historicalBookings = mockHistoricalBookings;
 
     if (isLoading) {
         return (

@@ -1,3 +1,4 @@
+
 'use client';
 import { RequestCard } from '@/components/carrier/request-card';
 import { useFirestore, useCollection, useUser } from '@/firebase';
@@ -53,6 +54,17 @@ const mockRequests: Trip[] = [
       destination: 'damascus',
       departureDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
       passengers: 3,
+      status: 'Awaiting-Offers',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+     {
+      id: 'mock_trip_5',
+      userId: 'mock_user_5',
+      origin: 'riyadh',
+      destination: 'damascus',
+      departureDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+      passengers: 1,
       status: 'Awaiting-Offers',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -126,8 +138,6 @@ export default function CarrierRequestsPage() {
           setCarrierProfile(carrierSnap.data() as CarrierProfile);
         }
       } catch (e) {
-          // Errors are handled globally by the FirestorePermissionError logic
-          // and will show an overlay. We can log them here for good measure.
           console.error("Failed to fetch carrier profile:", e);
       } finally {
         setIsLoadingProfile(false);
@@ -137,7 +147,6 @@ export default function CarrierRequestsPage() {
   }, [firestore, user]);
   
   const filteredRequests = useMemo(() => {
-    // Relying solely on mock requests for now to bypass Firestore errors.
     const uniqueRequests = mockRequests;
 
     if (filterBySpecialization && carrierProfile?.primaryRoute?.origin && carrierProfile.primaryRoute.destination) {
