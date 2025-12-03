@@ -70,6 +70,12 @@ export default function LoginPage() {
         description: 'You will be redirected shortly.',
       });
       router.push('/dashboard');
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: "Please check your email and password.",
+        });
     }
   };
   

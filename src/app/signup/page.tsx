@@ -26,7 +26,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/logo';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useFirestore, initiateEmailSignUp, useAuth, initiateGoogleSignIn, initiateAnonymousSignIn } from '@/firebase';
+import { useFirestore, initiateEmailSignUp, useAuth, initiateGoogleSignIn, initiateAnonymousSignIn, initiateEmailSignIn } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { MailCheck, TestTube2 } from 'lucide-react';
 
@@ -95,15 +95,45 @@ export default function SignupPage() {
   };
 
   const handleGuestSignIn = async () => {
-    if (!auth) return;
-    const success = await initiateAnonymousSignIn(auth);
-    if (success) {
-      toast({
-        title: 'Logged in as Guest',
-        description: 'Developer mode activated.',
-      });
-      router.push('/dashboard');
+    if (!auth || !firestore) {
+      toast({ title: "Error", description: "Firebase not initialized.", variant: "destructive" });
+      return;
     }
+  
+    const guestEmail = 'guest@example.com';
+    const guestPassword = 'password123';
+  
+    toast({ title: 'Logging in as Guest...', description: 'Please wait.' });
+  
+    // First, try to log in.
+    const signInSuccess = await initiateEmailSignIn(auth, guestEmail, guestPassword);
+  
+    if (signInSuccess) {
+      toast({ title: 'Logged in as Guest', description: 'Developer mode activated.' });
+      router.push('/dashboard');
+      return;
+    }
+  
+    // If login fails (likely because the account doesn't exist), create it.
+    toast({ title: 'Creating guest account...', description: 'One moment.' });
+    const guestProfile = {
+      firstName: 'Guest',
+      lastName: 'User',
+      email: guestEmail,
+      phoneNumber: '123-456-7890',
+    };
+  
+    const signUpSuccess = await initiateEmailSignUp(auth, firestore, guestEmail, guestPassword, guestProfile, false);
+  
+    if (signUpSuccess) {
+      // Now, sign in with the newly created account.
+      const finalSignInSuccess = await initiateEmailSignIn(auth, guestEmail, guestPassword);
+      if (finalSignInSuccess) {
+        toast({ title: 'Logged in as Guest', description: 'Developer mode activated.' });
+        router.push('/dashboard');
+      }
+    }
+    // Error toasts are handled within the initiate functions, so no need for else here.
   };
   
   if (isSignUpSuccessful) {

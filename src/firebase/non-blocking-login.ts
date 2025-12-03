@@ -37,7 +37,8 @@ export async function initiateEmailSignUp(
     firestore: Firestore,
     email: string, 
     password: string,
-    profileData: UserProfileCreation
+    profileData: UserProfileCreation,
+    signOutAfter: boolean = true
 ): Promise<boolean> {
     let user;
     try {
@@ -69,7 +70,7 @@ export async function initiateEmailSignUp(
 
     try {
         const userRef = doc(firestore, 'users', user.uid);
-        await setDoc(userRef, { ...profileData, createdAt: serverTimestamp() });
+        await setDoc(userRef, { ...profileData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     } catch (firestoreError: any) {
         toast({
             variant: "destructive",
@@ -81,11 +82,13 @@ export async function initiateEmailSignUp(
 
     try {
         await sendEmailVerification(user, actionCodeSettings);
-        toast({
-            title: 'Final Step!',
-            description: 'A verification email has been sent to activate your account.',
-            duration: 8000,
-        });
+        if (signOutAfter) {
+            toast({
+                title: 'Final Step!',
+                description: 'A verification email has been sent to activate your account.',
+                duration: 8000,
+            });
+        }
     } catch (emailError: any) {
          toast({
             variant: "destructive",
@@ -95,7 +98,9 @@ export async function initiateEmailSignUp(
         });
     }
 
-    await auth.signOut();
+    if (signOutAfter) {
+        await auth.signOut();
+    }
     
     return true;
 }
@@ -107,11 +112,15 @@ export async function initiateEmailSignIn(authInstance: Auth, email: string, pas
     await signInWithEmailAndPassword(authInstance, email, password);
     return true;
   } catch (error: any) {
-    toast({
-        variant: "destructive",
-        title: "Login Failed",
-        description: "Please check your email and password.",
-    });
+    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+         // Don't show a toast for these, as it's a normal flow for guest login
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Login Failed",
+            description: "An unexpected error occurred. Please try again.",
+        });
+    }
     return false;
   }
 }
@@ -134,7 +143,7 @@ export async function initiateGoogleSignIn(auth: Auth, firestore: Firestore): Pr
         email: user.email!,
         phoneNumber: user.phoneNumber || '',
       };
-      await setDoc(userRef, { ...newUserProfile, createdAt: serverTimestamp() });
+      await setDoc(userRef, { ...newUserProfile, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     }
     
     return true;
