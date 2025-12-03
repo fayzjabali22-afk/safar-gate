@@ -28,6 +28,21 @@
           "description": "The phone number of the user, preferably in E.164 format.",
           "pattern": "^\\+[1-9]\\d{1,14}$"
         },
+        "role": {
+          "type": "string",
+          "enum": ["traveler", "carrier", "admin"],
+          "description": "The user's role in the system."
+        },
+        "bankDetails": {
+            "type": "object",
+            "description": "The carrier's bank account details for payouts, stored on the user object for security.",
+            "properties": {
+                "bankName": { "type": "string", "description": "Name of the bank." },
+                "accountHolderName": { "type": "string", "description": "Full name of the account holder." },
+                "iban": { "type": "string", "description": "International Bank Account Number." }
+            },
+            "required": ["bankName", "accountHolderName", "iban"]
+        },
         "createdAt": {
             "type": "string",
             "format": "date-time",
@@ -68,16 +83,6 @@
                 "to": { "type": "string", "description": "The typical destination country/area." }
             },
             "required": ["from", "to"]
-        },
-        "bankDetails": {
-            "type": "object",
-            "description": "The carrier's bank account details for payouts.",
-            "properties": {
-                "bankName": { "type": "string", "description": "Name of the bank." },
-                "accountHolderName": { "type": "string", "description": "Full name of the account holder." },
-                "iban": { "type": "string", "description": "International Bank Account Number." }
-            },
-            "required": ["bankName", "accountHolderName", "iban"]
         },
         "createdAt": {
             "type": "string",
@@ -500,4 +505,5 @@
     ]
   }
 }
+    
     

@@ -32,7 +32,6 @@ export type CarrierProfile = {
   photoURL?: string;
   vehicleCategory?: 'small' | 'bus';
   specialization?: CarrierSpecialization;
-  bankDetails?: BankDetails;
   createdAt?: any;
   updatedAt?: any;
 };
@@ -114,4 +113,5 @@ export type Message = {
   content: string;
   timestamp: string;
 };
+    
     

@@ -16,7 +16,6 @@ import {
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -30,13 +29,12 @@ import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { deleteUser, sendEmailVerification } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, Trash2, MailCheck, TestTube2, ArrowRightLeft, Loader2, Briefcase, Upload } from 'lucide-react';
+import { ShieldAlert, Trash2, MailCheck, TestTube2, ArrowRightLeft, Loader2, Upload } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { actionCodeSettings } from '@/firebase/config';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Separator } from '@/components/ui/separator';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { CarrierSettingsSection } from '@/components/carrier/carrier-settings-section';
 
 
 const profileFormSchema = z.object({
@@ -48,23 +46,6 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
-const carrierSettingsSchema = z.object({
-    specialization: z.object({
-        from: z.string().min(1, 'Origin country is required.'),
-        to: z.string().min(1, 'Destination country is required.'),
-    }).optional(),
-    vehicleCategory: z.enum(['small', 'bus']).optional(),
-});
-
-type CarrierSettingsValues = z.infer<typeof carrierSettingsSchema>;
-
-// Mock data for countries - should be moved to a shared location
-const countries: { [key: string]: { name: string; cities?: string[] } } = {
-  syria: { name: 'سوريا' },
-  jordan: { name: 'الأردن' },
-  ksa: { name: 'السعودية' },
-  egypt: { name: 'مصر' },
-};
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -81,23 +62,10 @@ export default function ProfilePage() {
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
 
-  const carrierProfileRef = useMemoFirebase(() => {
-    if (!firestore || !user || profile?.role !== 'carrier') return null;
-    return doc(firestore, 'carriers', user.uid);
-  }, [firestore, user, profile?.role]);
-
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: { firstName: '', lastName: '', email: '', phoneNumber: '' },
-  });
-
-  const carrierForm = useForm<CarrierSettingsValues>({
-      resolver: zodResolver(carrierSettingsSchema),
-      defaultValues: {
-          specialization: { from: '', to: ''},
-          vehicleCategory: undefined,
-      }
   });
 
 
@@ -109,22 +77,6 @@ export default function ProfilePage() {
         email: profile.email || user?.email || '',
         phoneNumber: profile.phoneNumber || user?.phoneNumber || ''
       });
-      if (profile.role === 'carrier') {
-        // Fetch and set carrier-specific data
-        const fetchCarrierProfile = async () => {
-            if (!carrierProfileRef) return;
-            const { getDoc } = await import('firebase/firestore');
-            const carrierSnap = await getDoc(carrierProfileRef);
-            if(carrierSnap.exists()) {
-                const carrierData = carrierSnap.data();
-                carrierForm.reset({
-                    specialization: carrierData.specialization || { from: '', to: '' },
-                    vehicleCategory: carrierData.vehicleCategory,
-                });
-            }
-        }
-        fetchCarrierProfile();
-      }
     } else if (user) {
         form.reset({
         ...form.getValues(),
@@ -132,7 +84,7 @@ export default function ProfilePage() {
         phoneNumber: user.phoneNumber || ''
         });
     }
-  }, [profile, user, form, carrierForm, carrierProfileRef]);
+  }, [profile, user, form]);
   
   function onUserSubmit(data: ProfileFormValues) {
     if (!userProfileRef) return;
@@ -140,27 +92,29 @@ export default function ProfilePage() {
     toast({ title: 'تم تحديث الملف الشخصي', description: 'تم حفظ تغييراتك بنجاح.' });
   }
 
-  async function onCarrierSubmit(data: CarrierSettingsValues) {
-    if (!carrierProfileRef) return;
-    try {
-        await updateDoc(carrierProfileRef, data);
-        toast({ title: 'تم تحديث إعدادات الناقل', description: 'تم حفظ إعداداتك التخصصية.' });
-    } catch (e) {
-        console.error(e);
-        toast({ variant: 'destructive', title: 'فشل التحديث', description: 'لم نتمكن من حفظ إعدادات الناقل.' });
-    }
-  }
-
-
   const handleRoleChange = async (newRole: 'traveler' | 'carrier') => {
     if (!userProfileRef) return;
     setIsSwitchingRole(true);
     try {
+        // Create a public carrier profile if switching to carrier
+        if (newRole === 'carrier') {
+            const carrierRef = doc(firestore, 'carriers', user!.uid);
+            await setDocumentNonBlocking(carrierRef, {
+                id: user!.uid,
+                name: `${form.getValues('firstName')} ${form.getValues('lastName')}`,
+                contactEmail: user!.email,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            }, { merge: true });
+        }
+        
         await updateDoc(userProfileRef, { role: newRole });
+
         toast({
             title: `تم تغيير الدور إلى ${newRole === 'carrier' ? 'ناقل' : 'مسافر'}`,
             description: "سيتم تحديث صلاحياتك."
         });
+
         if (newRole === 'carrier') {
             router.push('/carrier');
         } else {
@@ -278,41 +232,10 @@ export default function ProfilePage() {
         </Card>
 
         {profile?.role === 'carrier' && (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Briefcase /> إعدادات الناقل التخصصية</CardTitle>
-                    <CardDescription>حدد خط النقل الذي تعمل عليه ونوع مركبتك لتصلك الطلبات المناسبة.</CardDescription>
-                </CardHeader>
-                <Form {...carrierForm}>
-                    <form onSubmit={carrierForm.handleSubmit(onCarrierSubmit)}>
-                        <CardContent className="space-y-6">
-                            <div className="space-y-2">
-                                <Label className="font-semibold">تخصص خط النقل</Label>
-                                <div className="grid grid-cols-2 gap-4">
-                                     <FormField control={carrierForm.control} name="specialization.from" render={({ field }) => (<FormItem><FormLabel>من</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر دولة" /></SelectTrigger></FormControl><SelectContent>{Object.entries(countries).map(([key, {name}]) => (<SelectItem key={key} value={key}>{name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                     <FormField control={carrierForm.control} name="specialization.to" render={({ field }) => (<FormItem><FormLabel>إلى</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر دولة" /></SelectTrigger></FormControl><SelectContent>{Object.entries(countries).map(([key, {name}]) => (<SelectItem key={key} value={key}>{name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                </div>
-                            </div>
-                            <Separator />
-                            <FormField control={carrierForm.control} name="vehicleCategory" render={({ field }) => (
-                                <FormItem className="space-y-3">
-                                    <FormLabel className="font-semibold">فئة المركبة الأساسية</FormLabel>
-                                    <FormControl>
-                                        <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
-                                            <FormItem className="flex items-center space-x-3 space-x-reverse"><FormControl><RadioGroupItem value="small" /></FormControl><FormLabel className="font-normal">مركبة صغيرة (4-7 ركاب)</FormLabel></FormItem>
-                                            <FormItem className="flex items-center space-x-3 space-x-reverse"><FormControl><RadioGroupItem value="bus" /></FormControl><FormLabel className="font-normal">حافلة (8+ ركاب)</FormLabel></FormItem>
-                                        </RadioGroup>
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                        </CardContent>
-                        <CardFooter>
-                            <Button type="submit">حفظ إعدادات الناقل</Button>
-                        </CardFooter>
-                    </form>
-                </Form>
-            </Card>
+          <>
+            <Separator />
+            <CarrierSettingsSection />
+          </>
         )}
 
         <Card className="border-destructive shadow-lg">
@@ -333,4 +256,5 @@ export default function ProfilePage() {
   );
 }
 
+    
     
