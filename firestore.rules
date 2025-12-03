@@ -35,15 +35,10 @@ service cloud.firestore {
     // --- الرحلات (Trips) ---
     match /trips/{tripId} {
       
-      // التعديل: استخدام get بدلاً من read لتطبيق الشروط الصارمة فقط عند فتح رحلة محددة
-      allow get: if isSignedIn() && (
-        isOwner(resource.data.userId) || 
-        resource.data.status == 'Awaiting-Offers' ||
-        resource.data.carrierId == request.auth.uid
-      );
-      
-      // التعديل: السماح بالقائمة (List) لجميع المسجلين لتجنب خطأ التصاريح الحالي
-      allow list: if isSignedIn();
+      // FIX: Consolidate get and list into a single, secure read rule.
+      // This enforces that any query against this collection MUST include
+      // a `where('userId', '==', request.auth.uid)` clause.
+      allow read: if isOwner(resource.data.userId);
 
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       
@@ -55,7 +50,6 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
 
       // --- العروض (Offers) ---
-      // (لم يتم تغيير المنطق هنا، لكن تأكد من بقائه داخل بلوك الرحلات)
       match /offers/{offerId} {
         allow read, list: if isSignedIn() && (
            get(/databases/$(database)/documents/trips/$(tripId)).data.userId == request.auth.uid ||
