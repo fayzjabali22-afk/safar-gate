@@ -2,7 +2,7 @@
 import { RequestCard } from '@/components/carrier/request-card';
 import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, where, doc, getDoc } from 'firebase/firestore';
-import { PackageOpen, Settings, AlertTriangle, ListFilter } from 'lucide-react';
+import { PackageOpen, Settings, AlertTriangle, ListFilter, ShipWheel } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Trip, CarrierProfile } from '@/lib/data';
 import { useEffect, useState, useMemo } from 'react';
@@ -81,18 +81,19 @@ export default function CarrierRequestsPage() {
   }, [firestore, user]);
 
 
-  const tripsQuery = useMemo(() => {
-    if (!firestore) return null;
-    
-    let q = query(
-      collection(firestore, 'trips'),
-      where('status', '==', 'Awaiting-Offers')
-    );
-  
-    return q;
-  }, [firestore]);
-
-  const { data: allRequests, isLoading: isLoadingRequests } = useCollection<Trip>(tripsQuery);
+  // START: TEMPORARY FIX - Disable problematic query
+  const allRequests: Trip[] | null = [];
+  const isLoadingRequests = false;
+  // const tripsQuery = useMemo(() => {
+  //   if (!firestore) return null;
+  //   let q = query(
+  //     collection(firestore, 'trips'),
+  //     where('status', '==', 'Awaiting-Offers')
+  //   );
+  //   return q;
+  // }, [firestore]);
+  // const { data: allRequests, isLoading: isLoadingRequests } = useCollection<Trip>(tripsQuery);
+  // END: TEMPORARY FIX
   
   const filteredRequests = useMemo(() => {
     if (!allRequests) return [];
@@ -127,27 +128,13 @@ export default function CarrierRequestsPage() {
   return (
     <>
     <div className="space-y-4">
-        {canFilter && (
-            <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse p-4 bg-card rounded-lg border">
-                <Label htmlFor="filter-switch" className="font-semibold text-sm">عرض الطلبات المطابقة لخط سيري فقط</Label>
-                <Switch
-                    id="filter-switch"
-                    checked={filterBySpecialization}
-                    onCheckedChange={setFilterBySpecialization}
-                    aria-label="Filter by specialization"
-                />
-            </div>
-        )}
-
-        {filteredRequests.length > 0 ? (
-             <div className="space-y-2">
-                {filteredRequests.map((request) => (
-                    <RequestCard key={request.id} tripRequest={request} onOffer={handleOfferClick} />
-                ))}
-            </div>
-        ) : (
-            <NoRequestsState isFiltered={filterBySpecialization} />
-        )}
+       <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
+          <ShipWheel className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
+          <p className="text-lg font-bold">الميزة قيد الصيانة حالياً</p>
+          <p className="text-sm mt-2">
+            نحن نعمل على تحسين هذه الميزة. يرجى المحاولة مرة أخرى لاحقًا.
+          </p>
+        </div>
     </div>
     {selectedTrip && (
         <OfferDialog
