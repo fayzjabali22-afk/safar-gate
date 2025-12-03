@@ -1,18 +1,23 @@
 'use client';
+import { useState } from 'react';
 import { useFirestore, useCollection, useUser, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { Trip } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CalendarX, ArrowRight, Calendar, Users, CircleDollarSign, CheckCircle, Clock, XCircle, MoreVertical } from 'lucide-react';
+import { CalendarX, ArrowRight, Calendar, Users, CircleDollarSign, CheckCircle, Clock, XCircle, MoreVertical, Pencil, Ban } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from '../ui/button';
+import { EditTripDialog } from './edit-trip-dialog';
+import { useToast } from '@/hooks/use-toast';
+
 
 const cities: { [key: string]: string } = {
     damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص',
@@ -39,8 +44,18 @@ const statusMap: Record<string, { text: string; icon: React.ElementType; classNa
 };
 
 
-function TripListItem({ trip }: { trip: Trip }) {
+function TripListItem({ trip, onEdit }: { trip: Trip, onEdit: (trip: Trip) => void }) {
     const statusInfo = statusMap[trip.status] || { text: trip.status, icon: CircleDollarSign, className: 'bg-gray-100 text-gray-800' };
+    const { toast } = useToast();
+
+    const handleCancelTrip = () => {
+        toast({
+            title: "إجراء غير متاح حالياً",
+            description: "لإلغاء الرحلة وتنسيق إعادة المبالغ للمسافرين، يرجى التواصل مع إدارة التطبيق مباشرة.",
+            variant: "destructive",
+            duration: 8000,
+        });
+    }
 
     return (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full p-3 border rounded-lg bg-card shadow-sm transition-shadow hover:shadow-md">
@@ -64,7 +79,7 @@ function TripListItem({ trip }: { trip: Trip }) {
                     <span>{trip.price} د.أ</span>
                 </div>
             </div>
-             <div className="flex items-center gap-4 mt-3 sm:mt-0 sm:mr-4">
+             <div className="flex items-center gap-4 mt-3 sm:mt-0 sm:ml-4 rtl:sm:mr-4">
                 <Badge className={cn("py-1 px-3 text-xs", statusInfo.className)}>
                     <statusInfo.icon className="ml-1 h-3 w-3" />
                     {statusInfo.text}
@@ -76,9 +91,18 @@ function TripListItem({ trip }: { trip: Trip }) {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem>تعديل التفاصيل</DropdownMenuItem>
-                        <DropdownMenuItem>عرض الحجوزات</DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-500">إلغاء الرحلة</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onEdit(trip)}>
+                            <Pencil className="ml-2 h-4 w-4" />
+                            <span>تعديل المقاعد</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                            <span>عرض الحجوزات</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={handleCancelTrip}>
+                            <Ban className="ml-2 h-4 w-4" />
+                            <span>إلغاء الرحلة</span>
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
@@ -89,6 +113,9 @@ function TripListItem({ trip }: { trip: Trip }) {
 export function MyTripsList() {
     const firestore = useFirestore();
     const { user } = useUser();
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+
 
     const tripsQuery = useMemoFirebase(() => 
         firestore && user
@@ -101,6 +128,11 @@ export function MyTripsList() {
     [firestore, user]);
 
     const { data: trips, isLoading } = useCollection<Trip>(tripsQuery);
+
+    const handleEditClick = (trip: Trip) => {
+        setSelectedTrip(trip);
+        setIsEditDialogOpen(true);
+    };
 
     if (isLoading) {
         return (
@@ -123,8 +155,15 @@ export function MyTripsList() {
     }
 
     return (
-        <div className="space-y-2">
-            {trips.map((trip) => <TripListItem key={trip.id} trip={trip} />)}
-        </div>
+        <>
+            <div className="space-y-2">
+                {trips.map((trip) => <TripListItem key={trip.id} trip={trip} onEdit={handleEditClick} />)}
+            </div>
+            <EditTripDialog
+                isOpen={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                trip={selectedTrip}
+            />
+        </>
     );
 }
