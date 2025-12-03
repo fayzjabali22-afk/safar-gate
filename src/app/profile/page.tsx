@@ -25,13 +25,14 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useMemoFirebase, useDoc, setDocumentNonBlocking, useAuth } from '@/firebase';
-import { doc, deleteDoc } from 'firebase/firestore';
+import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { deleteUser, sendEmailVerification } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, Trash2, MailCheck } from 'lucide-react';
+import { ShieldAlert, Trash2, MailCheck, TestTube2, ArrowRightLeft } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { actionCodeSettings } from '@/firebase/config';
+import { useUserProfile } from '@/hooks/use-user-profile';
 
 
 const profileFormSchema = z.object({
@@ -50,6 +51,7 @@ export default function ProfilePage() {
   const firestore = useFirestore();
   const router = useRouter();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const { profile, isLoading } = useUserProfile();
 
 
   const userProfileRef = useMemoFirebase(() => {
@@ -95,6 +97,25 @@ export default function ProfilePage() {
       title: 'تم تحديث الملف الشخصي',
       description: 'تم حفظ تغييراتك بنجاح.',
     });
+  }
+
+  const handleRoleChange = async (newRole: 'traveler' | 'carrier') => {
+    if (!userProfileRef) return;
+    try {
+        await updateDoc(userProfileRef, { role: newRole });
+        toast({
+            title: `تم تغيير الدور إلى ${newRole}`,
+            description: "سيتم تحديث صلاحياتك في التنقل التالي."
+        });
+        // You might want to refresh the page or redirect to let changes take effect
+        window.location.reload();
+    } catch (e) {
+         toast({
+            variant: "destructive",
+            title: "فشل تحديث الدور",
+            description: "حدث خطأ ما.",
+        });
+    }
   }
 
   const handleResendVerification = async () => {
@@ -157,12 +178,15 @@ export default function ProfilePage() {
     }
   };
 
+  const isGuestUser = user?.email === 'guest@example.com';
+
+
   return (
     <>
     <AppLayout>
       <div className="max-w-2xl mx-auto space-y-8">
         
-        {user && !user.emailVerified && (
+        {user && !user.emailVerified && !isGuestUser && (
           <Card className="border-yellow-500 shadow-lg">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-yellow-500">
@@ -181,6 +205,41 @@ export default function ProfilePage() {
             </CardFooter>
           </Card>
         )}
+
+        {isGuestUser && (
+          <Card className="border-accent shadow-lg">
+             <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-accent">
+                    <TestTube2 />
+                    منطقة المطور (Dev Zone)
+                </CardTitle>
+                <CardDescription>
+                    أنت تستخدم حساب الضيف. يمكنك تبديل دورك لأغراض الاختبار. الدور الحالي: <span className="font-bold text-foreground">{profile?.role || '...'}</span>
+                </CardDescription>
+             </CardHeader>
+             <CardFooter className="flex gap-4">
+                <Button 
+                    variant={profile?.role === 'traveler' ? 'default' : 'outline'} 
+                    onClick={() => handleRoleChange('traveler')}
+                    disabled={isLoading}
+                    className="flex-1"
+                >
+                    <ArrowRightLeft className="ml-2 h-4 w-4" />
+                    التحويل إلى مسافر (Traveler)
+                </Button>
+                <Button 
+                    variant={profile?.role === 'carrier' ? 'default' : 'outline'} 
+                    onClick={() => handleRoleChange('carrier')}
+                    disabled={isLoading}
+                    className="flex-1"
+                >
+                    <ArrowRightLeft className="ml-2 h-4 w-4" />
+                    التحويل إلى ناقل (Carrier)
+                </Button>
+             </CardFooter>
+          </Card>  
+        )}
+
 
         <Card className="shadow-lg">
             <CardHeader>
@@ -306,3 +365,5 @@ export default function ProfilePage() {
     </>
   );
 }
+
+    

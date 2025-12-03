@@ -71,7 +71,9 @@ export async function initiateEmailSignUp(
 
     try {
         const userRef = doc(firestore, 'users', user.uid);
-        await setDoc(userRef, { ...profileData, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+        // All new users, including guest, default to traveler
+        const finalProfileData = { ...profileData, role: 'traveler', createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+        await setDoc(userRef, finalProfileData);
     } catch (firestoreError: any) {
         toast({
             variant: "destructive",
@@ -85,13 +87,16 @@ export async function initiateEmailSignUp(
     }
 
     try {
-        await sendEmailVerification(user, actionCodeSettings);
-        if (signOutAfter) {
-            toast({
-                title: 'Final Step!',
-                description: 'A verification email has been sent to activate your account.',
-                duration: 8000,
-            });
+        // Don't send verification for the guest account
+        if (email !== 'guest@example.com') {
+            await sendEmailVerification(user, actionCodeSettings);
+            if (signOutAfter) {
+                toast({
+                    title: 'Final Step!',
+                    description: 'A verification email has been sent to activate your account.',
+                    duration: 8000,
+                });
+            }
         }
     } catch (emailError: any) {
          toast({
@@ -147,6 +152,7 @@ export async function initiateGoogleSignIn(auth: Auth, firestore: Firestore): Pr
         lastName: lastNameParts.join(' '),
         email: user.email!,
         phoneNumber: user.phoneNumber || '',
+        role: 'traveler' // Default role for new Google sign-ups
       };
       await setDoc(userRef, { ...newUserProfile, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     }
@@ -169,3 +175,5 @@ export async function initiateGoogleSignIn(auth: Auth, firestore: Firestore): Pr
     return false;
   }
 }
+
+    
