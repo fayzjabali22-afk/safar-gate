@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { OfferDialog } from '@/components/carrier/offer-dialog';
+
 
 function LoadingState() {
   return (
@@ -29,7 +31,7 @@ function NoSpecializationState() {
             <p className="text-muted-foreground mt-2 max-w-md">
               للاستفادة من الفلترة الذكية، يرجى الذهاب إلى صفحة الملف الشخصي وتحديد "خط السير المفضل" الذي تعمل عليه.
             </p>
-            <Button asChild className="mt-6">
+             <Button asChild className="mt-6">
                 <Link href="/profile">
                     <Settings className="ml-2 h-4 w-4" />
                     الذهاب إلى الملف الشخصي
@@ -60,6 +62,9 @@ export default function CarrierRequestsPage() {
   const [carrierProfile, setCarrierProfile] = useState<CarrierProfile | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [filterBySpecialization, setFilterBySpecialization] = useState(true);
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
+
 
   useEffect(() => {
     const fetchCarrierProfile = async () => {
@@ -103,6 +108,11 @@ export default function CarrierRequestsPage() {
   }, [allRequests, filterBySpecialization, carrierProfile]);
 
   const isLoading = isLoadingProfile || isLoadingRequests;
+  
+  const handleOfferClick = (trip: Trip) => {
+    setSelectedTrip(trip);
+    setIsOfferDialogOpen(true);
+  }
 
   if (isLoading) {
     return <LoadingState />;
@@ -115,6 +125,7 @@ export default function CarrierRequestsPage() {
   }
 
   return (
+    <>
     <div className="space-y-4">
         {canFilter && (
             <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse p-4 bg-card rounded-lg border">
@@ -131,12 +142,20 @@ export default function CarrierRequestsPage() {
         {filteredRequests.length > 0 ? (
              <div className="space-y-2">
                 {filteredRequests.map((request) => (
-                    <RequestCard key={request.id} tripRequest={request} />
+                    <RequestCard key={request.id} tripRequest={request} onOffer={handleOfferClick} />
                 ))}
             </div>
         ) : (
             <NoRequestsState isFiltered={filterBySpecialization} />
         )}
     </div>
+    {selectedTrip && (
+        <OfferDialog
+            isOpen={isOfferDialogOpen}
+            onOpenChange={setIsOfferDialogOpen}
+            trip={selectedTrip}
+        />
+    )}
+    </>
   );
 }

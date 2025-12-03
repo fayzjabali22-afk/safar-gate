@@ -6,7 +6,6 @@ import { Trip } from '@/lib/data';
 import { Calendar, Users, Handshake, Info, ArrowRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
-import { OfferDialog } from './offer-dialog';
 import { cn } from '@/lib/utils';
 
 
@@ -36,51 +35,44 @@ const safeDateFormat = (dateInput: any): string => {
 
 interface RequestCardProps {
     tripRequest: Trip;
+    onOffer: (trip: Trip) => void;
 }
 
-export function RequestCard({ tripRequest }: RequestCardProps) {
-    const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
+export function RequestCard({ tripRequest, onOffer }: RequestCardProps) {
 
     return (
-        <>
-            <div className={cn(
-                "flex flex-col sm:flex-row sm:items-center sm:justify-between",
-                "w-full p-4 border rounded-lg shadow-sm transition-shadow duration-300 hover:shadow-primary/20 bg-card"
-            )}>
-                <div className="flex-1 mb-4 sm:mb-0">
-                    {/* Destination */}
-                    <div className="flex items-center gap-2 font-bold text-lg text-foreground">
-                        <span>{getCityName(tripRequest.origin)}</span>
-                        <ArrowRight className="h-5 w-5 text-primary" />
-                        <span>{getCityName(tripRequest.destination)}</span>
-                    </div>
-
-                    {/* Meta Info */}
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
-                        <div className="flex items-center gap-1">
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>{safeDateFormat(tripRequest.departureDate)}</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <Users className="h-3.5 w-3.5" />
-                            <span>{tripRequest.passengers || 1} راكب</span>
-                        </div>
-                    </div>
+        <div className={cn(
+            "flex flex-col sm:flex-row sm:items-center sm:justify-between",
+            "w-full p-4 border rounded-lg shadow-sm transition-shadow duration-300 hover:shadow-primary/20 bg-card"
+        )}>
+            <div className="flex-1 mb-4 sm:mb-0">
+                {/* Destination */}
+                <div className="flex items-center gap-2 font-bold text-lg text-foreground">
+                    <span>{getCityName(tripRequest.origin)}</span>
+                    <ArrowRight className="h-5 w-5 text-primary" />
+                    <span>{getCityName(tripRequest.destination)}</span>
                 </div>
 
-                {/* Action Button */}
-                <div className="flex-shrink-0">
-                     <Button className="w-full sm:w-auto" onClick={() => setIsOfferDialogOpen(true)}>
-                        <Handshake className="ml-2 h-4 w-4" />
-                        تقديم عرض
-                    </Button>
+                {/* Meta Info */}
+                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                    <div className="flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>{safeDateFormat(tripRequest.departureDate)}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <Users className="h-3.5 w-3.5" />
+                        <span>{tripRequest.passengers || 1} راكب</span>
+                    </div>
                 </div>
             </div>
-            <OfferDialog 
-                isOpen={isOfferDialogOpen}
-                onOpenChange={setIsOfferDialogOpen}
-                trip={tripRequest}
-            />
-        </>
+
+            {/* Action Button */}
+            <div className="flex-shrink-0">
+                 <Button className="w-full sm:w-auto" onClick={() => onOffer(tripRequest)}>
+                    <Handshake className="ml-2 h-4 w-4" />
+                    تقديم عرض
+                </Button>
+            </div>
+        </div>
     );
 }
