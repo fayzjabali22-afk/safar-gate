@@ -4,9 +4,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { QuickActions } from '@/components/carrier/quick-actions';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useState, useEffect } from 'react';
 
 export default function CarrierDashboardPage() {
   const { profile, isLoading } = useUserProfile();
+  const [currentDate, setCurrentDate] = useState('');
+
+  useEffect(() => {
+    // This effect runs only on the client, after hydration
+    setCurrentDate(new Date().toLocaleDateString('ar-SA', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+    }));
+  }, []); // Empty dependency array ensures it runs once on mount
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -31,13 +43,8 @@ export default function CarrierDashboardPage() {
             هذه هي غرفة عملياتك. نأمل لك يوماً مثمراً.
           </p>
         </div>
-        <div className="text-sm text-muted-foreground font-medium bg-card border px-3 py-1 rounded-md">
-          {new Date().toLocaleDateString('ar-SA', {
-            weekday: 'long',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          })}
+        <div className="text-sm text-muted-foreground font-medium bg-card border px-3 py-1.5 rounded-md min-w-[180px] text-center">
+          {currentDate ? currentDate : <Skeleton className="h-5 w-full" />}
         </div>
       </header>
 
