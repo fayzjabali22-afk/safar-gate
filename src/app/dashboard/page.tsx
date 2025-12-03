@@ -20,7 +20,6 @@ import { Label } from '@/components/ui/label';
 import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import type { Trip, CarrierProfile } from '@/lib/data';
-import { scheduledTrips, mockCarriers } from '@/lib/data'; 
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -76,9 +75,15 @@ export default function DashboardPage() {
   const [selectedTripForBooking, setSelectedTripForBooking] = useState<Trip | null>(null);
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
 
+  const scheduledTripsQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(
+      collection(firestore, 'trips'),
+      where('status', '==', 'Planned')
+    );
+  }, [firestore]);
 
-  const allTrips = scheduledTrips;
-  const isLoading = false; 
+  const { data: allTrips, isLoading } = useCollection<Trip>(scheduledTripsQuery);
 
   const [searchOriginCountry, setSearchOriginCountry] = useState('');
   const [searchOriginCity, setSearchOriginCity] = useState('');
@@ -113,7 +118,6 @@ export default function DashboardPage() {
 
     let foundCarrier: CarrierProfile | null = null;
 
-    // 1. Search in Firestore
     const carriersRef = collection(firestore, 'carriers');
     const q = query(carriersRef, where("name", "==", carrierSearchInput));
     const querySnapshot = await getDocs(q);
@@ -121,12 +125,6 @@ export default function DashboardPage() {
     if (!querySnapshot.empty) {
         const carrierDoc = querySnapshot.docs[0];
         foundCarrier = { id: carrierDoc.id, ...carrierDoc.data() } as CarrierProfile;
-    } else {
-        // 2. Fallback to mock data if not found in Firestore
-        const mockMatch = mockCarriers.find(c => c.name.toLowerCase() === carrierSearchInput.toLowerCase());
-        if (mockMatch) {
-            foundCarrier = mockMatch;
-        }
     }
 
     if (foundCarrier) {
@@ -141,16 +139,16 @@ export default function DashboardPage() {
 
 
   useEffect(() => {
-    let baseTrips: Trip[] = [];
+    let baseTrips: Trip[] = allTrips || [];
     
     if (searchMode === 'specific-carrier') {
         if (selectedCarrier) {
-            baseTrips = allTrips.filter(trip => trip.carrierName === selectedCarrier.name);
+            baseTrips = allTrips?.filter(trip => trip.carrierId === selectedCarrier.id) || [];
         } else {
             baseTrips = [];
         }
     } else {
-        baseTrips = [...allTrips];
+        baseTrips = allTrips || [];
     }
 
     let filteredTrips = [...baseTrips];

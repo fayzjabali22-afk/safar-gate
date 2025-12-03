@@ -44,7 +44,7 @@ export function BankDetailsForm() {
 
     const onSubmit = async (data: BankDetailsFormValues) => {
         if (!firestore || !profile?.id) {
-            toast({ variant: 'destructive', title: 'خطأ', description: 'لا يمكن حفظ البيانات.' });
+            toast({ variant: 'destructive', title: 'خطأ', description: 'لا يمكن حفظ البيانات. الحفظ يتم في ملف المستخدم وليس الناقل' });
             return;
         }
         setIsSubmitting(true);
