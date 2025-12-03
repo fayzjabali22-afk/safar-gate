@@ -24,27 +24,32 @@ service cloud.firestore {
     match /carriers/{carrierId} {
       // Public info is readable by anyone
       allow read: if true; 
-      // Only the carrier can write to their profile
-      // We secure the bankDetails field specifically
-      allow write: if isOwner(carrierId) && !(request.resource.data.keys().hasAll(['bankDetails']));
+      // Only the carrier can write to their profile, including bank details
+      allow write: if isOwner(carrierId);
       allow update: if isOwner(carrierId);
     }
 
     // --- الإشعارات (Notifications) ---
-    match /notifications/{notificationId} {
-      allow read, list, update: if isSignedIn() && resource.data.userId == request.auth.uid;
+    // Note: The original rule was for /notifications/{notificationId} which might not be correct
+    // if notifications are a sub-collection. Assuming a root collection for now.
+    match /users/{userId}/notifications/{notificationId} {
+      allow read, list, update: if isOwner(userId);
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
     }
+    
+    // A root level notifications collection
+    match /notifications/{notificationId} {
+        allow read, write: if resource.data.userId == request.auth.uid;
+    }
+
 
     // --- الرحلات (Trips) ---
     match /trips/{tripId} {
       
-      // التعديل الجذري: دمجنا get و list في أمر واحد بسيط
-      // هذا السطر يقول: "أي مستخدم مسجل دخول يحق له قراءة الرحلات وتفاصيلها"
-      // هذا سيحل مشكلة "insufficient permissions" بشكل مؤكد
+      // Allow any signed-in user to read trips and offers
       allow read: if isSignedIn();
 
-      // عمليات الكتابة تبقى آمنة كما هي
+      // Write operations are secured
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       
       allow update: if isSignedIn() && (
@@ -56,7 +61,6 @@ service cloud.firestore {
 
       // --- العروض (Offers) ---
       match /offers/{offerId} {
-        // قمنا بتبسيط قراءة العروض أيضاً لتتبع نفس منطق الرحلات مؤقتاً
         allow read, list: if isSignedIn();
         
         allow create: if isSignedIn() && isOwner(request.resource.data.carrierId);

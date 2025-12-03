@@ -49,7 +49,7 @@ export function BankDetailsForm() {
         }
         setIsSubmitting(true);
         try {
-            const carrierRef = doc(firestore, 'carriers', profile.id);
+            const carrierRef = doc(firestore, 'users', profile.id); // It should be users collection
             await updateDoc(carrierRef, { bankDetails: data });
             toast({ title: 'تم حفظ البيانات بنجاح', description: 'تم تحديث معلومات حسابك البنكي.' });
         } catch (error) {

@@ -9,6 +9,11 @@ export type UserProfile = {
   role?: 'traveler' | 'carrier' | 'admin';
   createdAt?: any;
   updatedAt?: any;
+  bankDetails?: {
+    bankName: string;
+    accountHolderName: string;
+    iban: string;
+  };
 };
 
 export type CarrierProfile = {
@@ -17,6 +22,11 @@ export type CarrierProfile = {
   contactEmail: string;
   phoneNumber?: string;
   averageRating?: number;
+  bankDetails?: {
+    bankName: string;
+    accountHolderName: string;
+    iban: string;
+  };
   createdAt?: any;
   updatedAt?: any;
 }
