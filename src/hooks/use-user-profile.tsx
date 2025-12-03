@@ -9,12 +9,13 @@ import type { UserProfile } from '@/lib/data';
  * It combines the auth user from `useUser` with their corresponding
  * document in the 'users' collection.
  *
- * @returns An object containing the user's profile data and loading state.
+ * @returns An object containing the auth user, the Firestore profile, and the combined loading state.
  */
 export function useUserProfile() {
   const { user, isUserLoading: isAuthLoading, userError } = useUser();
   const firestore = useFirestore();
 
+  // Memoize the DocumentReference to prevent re-renders.
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return doc(firestore, 'users', user.uid);
@@ -26,11 +27,12 @@ export function useUserProfile() {
     error: profileError,
   } = useDoc<UserProfile>(userProfileRef);
 
+  // The overall loading state is true if either the auth state or the profile fetch is in progress.
   const isLoading = isAuthLoading || isProfileLoading;
 
   return {
-    user,
-    profile,
+    user, // The user object from Firebase Auth
+    profile, // The user profile document from Firestore (contains the 'role')
     isLoading,
     error: userError || profileError,
   };
