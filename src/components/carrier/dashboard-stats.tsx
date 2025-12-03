@@ -6,25 +6,25 @@ import { DollarSign, Briefcase, Users, PackageSearch } from 'lucide-react';
 const stats = [
   {
     title: 'طلبات تنتظر العروض',
-    value: '0',
+    value: '7',
     description: 'طلبات جديدة في السوق',
     icon: PackageSearch,
   },
   {
     title: 'حجوزاتي المؤكدة',
-    value: '0',
+    value: '4',
     description: 'الرحلات القادمة المخطط لها',
     icon: Briefcase,
   },
   {
     title: 'عدد الركاب',
-    value: '0',
+    value: '12',
     description: 'إجمالي الركاب في رحلاتك',
     icon: Users,
   },
   {
     title: 'الرصيد (قيد الانتظار)',
-    value: '0.00 د.أ',
+    value: '175.00 د.أ',
     description: 'الأرباح من الرحلات المكتملة',
     icon: DollarSign,
   },

@@ -5,7 +5,7 @@ import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import { Trip } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CalendarX, ArrowRight, Calendar, Users, CircleDollarSign, CheckCircle, Clock, XCircle, MoreVertical, Pencil, Ban } from 'lucide-react';
+import { CalendarX, ArrowRight, Calendar, Users, CircleDollarSign, CheckCircle, Clock, XCircle, MoreVertical, Pencil, Ban, Ship } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import {
@@ -33,6 +33,34 @@ const mockTrips: Trip[] = [
         vehicleType: 'GMC Yukon 2023',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+    },
+    {
+        id: 'mock_planned_2',
+        userId: 'carrier_user_id',
+        carrierId: 'carrier_user_id',
+        origin: 'amman',
+        destination: 'damascus',
+        departureDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Planned',
+        price: 20,
+        availableSeats: 4,
+        vehicleType: 'Hyundai Staria 2024',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    },
+    {
+        id: 'mock_in_transit_1',
+        userId: 'carrier_user_id',
+        carrierId: 'carrier_user_id',
+        origin: 'jeddah',
+        destination: 'cairo',
+        departureDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'In-Transit',
+        price: 150,
+        availableSeats: 8,
+        vehicleType: 'Mercedes Bus 2022',
+        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     },
     {
         id: 'mock_completed_1',
@@ -84,7 +112,7 @@ const safeDateFormat = (dateInput: any): string => {
 
 const statusMap: Record<string, { text: string; icon: React.ElementType; className: string }> = {
   'Planned': { text: 'مجدولة', icon: Clock, className: 'bg-blue-100 text-blue-800' },
-  'In-Transit': { text: 'قيد التنفيذ', icon: ArrowRight, className: 'bg-yellow-100 text-yellow-800' },
+  'In-Transit': { text: 'قيد التنفيذ', icon: Ship, className: 'bg-yellow-100 text-yellow-800' },
   'Completed': { text: 'مكتملة', icon: CheckCircle, className: 'bg-green-100 text-green-800' },
   'Cancelled': { text: 'ملغاة', icon: XCircle, className: 'bg-red-100 text-red-800' },
 };

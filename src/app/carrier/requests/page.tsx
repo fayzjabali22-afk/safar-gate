@@ -69,6 +69,28 @@ const mockRequests: Trip[] = [
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
+    {
+      id: 'mock_trip_6',
+      userId: 'mock_user_6',
+      origin: 'amman',
+      destination: 'riyadh',
+      departureDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(),
+      passengers: 1,
+      status: 'Awaiting-Offers',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
+    {
+      id: 'mock_trip_7',
+      userId: 'mock_user_7',
+      origin: 'homs',
+      destination: 'zarqa',
+      departureDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
+      passengers: 5,
+      status: 'Awaiting-Offers',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    },
 ];
 
 function LoadingState() {

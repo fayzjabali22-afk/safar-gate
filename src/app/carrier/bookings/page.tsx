@@ -37,6 +37,23 @@ const mockPendingBookings: Booking[] = [
         totalPrice: 25,
         createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
         updatedAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'mock_booking_3',
+        tripId: 'mock_trip_3',
+        userId: 'mock_user_5',
+        carrierId: 'carrier_user_id',
+        seats: 4,
+        passengersDetails: [
+            { name: 'يوسف المغربي', type: 'adult' },
+            { name: 'مريم المغربي', type: 'adult' },
+            { name: 'علي المغربي', type: 'child' },
+            { name: 'نور المغربي', type: 'child' },
+        ],
+        status: 'Pending-Carrier-Confirmation',
+        totalPrice: 200,
+        createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
     }
 ];
 
