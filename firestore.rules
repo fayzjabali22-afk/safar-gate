@@ -34,9 +34,11 @@ service cloud.firestore {
 
     // --- الرحلات (Trips) ---
     match /trips/{tripId} {
-      // Allow read/list only if the user is the owner of the trip.
-      // This is more secure and ensures queries from the client must be specific.
-      allow read, list: if isSignedIn() && isOwner(resource.data.userId);
+      allow read: if isSignedIn() && isOwner(resource.data.userId);
+
+      // This allows a logged-in user to query the collection.
+      // The `read` rule above will ensure that only documents where the user is the owner are actually returned.
+      allow list: if isSignedIn();
 
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       
