@@ -4,7 +4,7 @@ import { useUserProfile } from '@/hooks/use-user-profile';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ShieldAlert, Ship, LayoutDashboard, FilePlus, Route } from 'lucide-react';
+import { ShieldAlert, Ship, LayoutDashboard, FilePlus, Route, Briefcase } from 'lucide-react';
 import { AppLayout } from '@/components/app-layout';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -48,7 +48,8 @@ function AccessDenied() {
 const sidebarNavLinks = [
     { href: '/carrier', label: 'لوحة القيادة', icon: LayoutDashboard, exact: true },
     { href: '/carrier/requests', label: 'سوق الطلبات', icon: FilePlus, exact: false },
-    { href: '/carrier/trips', label: 'رحلاتي المجدولة', icon: Route, exact: false }
+    { href: '/carrier/trips', label: 'رحلاتي المجدولة', icon: Route, exact: false },
+    { href: '/carrier/bookings', label: 'الحجوزات الواردة', icon: Briefcase, exact: false }
 ];
 
 
