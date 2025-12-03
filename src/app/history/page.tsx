@@ -10,18 +10,18 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, doc, writeBatch, limit, orderBy, arrayUnion } from 'firebase/firestore'; 
+import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, doc, writeBatch, arrayUnion } from 'firebase/firestore'; 
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Trip, Offer } from '@/lib/data';
+import type { Trip, Offer, Booking } from '@/lib/data';
 import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass } from 'lucide-react';
 import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
-import { BookingDialog } from '@/components/booking-dialog';
+import { BookingDialog, type PassengerDetails } from '@/components/booking-dialog';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
 
 // --- Helper Functions & Data ---
@@ -125,66 +125,74 @@ export default function HistoryPage() {
   }, [totalLoading, hasAwaitingTrips, hasPendingConfirmationTrips, hasConfirmedTrips]);
 
   const handleAcceptOffer = (trip: Trip, offer: Offer) => {
-    setSelectedOfferForBooking({ trip, offer });
-    setIsBookingDialogOpen(true);
+      // For now, we will handle this via chat. The actual booking confirmation will be done by carrier.
+      // This function can be used to initiate the chat.
+      if (!firestore || !user) {
+        toast({ variant: 'destructive', title: 'خطأ', description: 'يجب تسجيل الدخول لبدء محادثة.'});
+        return;
+      }
+      const chatId = `${trip.id}_${user.uid}_${offer.carrierId}`;
+      router.push(`/chats/${chatId}`);
   };
 
-  const handleConfirmBooking = async (passengers: any[]) => {
-    if (!firestore || !user || !selectedOfferForBooking) return;
-    setIsProcessingBooking(true);
-    const { trip, offer } = selectedOfferForBooking;
+  const handleConfirmBookingFromOffer = async (passengers: PassengerDetails[]) => {
+      if (!firestore || !user || !selectedOfferForBooking) return;
+      setIsProcessingBooking(true);
+      const { trip, offer } = selectedOfferForBooking;
+  
+      try {
+        const batch = writeBatch(firestore);
+        
+        // This process is now simplified. We create a Booking document and set the trip to pending.
+        const bookingData: Omit<Booking, 'id'> = {
+            tripId: trip.id,
+            userId: user.uid,
+            carrierId: offer.carrierId,
+            seats: passengers.length,
+            passengersDetails: passengers,
+            status: 'Pending-Carrier-Confirmation',
+            totalPrice: offer.price, // Using the offer price
+            createdAt: new Date().toISOString(),
+        };
 
-    try {
-      const batch = writeBatch(firestore);
-      
-      const bookingRef = doc(collection(firestore, 'bookings'));
-      batch.set(bookingRef, {
-        id: bookingRef.id,
-        tripId: trip.id,
-        offerId: offer.id,
-        userId: user.uid,
-        carrierId: offer.carrierId,
-        seats: passengers.length,
-        passengersDetails: passengers,
-        status: 'Pending-Carrier-Confirmation',
-        totalPrice: offer.price * passengers.length,
-        createdAt: new Date().toISOString(),
-      });
-
-      // @ts-ignore
-      const carrierName = offer.carrierName || '';
-
-      batch.update(doc(firestore, 'trips', trip.id), {
-        status: 'Pending-Carrier-Confirmation',
-        acceptedOfferId: offer.id,
-        bookingIds: arrayUnion(bookingRef.id),
-        carrierId: offer.carrierId,
-        carrierName: carrierName,
-      });
-
-      const notificationRef = doc(collection(firestore, 'notifications'));
-      batch.set(notificationRef, {
-        userId: offer.carrierId,
-        title: `طلب حجز جديد لرحلة ${cities[trip.origin] || trip.origin} - ${cities[trip.destination] || trip.destination}`,
-        message: `لديك طلب حجز جديد من المستخدم ${user.displayName || user.email}.`,
-        type: 'new_booking_request',
-        isRead: false,
-        createdAt: new Date().toISOString(),
-        link: `/carrier/bookings`,
-      });
-
-      await batch.commit();
-      
-      toast({ title: 'تم إرسال طلب الحجز بنجاح!', description: 'بانتظار موافقة الناقل. تم نقل الطلب إلى قسم "حجوزات بانتظار التأكيد".' });
-      setIsBookingDialogOpen(false);
-      setSelectedOfferForBooking(null);
-    } catch (error) {
-      console.error("Booking Error:", error);
-      toast({ variant: 'destructive', title: 'فشلت العملية', description: 'حدث خطأ أثناء الحجز، حاول لاحقاً.' });
-    } finally {
-      setIsProcessingBooking(false);
-    }
+        // Create booking doc
+        const bookingRef = doc(collection(firestore, 'bookings'));
+        batch.set(bookingRef, bookingData);
+        
+        // Update trip status and link to the booking
+        batch.update(doc(firestore, 'trips', trip.id), { 
+            status: 'Pending-Carrier-Confirmation',
+            acceptedOfferId: offer.id,
+            bookingIds: arrayUnion(bookingRef.id),
+            carrierId: offer.carrierId,
+            carrierName: (offer as any).carrierName || 'Unknown Carrier' // Get carrier name if available
+        });
+        
+        // Notify the carrier
+        const notificationsCollection = collection(firestore, 'notifications');
+        addDocumentNonBlocking(notificationsCollection, {
+            userId: offer.carrierId,
+            title: 'طلب حجز جديد',
+            message: `لديك طلب حجز جديد لرحلة ${cities[trip.origin]} - ${cities[trip.destination]}.`,
+            type: 'new_booking_request',
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            link: `/carrier/bookings`
+        });
+  
+        await batch.commit();
+        
+        toast({ title: 'تم إرسال طلب الحجز بنجاح!', description: 'بانتظار موافقة الناقل. تم نقل الطلب إلى قسم "بانتظار التأكيد".' });
+        setIsBookingDialogOpen(false);
+        setSelectedOfferForBooking(null);
+      } catch (error) {
+        console.error("Booking Error:", error);
+        toast({ variant: 'destructive', title: 'فشلت العملية', description: 'حدث خطأ أثناء الحجز، حاول لاحقاً.' });
+      } finally {
+        setIsProcessingBooking(false);
+      }
   };
+
 
   const renderSkeleton = () => (
     <div className="space-y-4" role="status" aria-label="جار التحميل">
@@ -241,7 +249,7 @@ export default function HistoryPage() {
                           تاريخ الطلب: {safeDateFormat(trip.departureDate)} | عدد الركاب: {trip.passengers || 'غير محدد'}
                         </CardDescription>
                       </div>
-                      <TripOffers trip={trip} onAcceptOffer={(offer) => handleAcceptOffer(trip, offer)} />
+                      <TripOffers trip={trip} onAcceptOffer={handleAcceptOffer} />
                     </CardContent>
                   ))}
                 </AccordionContent>
@@ -319,7 +327,7 @@ export default function HistoryPage() {
             onOpenChange={setIsBookingDialogOpen}
             trip={selectedOfferForBooking.trip}
             seatCount={selectedOfferForBooking.trip.passengers || selectedOfferForBooking.offer.availableSeats || 1}
-            onConfirm={handleConfirmBooking}
+            onConfirm={handleConfirmBookingFromOffer}
             isProcessing={isProcessingBooking}
           />
       )}
