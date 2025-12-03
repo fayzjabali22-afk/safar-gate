@@ -44,6 +44,7 @@ import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { BookingDialog, type PassengerDetails } from '@/components/booking-dialog';
 import { logEvent } from '@/lib/analytics';
+import Link from 'next/link';
 
 
 // Mock data for countries and cities
@@ -358,12 +359,26 @@ export default function DashboardPage() {
   const showNoResultsMessage = Object.keys(groupedAndFilteredTrips).length === 0;
 
   const sortedTripDates = Object.keys(groupedAndFilteredTrips);
-
+  const isDevUser = user?.email === 'dev@safar.com';
 
   return (
     <AppLayout>
       <div className="container mx-auto p-0 md:p-4 rounded-lg">
-
+        {isDevUser && (
+          <Card className="mb-4 border-accent">
+            <CardHeader>
+              <CardTitle className="text-accent text-base">Developer Quick Switch</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline">
+                <Link href="/carrier">
+                  <ArrowRightLeft className="ml-2 h-4 w-4" />
+                  Switch to Carrier Interface
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
         <div className="flex flex-col lg:flex-row gap-8 p-2 lg:p-4">
 
           <div className="flex-1 min-w-0">
