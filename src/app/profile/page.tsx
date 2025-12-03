@@ -139,41 +139,34 @@ export default function ProfilePage() {
   };
 
     const handleDeleteAccount = async () => {
-    // DEV MODE: Bypassing auth check
-    toast({
-        title: 'تم تعطيل المصادقة',
-        description: 'تم تعطيل حذف الحساب في وضع التطوير.',
-    });
-    setIsDeleteConfirmOpen(false);
+    if (!user || !auth || !firestore) {
+        toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم العثور على المستخدم أو خدمات Firebase.' });
+        setIsDeleteConfirmOpen(false);
+        return;
+    }
 
-    // if (!user || !auth || !firestore) {
-    //     toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم العثور على المستخدم أو خدمات Firebase.' });
-    //     setIsDeleteConfirmOpen(false);
-    //     return;
-    // }
+    const userDocRef = doc(firestore, 'users', user.uid);
 
-    // const userDocRef = doc(firestore, 'users', user.uid);
-
-    // try {
-    //     await deleteDoc(userDocRef);
+    try {
+        await deleteDoc(userDocRef);
         
-    //     await deleteUser(user);
+        await deleteUser(user);
         
-    //     toast({ title: 'تم حذف الحساب بنجاح', description: 'نأمل أن نراك مرة أخرى قريبًا.' });
-    //     router.push('/signup');
+        toast({ title: 'تم حذف الحساب بنجاح', description: 'نأمل أن نراك مرة أخرى قريبًا.' });
+        router.push('/signup');
 
-    // } catch (error: any) {
-    //     console.error("Delete account error:", error);
+    } catch (error: any) {
+        console.error("Delete account error:", error);
         
-    //     if (error.code === 'auth/requires-recent-login') {
-    //         toast({ variant: 'destructive', title: 'فشل حذف المصادقة', description: 'هذه العملية تتطلب إعادة تسجيل دخول حديثة. تم حذف بياناتك، يرجى تسجيل الخروج ثم الدخول مرة أخرى لإكمال الحذف.' });
-    //          router.push('/login'); 
-    //     } else {
-    //          toast({ variant: 'destructive', title: 'فشل حذف الحساب', description: 'حدث خطأ أثناء محاولة حذف حسابك.' });
-    //     }
-    // } finally {
-    //     setIsDeleteConfirmOpen(false);
-    // }
+        if (error.code === 'auth/requires-recent-login') {
+             toast({ variant: 'destructive', title: 'فشل حذف المصادقة', description: 'هذه العملية تتطلب إعادة تسجيل دخول حديثة. تم حذف بياناتك، يرجى تسجيل الخروج ثم الدخول مرة أخرى لإكمال الحذف.' });
+             router.push('/login'); 
+        } else {
+             toast({ variant: 'destructive', title: 'فشل حذف الحساب', description: 'حدث خطأ أثناء محاولة حذف حسابك.' });
+        }
+    } finally {
+        setIsDeleteConfirmOpen(false);
+    }
   };
 
   const isDevUser = user?.email === 'dev@safar.com';
@@ -262,3 +255,5 @@ export default function ProfilePage() {
     </>
   );
 }
+
+    
