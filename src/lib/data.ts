@@ -115,6 +115,39 @@ export const userProfile: UserProfile = {
 
 // --- MOCK DATA FOR DEVELOPMENT ---
 
+export const mockTripRequests: Trip[] = [
+    {
+        id: 'REQ-001',
+        userId: 'userABC',
+        origin: 'amman',
+        destination: 'riyadh',
+        departureDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Awaiting-Offers',
+        passengers: 2,
+        cargoDetails: 'حقيبتان كبيرتان فقط.'
+    },
+    {
+        id: 'REQ-002',
+        userId: 'userDEF',
+        origin: 'damascus',
+        destination: 'jeddah',
+        departureDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Awaiting-Offers',
+        passengers: 1,
+        cargoDetails: 'مسافر بدون أمتعة إضافية.'
+    },
+    {
+        id: 'REQ-003',
+        userId: 'userGHI',
+        origin: 'cairo',
+        destination: 'amman',
+        departureDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Awaiting-Offers',
+        passengers: 4,
+    }
+];
+
+
 export const mockCarriers: CarrierProfile[] = [
     { id: 'carrier01', name: 'شركة النقل السريع', contactEmail: 'nq.saree3@email.com', averageRating: 4.8 },
     { id: 'carrier02', name: 'سفريات الأمان', contactEmail: 'alaman.travel@email.com', averageRating: 4.5 },
@@ -216,5 +249,3 @@ export const mockOffers: Offer[] = [
         depositPercentage: 25,
     }
 ];
-
-    

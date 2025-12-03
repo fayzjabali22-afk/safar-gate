@@ -19,7 +19,7 @@ export function QuickActions() {
                 </CardHeader>
                 <div className="p-6 pt-0">
                     <Button asChild className="w-full">
-                        <Link href="#">
+                        <Link href="/carrier/requests">
                             <Search className="ml-2 h-4 w-4" />
                             الذهاب إلى السوق
                         </Link>
