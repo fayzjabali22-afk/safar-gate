@@ -16,12 +16,12 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Offer, Booking } from '@/lib/data';
-import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Radar, MessageSquare, Flag } from 'lucide-react';
+import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Radar, MessageSquare, Flag, CreditCard } from 'lucide-react';
 import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format, addHours, isFuture } from 'date-fns';
 import { arSA } from 'date-fns/locale';
-import { BookingDialog } from '@/components/booking/booking-dialog';
+import { BookingPaymentDialog } from '@/components/booking/booking-payment-dialog';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
 import { RateTripDialog } from '@/components/trip-closure/rate-trip-dialog';
 import { CancellationDialog } from '@/components/booking/cancellation-dialog';
@@ -84,7 +84,7 @@ const mockPendingConfirmationTrips: { trip: Trip, booking: Booking }[] = [
             origin: 'damascus',
             destination: 'amman',
             departureDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'Pending-Carrier-Confirmation',
+            status: 'Pending-Carrier-Confirmation', // This status is on the trip, but booking is what matters
         },
         booking: {
             id: 'booking_pending_1',
@@ -100,6 +100,38 @@ const mockPendingConfirmationTrips: { trip: Trip, booking: Booking }[] = [
         }
     }
 ];
+
+// NEW MOCK SCENARIO: PENDING PAYMENT
+const mockPendingPaymentTrips: { trip: Trip, booking: Booking }[] = [
+    {
+        trip: {
+            id: 'trip_payment_1',
+            userId: 'carrier_payment',
+            carrierId: 'carrier_payment',
+            carrierName: 'النقل الذهبي',
+            origin: 'jeddah',
+            destination: 'cairo',
+            departureDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
+            status: 'Planned', // Trip is planned, but booking needs payment
+            price: 150,
+            currency: 'SAR',
+            depositPercentage: 25, // Carrier requires 25% deposit
+        },
+        booking: {
+            id: 'booking_payment_1',
+            tripId: 'trip_payment_1',
+            userId: 'user1',
+            carrierId: 'carrier_payment',
+            seats: 2,
+            passengersDetails: [{ name: 'Jasser Mohamed', type: 'adult' }, { name: 'Reem Mohamed', type: 'adult' }],
+            status: 'Pending-Payment', // THE KEY STATUS
+            totalPrice: 300,
+            currency: 'SAR',
+            createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(), // 12 hours ago
+        }
+    }
+];
+
 
 const mockConfirmedTrips: { trip: Trip, booking: Booking }[] = [
     {
@@ -165,6 +197,7 @@ const cities: { [key: string]: string } = {
 const statusMap: Record<string, string> = {
   'Awaiting-Offers': 'بانتظار العروض',
   'Pending-Carrier-Confirmation': 'بانتظار تأكيد الناقل',
+  'Pending-Payment': 'بانتظار الدفع',
   'Planned': 'مؤكدة',
   'Completed': 'مكتملة',
   'Cancelled': 'ملغاة',
@@ -173,6 +206,7 @@ const statusMap: Record<string, string> = {
 const statusVariantMap: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
   'Awaiting-Offers': 'outline',
   'Pending-Carrier-Confirmation': 'secondary',
+  'Pending-Payment': 'destructive',
   'Planned': 'default',
   'Completed': 'default',
   'Cancelled': 'destructive',
@@ -206,8 +240,9 @@ export default function HistoryPage() {
   const { toast } = useToast();
 
   const [openAccordion, setOpenAccordion] = useState<string | undefined>(undefined);
-  const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
+  const [isBookingPaymentOpen, setIsBookingPaymentOpen] = useState(false);
   const [selectedOfferForBooking, setSelectedOfferForBooking] = useState<{ trip: Trip, offer: Offer } | null>(null);
+  const [selectedBookingForPayment, setSelectedBookingForPayment] = useState<{ trip: Trip, booking: Booking } | null>(null);
   const [isProcessingBooking, setIsProcessingBooking] = useState(false);
 
   // Rating Dialog State
@@ -231,29 +266,37 @@ export default function HistoryPage() {
   // --- USE MOCK DATA ---
   const awaitingTrips = mockAwaitingTrips;
   const pendingConfirmationTrips = mockPendingConfirmationTrips;
+  const pendingPaymentTrips = mockPendingPaymentTrips;
   const confirmedTrips = mockConfirmedTrips;
   const totalLoading = false;
   // --- END MOCK DATA ---
 
   const hasAwaitingTrips = awaitingTrips && awaitingTrips.length > 0;
   const hasPendingConfirmationTrips = pendingConfirmationTrips && pendingConfirmationTrips.length > 0;
+  const hasPendingPaymentTrips = pendingPaymentTrips && pendingPaymentTrips.length > 0;
   const hasConfirmedTrips = confirmedTrips && confirmedTrips.length > 0;
 
-  const noHistoryAtAll = !totalLoading && !hasAwaitingTrips && !hasPendingConfirmationTrips && !hasConfirmedTrips;
+  const noHistoryAtAll = !totalLoading && !hasAwaitingTrips && !hasPendingConfirmationTrips && !hasPendingPaymentTrips && !hasConfirmedTrips;
 
   useEffect(() => {
     if (!totalLoading) {
-        if (hasAwaitingTrips) setOpenAccordion('awaiting');
+        if (hasPendingPaymentTrips) setOpenAccordion('pending-payment');
+        else if (hasAwaitingTrips) setOpenAccordion('awaiting');
         else if (hasPendingConfirmationTrips) setOpenAccordion('pending');
         else if (hasConfirmedTrips) setOpenAccordion('confirmed');
         else setOpenAccordion(undefined);
     }
-  }, [totalLoading, hasAwaitingTrips, hasPendingConfirmationTrips, hasConfirmedTrips]);
+  }, [totalLoading, hasAwaitingTrips, hasPendingConfirmationTrips, hasPendingPaymentTrips, hasConfirmedTrips]);
 
   const handleAcceptOffer = (trip: Trip, offer: Offer) => {
       setSelectedOfferForBooking({ trip, offer });
-      setIsBookingDialogOpen(true);
+      setIsBookingPaymentOpen(true);
   };
+
+  const handlePayNow = (trip: Trip, booking: Booking) => {
+    setSelectedBookingForPayment({ trip, booking });
+    setIsBookingPaymentOpen(true);
+  }
   
   const handleOpenRatingDialog = (trip: Trip) => {
       setSelectedTripForRating(trip);
@@ -295,16 +338,19 @@ export default function HistoryPage() {
   };
 
 
-  const handleConfirmBookingFromOffer = async (passengers: any[]) => {
-      if (!firestore || !user || !selectedOfferForBooking) return;
+  const handleConfirmBookingPayment = async (passengers: any[]) => {
+      if (!firestore || !user || (!selectedOfferForBooking && !selectedBookingForPayment)) return;
       setIsProcessingBooking(true);
       
       // SIMULATION
       setTimeout(() => {
-        toast({ title: 'محاكاة: تم إرسال طلب الحجز!', description: 'بانتظار موافقة الناقل.' });
+        const title = selectedOfferForBooking ? 'محاكاة: تم إرسال طلب الحجز!' : 'محاكاة: تم تأكيد الدفع!';
+        const description = selectedOfferForBooking ? 'بانتظار موافقة الناقل.' : 'تم تأكيد حجزك، نتمنى لك رحلة سعيدة.';
+        toast({ title, description });
         setIsProcessingBooking(false);
-        setIsBookingDialogOpen(false);
+        setIsBookingPaymentOpen(false);
         setSelectedOfferForBooking(null);
+        setSelectedBookingForPayment(null);
       }, 1500);
   };
 
@@ -317,7 +363,7 @@ export default function HistoryPage() {
   
   if (totalLoading) return <AppLayout>{renderSkeleton()}</AppLayout>;
 
-  const bookingDialogData = selectedOfferForBooking;
+  const bookingDialogData = selectedOfferForBooking || selectedBookingForPayment;
 
   return (
     <AppLayout>
@@ -380,6 +426,48 @@ export default function HistoryPage() {
                         </CardFooter>
                     </div>
                   ))}
+                </AccordionContent>
+              </Card>
+            </AccordionItem>
+          )}
+
+           {/* Pending Payment */}
+          {hasPendingPaymentTrips && (
+             <AccordionItem value="pending-payment" className="border-none">
+              <Card className="border-2 border-destructive/50">
+                <AccordionTrigger className="p-6 text-lg hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-6 w-6 text-destructive" aria-hidden="true" />
+                    <CardTitle className="text-destructive">حجوزات بانتظار الدفع ({pendingPaymentTrips.length})</CardTitle>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <CardContent className="space-y-6 pt-6">
+                    {pendingPaymentTrips.map(({trip, booking}) => (
+                      <Card key={booking.id} className="bg-background/50">
+                        <CardHeader>
+                          <div className="flex justify-between items-center">
+                            <CardTitle className="text-base font-bold">رحلة {cities[trip.origin] || trip.origin} إلى {cities[trip.destination] || trip.destination}</CardTitle>
+                            <Badge variant={statusVariantMap[booking.status] || 'outline'}>{statusMap[booking.status] || booking.status}</Badge>
+                          </div>
+                          <CardDescription>الناقل: {trip.carrierName}</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex flex-col items-center justify-center text-center space-y-2 p-6">
+                            <AlertCircle className="h-8 w-8 text-destructive" aria-hidden="true" />
+                            <p className="font-bold">مطلوب إتمام الدفع</p>
+                            <p className="text-sm text-muted-foreground">
+                              وافق الناقل على طلبك! يرجى دفع العربون لتأكيد حجزك.
+                            </p>
+                        </CardContent>
+                        <CardFooter>
+                           <Button className="w-full" onClick={() => handlePayNow(trip, booking)}>
+                                <CreditCard className="ml-2 h-4 w-4" />
+                                اذهب إلى الدفع
+                            </Button>
+                        </CardFooter>
+                      </Card>
+                    ))}
+                  </CardContent>
                 </AccordionContent>
               </Card>
             </AccordionItem>
@@ -459,15 +547,14 @@ export default function HistoryPage() {
       </div>
 
       {/* --- Dialogs --- */}
-      {selectedOfferForBooking && (
-          <BookingDialog
-            isOpen={isBookingDialogOpen}
-            onOpenChange={setIsBookingDialogOpen}
-            trip={bookingDialogData!.trip}
-            seatCount={bookingDialogData!.trip?.passengers || 1}
-            offerPrice={bookingDialogData!.offer.price}
-            depositPercentage={bookingDialogData!.offer.depositPercentage || 25}
-            onConfirm={handleConfirmBookingFromOffer}
+      {bookingDialogData && (
+          <BookingPaymentDialog
+            isOpen={isBookingPaymentOpen}
+            onOpenChange={setIsBookingPaymentOpen}
+            trip={bookingDialogData.trip}
+            booking={bookingDialogData.booking}
+            offer={bookingDialogData.offer}
+            onConfirm={handleConfirmBookingPayment}
             isProcessing={isProcessingBooking}
           />
       )}
