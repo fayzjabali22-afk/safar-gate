@@ -14,11 +14,14 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useState, useEffect, useMemo } from 'react';
-import type { Trip } from '@/lib/data';
-import { Send, Loader2, CreditCard, Banknote } from 'lucide-react';
+import type { Offer, Trip, UserProfile } from '@/lib/data';
+import { Send, Loader2, CreditCard, Banknote, Clipboard, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription, AlertTitle } from '../ui/alert';
+import { useDoc, useFirestore } from '@/firebase';
+import { doc } from 'firebase/firestore';
 
 export interface PassengerDetails {
   name: string;
@@ -30,8 +33,8 @@ interface BookingDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   trip: Trip;
   seatCount: number;
-  offerPrice: number; // Price per seat from the offer
-  depositPercentage: number; // Percentage required for deposit
+  offerPrice: number;
+  depositPercentage: number;
   onConfirm: (passengers: PassengerDetails[]) => void;
   isProcessing?: boolean;
 }
@@ -48,8 +51,15 @@ export function BookingDialog({
 }: BookingDialogProps) {
     const { toast } = useToast();
     const [passengers, setPassengers] = useState<PassengerDetails[]>([]);
+    const firestore = useFirestore();
 
-    // Calculate totals
+    const carrierProfileRef = useMemo(() => {
+        if (!firestore || !trip.carrierId) return null;
+        return doc(firestore, 'users', trip.carrierId);
+    }, [firestore, trip.carrierId]);
+
+    const { data: carrierProfile } = useDoc<UserProfile>(carrierProfileRef);
+
     const { totalAmount, depositAmount, remainingAmount } = useMemo(() => {
         const total = offerPrice * seatCount;
         const deposit = total * (depositPercentage / 100);
@@ -75,13 +85,20 @@ export function BookingDialog({
         });
     };
 
+    const handleCopy = () => {
+        if (carrierProfile?.paymentInformation) {
+            navigator.clipboard.writeText(carrierProfile.paymentInformation);
+            toast({ title: 'تم نسخ التعليمات بنجاح!' });
+        }
+    };
+
     const handleSubmit = () => {
         const allNamesFilled = passengers.every(p => p.name.trim() !== '');
         if (!allNamesFilled) {
             toast({
                 variant: 'destructive',
                 title: 'بيانات غير مكتملة',
-                description: 'الرجاء إدخال أسماء جميع الركاب لإتمام الحجز.',
+                description: 'الرجاء إدخال أسماء جميع الركاب.',
             });
             return;
         }
@@ -90,27 +107,77 @@ export function BookingDialog({
     
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !isProcessing && onOpenChange(open)}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader>
-                <DialogTitle>تأكيد الحجز والدفع</DialogTitle>
-                <DialogDescription>
-                    أكمل بيانات الركاب وادفع العربون لتأكيد حجزك.
-                </DialogDescription>
+                    <DialogTitle>إتمام الحجز - الخطوة الأخيرة</DialogTitle>
+                    <DialogDescription>
+                        يرجى مراجعة التفاصيل المالية وتحويل العربون للناقل مباشرة.
+                    </DialogDescription>
                 </DialogHeader>
                 
-                <ScrollArea className="max-h-[50vh] p-1 pr-4">
+                <ScrollArea className="max-h-[60vh] p-1 pr-4">
                     <div className="space-y-6">
-                        {/* Passenger Details Section */}
-                        <div className="space-y-4">
+                        
+                        {/* Financial Summary */}
+                        <div className="space-y-3">
                             <h3 className="font-semibold text-sm flex items-center gap-2">
                                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">1</span>
+                                الفاتورة النهائية
+                            </h3>
+                            <Card className="bg-muted/50">
+                                <CardContent className="p-4 space-y-2 text-sm">
+                                    <div className="flex justify-between text-muted-foreground">
+                                        <span>السعر الإجمالي ({seatCount} مقاعد)</span>
+                                        <span className="font-bold">{totalAmount.toFixed(2)} {trip.currency}</span>
+                                    </div>
+                                    <Separator />
+                                    <div className="flex justify-between font-bold text-lg pt-1 text-primary">
+                                        <span>
+                                            <CreditCard className="inline-block ml-2 h-5 w-5" />
+                                            العربون المطلوب (الآن)
+                                        </span>
+                                        <span>{depositAmount.toFixed(2)} {trip.currency}</span>
+                                    </div>
+                                    <div className="flex justify-between text-muted-foreground text-xs pt-1">
+                                        <span>
+                                            <Banknote className="inline-block ml-2 h-4 w-4" />
+                                            المبلغ المتبقي (عند لقاء الناقل)
+                                        </span>
+                                        <span>{remainingAmount.toFixed(2)} {trip.currency}</span>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
+
+                        {/* Payment Instructions */}
+                        <div className="space-y-3">
+                             <h3 className="font-semibold text-sm flex items-center gap-2">
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">2</span>
+                                طريقة الدفع (تعليمات الناقل)
+                            </h3>
+                            <div className="p-4 border rounded-lg bg-background relative">
+                                {carrierProfile?.paymentInformation ? (
+                                    <>
+                                        <Button size="icon" variant="ghost" className="absolute top-2 left-2 h-7 w-7" onClick={handleCopy}>
+                                            <Clipboard className="h-4 w-4" />
+                                        </Button>
+                                        <p className="text-sm whitespace-pre-wrap">{carrierProfile.paymentInformation}</p>
+                                    </>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">لم يقم الناقل بتحديد تعليمات الدفع بعد.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Passenger Details */}
+                        <div className="space-y-3">
+                            <h3 className="font-semibold text-sm flex items-center gap-2">
+                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">3</span>
                                 بيانات الركاب ({seatCount})
                             </h3>
                             {passengers.map((passenger, index) => (
                             <div key={index} className="p-3 border rounded-lg space-y-3 bg-card">
-                                <div className="flex justify-between items-center">
-                                    <Label className="text-xs text-muted-foreground">الراكب {index + 1}</Label>
-                                </div>
+                                <Label className="text-xs text-muted-foreground">الراكب {index + 1}</Label>
                                 <div className="grid gap-3">
                                     <Input
                                         placeholder="الاسم الكامل"
@@ -138,41 +205,17 @@ export function BookingDialog({
                             </div>
                             ))}
                         </div>
-
-                        {/* Payment Summary Section */}
-                        <div className="space-y-3">
-                             <h3 className="font-semibold text-sm flex items-center gap-2">
-                                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-primary text-xs">2</span>
-                                ملخص الدفع
-                            </h3>
-                            <Card className="bg-muted/30 border-dashed">
-                                <CardContent className="p-4 space-y-2 text-sm">
-                                    <div className="flex justify-between text-muted-foreground">
-                                        <span>السعر الإجمالي ({seatCount} مقاعد)</span>
-                                        <span>{totalAmount.toFixed(2)} د.أ</span>
-                                    </div>
-                                    <Separator className="bg-border/50" />
-                                    <div className="flex justify-between font-medium pt-1">
-                                        <span className="flex items-center gap-1.5 text-primary">
-                                            <CreditCard className="h-4 w-4" />
-                                            العربون المطلوب (الآن)
-                                        </span>
-                                        <span className="text-primary font-bold">{depositAmount.toFixed(2)} د.أ</span>
-                                    </div>
-                                    <div className="flex justify-between text-muted-foreground text-xs pt-1">
-                                        <span className="flex items-center gap-1.5">
-                                            <Banknote className="h-3 w-3" />
-                                            المبلغ المتبقي للكابتن
-                                        </span>
-                                        <span>{remainingAmount.toFixed(2)} د.أ</span>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
+                         <Alert variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">
+                            <Info className="h-4 w-4" />
+                            <AlertTitle className="font-bold">إقرار هام</AlertTitle>
+                            <AlertDescription className="text-xs">
+                                بالضغط على الزر أدناه، أنت تقر بأنك قمت بتحويل مبلغ العربون مباشرة إلى الناقل بناءً على التعليمات المذكورة. التطبيق هو وسيط ولا يتحمل مسؤولية التحويلات المالية.
+                            </AlertDescription>
+                        </Alert>
                     </div>
                 </ScrollArea>
                 
-                <DialogFooter className="gap-2 sm:gap-0 pt-2">
+                <DialogFooter className="gap-2 sm:gap-0 pt-4">
                     <Button 
                         type="button" 
                         variant="ghost" 
@@ -185,17 +228,17 @@ export function BookingDialog({
                         type="submit" 
                         onClick={handleSubmit} 
                         disabled={isProcessing}
-                        className="w-full sm:w-auto min-w-[140px]"
+                        className="w-full sm:w-auto min-w-[180px]"
                     >
                         {isProcessing ? (
                             <>
                                 <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                                جاري المعالجة...
+                                جاري التأكيد...
                             </>
                         ) : (
                             <>
                                 <Send className="ml-2 h-4 w-4" />
-                                دفع {depositAmount.toFixed(2)} د.أ وتأكيد
+                                تم التحويل وتأكيد الحجز
                             </>
                         )}
                     </Button>
