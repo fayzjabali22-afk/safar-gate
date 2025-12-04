@@ -53,16 +53,13 @@ function TripInfo({ tripId }: { tripId: string }) {
     );
 }
 
-export function BookingActionCard({ booking, trip: mockTrip }: { booking: Booking, trip?: Trip }) {
+export function BookingActionCard({ booking }: { booking: Booking }) {
     const firestore = useFirestore();
     const { toast } = useToast();
     const [isProcessing, setIsProcessing] = useState(false);
     
     const tripRef = useMemo(() => firestore ? doc(firestore, 'trips', booking.tripId) : null, [firestore, booking.tripId]);
-    const { data: liveTrip, isLoading: isLoadingTrip } = useDoc<Trip>(tripRef);
-
-    // Use live trip if available, otherwise fall back to mockTrip for testing
-    const trip = mockTrip || liveTrip;
+    const { data: trip, isLoading: isLoadingTrip } = useDoc<Trip>(tripRef);
 
     const { depositAmount, remainingAmount } = useMemo(() => {
         if (!trip) return { depositAmount: 0, remainingAmount: 0 };
@@ -84,11 +81,6 @@ export function BookingActionCard({ booking, trip: mockTrip }: { booking: Bookin
         const batch = writeBatch(firestore);
 
         if (action === 'confirm') {
-            if(booking.id.startsWith('mock_')) {
-                 toast({ title: 'تم تأكيد الحجز (محاكاة)', description: 'هذا إجراء وهمي للتحقق البصري.'});
-                 setIsProcessing(false);
-                 return;
-            }
             batch.update(bookingRef, { status: 'Confirmed' });
             batch.update(tripRef, { availableSeats: increment(-booking.seats) });
 
@@ -112,11 +104,6 @@ export function BookingActionCard({ booking, trip: mockTrip }: { booking: Bookin
             });
 
         } else { // Reject
-             if(booking.id.startsWith('mock_')) {
-                 toast({ title: 'تم رفض الحجز (محاكاة)', description: 'هذا إجراء وهمي للتحقق البصري.'});
-                 setIsProcessing(false);
-                 return;
-            }
             batch.update(bookingRef, { status: 'Cancelled' });
             
             const notificationData = {
