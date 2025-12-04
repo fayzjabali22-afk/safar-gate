@@ -57,7 +57,7 @@ export default function CarrierLayout({
   return (
     <>
     <AppLayout>
-      <div className="grid h-screen grid-cols-1 md:grid-cols-[240px_1fr]">
+      <div className="grid h-full grid-cols-1 md:grid-cols-[240px_1fr]">
         {/* --- Sidebar for Desktop --- */}
         <aside className="hidden md:block h-full bg-card border-e p-4 overflow-y-auto">
            <Button className="w-full mb-4" onClick={() => setIsAddTripDialogOpen(true)}>
