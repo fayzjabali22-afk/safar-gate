@@ -21,6 +21,7 @@ import {
   Flag,
   Ban,
   ListChecks,
+  MessageSquare,
 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
@@ -120,6 +121,7 @@ export function ScheduledTripCard({
     onBookNow, 
     onClosureAction,
     onCancelBooking,
+    onMessageCarrier,
     context = 'dashboard' 
 }: { 
     trip: Trip; 
@@ -127,6 +129,7 @@ export function ScheduledTripCard({
     onBookNow: (trip: Trip) => void; 
     onClosureAction?: (trip: Trip) => void;
     onCancelBooking?: (trip: Trip, booking: Booking) => void;
+    onMessageCarrier?: (booking: Booking, trip: Trip) => void;
     context?: 'dashboard' | 'history' 
 }) {
   const depositAmount = (trip.price || 0) * ((trip.depositPercentage || 0) / 100);
@@ -136,6 +139,7 @@ export function ScheduledTripCard({
   const vehicleImageUrl = trip.vehicleImageUrl || placeholderCar?.imageUrl;
 
   const StatusComponent = booking?.status ? statusMap[booking.status] : null;
+  const isMessageable = context === 'history' && booking?.status === 'Confirmed';
 
   return (
     <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2 border-border/60 flex flex-col justify-between bg-card">
@@ -208,6 +212,12 @@ export function ScheduledTripCard({
               <Button size="sm" variant="destructive" className="w-full" onClick={() => onCancelBooking(trip, booking)}>
                   <Ban className="ml-2 h-4 w-4" />
                   إلغاء الحجز
+              </Button>
+          )}
+          {isMessageable && onMessageCarrier && booking &&(
+              <Button size="sm" variant="outline" className="w-full" onClick={() => onMessageCarrier(booking, trip)}>
+                  <MessageSquare className="ml-2 h-4 w-4" />
+                  مراسلة الناقل
               </Button>
           )}
       </CardFooter>

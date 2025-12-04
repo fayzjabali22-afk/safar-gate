@@ -16,7 +16,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Offer, Booking } from '@/lib/data';
-import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Sparkles, Flag } from 'lucide-react';
+import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Sparkles, Flag, MessageSquare } from 'lucide-react';
 import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format, addHours, isFuture } from 'date-fns';
@@ -26,6 +26,7 @@ import { ScheduledTripCard } from '@/components/scheduled-trip-card';
 import { TripClosureDialog } from '@/components/trip-closure/trip-closure-dialog';
 import { RateTripDialog } from '@/components/trip-closure/rate-trip-dialog';
 import { CancellationDialog } from '@/components/booking/cancellation-dialog';
+import { ChatDialog } from '@/components/chat/chat-dialog';
 
 // --- Helper Functions & Data ---
 const cities: { [key: string]: string } = {
@@ -94,6 +95,10 @@ export default function HistoryPage() {
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [selectedBookingForCancellation, setSelectedBookingForCancellation] = useState<{trip: Trip, booking: Booking} | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
+
+  // Chat Dialog State
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [selectedChatInfo, setSelectedChatInfo] = useState<{bookingId: string, otherPartyName: string} | null>(null);
   
 
   // --- Queries ---
@@ -179,6 +184,14 @@ export default function HistoryPage() {
   const handleOpenCancelDialog = (trip: Trip, booking: Booking) => {
       setSelectedBookingForCancellation({ trip, booking });
       setIsCancelDialogOpen(true);
+  }
+
+  const handleOpenChatDialog = (booking: Booking, trip: Trip) => {
+      setSelectedChatInfo({
+          bookingId: booking.id,
+          otherPartyName: trip.carrierName || "الناقل"
+      });
+      setIsChatOpen(true);
   }
 
   const handleConfirmCancellation = async () => {
@@ -411,6 +424,7 @@ export default function HistoryPage() {
                             onBookNow={() => {}}
                             onClosureAction={isClosureDue ? () => handleOpenClosureDialog(trip) : undefined}
                             onCancelBooking={canCancel ? () => handleOpenCancelDialog(trip, booking) : undefined}
+                            onMessageCarrier={() => handleOpenChatDialog(booking, trip)}
                             context="history"
                           />
                       )
@@ -449,12 +463,14 @@ export default function HistoryPage() {
         />
       )}
 
-      <RateTripDialog 
-        isOpen={isRatingDialogOpen}
-        onOpenChange={setIsRatingDialogOpen}
-        trip={selectedTripForClosure}
-        onConfirm={() => setSelectedTripForClosure(null)}
-      />
+      {selectedTripForClosure && (
+        <RateTripDialog 
+            isOpen={isRatingDialogOpen}
+            onOpenChange={setIsRatingDialogOpen}
+            trip={selectedTripForClosure}
+            onConfirm={() => setSelectedTripForClosure(null)}
+        />
+      )}
       
       {selectedBookingForCancellation && (
         <CancellationDialog
@@ -463,6 +479,14 @@ export default function HistoryPage() {
             isCancelling={isCancelling}
             onConfirm={handleConfirmCancellation}
         />
+      )}
+      {selectedChatInfo && (
+          <ChatDialog
+              isOpen={isChatOpen}
+              onOpenChange={setIsChatOpen}
+              bookingId={selectedChatInfo.bookingId}
+              otherPartyName={selectedChatInfo.otherPartyName}
+          />
       )}
     </AppLayout>
   );

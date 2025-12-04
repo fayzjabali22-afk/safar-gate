@@ -1,18 +1,19 @@
 'use client';
 import { useState, useMemo } from 'react';
 import type { Booking, Trip, UserProfile } from '@/lib/data';
-import { useFirestore, useDoc, addDocumentNonBlocking } from '@/firebase';
+import { useFirestore, useDoc, addDocumentNonBlocking, useUser } from '@/firebase';
 import { doc, writeBatch, increment, serverTimestamp, collection } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Check, X, Calendar, Users, ArrowRight, Loader2, Info, Wallet, CircleDollarSign, Banknote, AlertCircle } from 'lucide-react';
+import { Check, X, Calendar, Users, ArrowRight, Loader2, Info, Wallet, CircleDollarSign, Banknote, AlertCircle, MessageSquare } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { logEvent } from '@/lib/analytics';
 import { Separator } from '../ui/separator';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ChatDialog } from '@/components/chat/chat-dialog';
 
 
 const cities: { [key: string]: string } = {
@@ -69,6 +70,9 @@ export function BookingActionCard({ booking, trip }: { booking: Booking, trip: T
     const [isProcessing, setIsProcessing] = useState(false);
     const isLoadingTrip = false; 
     
+    const [isChatOpen, setIsChatOpen] = useState(false);
+    const travelerProfile = mockTravelers[booking.userId];
+    
     const { depositAmount, remainingAmount } = useMemo(() => {
         if (!trip) return { depositAmount: 0, remainingAmount: 0 };
         const deposit = booking.totalPrice * ((trip.depositPercentage || 20) / 100);
@@ -86,7 +90,7 @@ export function BookingActionCard({ booking, trip }: { booking: Booking, trip: T
         const notificationsCollection = collection(firestore, 'notifications');
         const notificationPayload = {
             userId: booking.userId, // Send notification to the traveler
-            type: 'booking_confirmed',
+            type: 'booking_confirmed' as 'booking_confirmed',
             isRead: false,
             createdAt: new Date().toISOString(),
             title: '',
@@ -116,10 +120,17 @@ export function BookingActionCard({ booking, trip }: { booking: Booking, trip: T
 
     const statusInfo = statusMap[booking.status] || { text: booking.status, className: 'bg-gray-100 text-gray-800' };
     const isPending = booking.status === 'Pending-Carrier-Confirmation';
+    const isConfirmed = booking.status === 'Confirmed';
     
     const hasSufficientSeats = trip ? booking.seats <= (trip.availableSeats || 0) : false;
 
+    const handleOpenChatDialog = () => {
+        if (!travelerProfile) return;
+        setIsChatOpen(true);
+    };
+
     return (
+        <>
         <Card className={cn("w-full shadow-md transition-shadow hover:shadow-lg", isPending && "border-primary border-2")}>
             <CardHeader className="flex flex-row justify-between items-start pb-2">
                 <div>
@@ -195,6 +206,23 @@ export function BookingActionCard({ booking, trip }: { booking: Booking, trip: T
                     )}
                 </CardFooter>
             )}
+             {isConfirmed && (
+                <CardFooter className="bg-muted/30 p-2">
+                    <Button variant="outline" className="w-full" onClick={handleOpenChatDialog}>
+                        <MessageSquare className="ml-2 h-4 w-4" />
+                        مراسلة المسافر
+                    </Button>
+                </CardFooter>
+            )}
         </Card>
+        {isConfirmed && travelerProfile && (
+            <ChatDialog 
+                isOpen={isChatOpen}
+                onOpenChange={setIsChatOpen}
+                bookingId={booking.id}
+                otherPartyName={`${travelerProfile.firstName} ${travelerProfile.lastName}`}
+            />
+        )}
+        </>
     );
 }

@@ -3,7 +3,7 @@
 import React from 'react';
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
+import { getAuth, Auth, useUser as useFirebaseUser } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'
 import { FirebaseContext } from './provider';
 
@@ -55,11 +55,9 @@ export * from './error-emitter';
 export function useAuth(): Auth | null {
     const context = React.useContext(FirebaseContext);
     if (context === undefined) {
-      // It's better to return null or a default mock instance
-      // if you need to support usage outside of the provider for some reason (e.g., stories).
-      // Throwing an error is generally better for enforcing correct usage.
-      // throw new Error("useAuth must be used within a FirebaseProvider");
       return null
     }
     return context.auth;
 }
+
+export { useFirebaseUser };

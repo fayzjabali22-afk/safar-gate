@@ -1,8 +1,8 @@
 'use client';
-import { useUserProfile } from '@/hooks/use-user-profile';
+import { useUser } from '@/firebase';
 import type { Message } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Skeleton } from './ui/skeleton';
+import { Skeleton } from '../ui/skeleton';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 
@@ -16,7 +16,7 @@ const safeFormat = (timestamp: any) => {
 }
 
 export function MessageList({ messages, isLoading }: { messages: Message[], isLoading: boolean }) {
-  const { user } = useUserProfile();
+  const { user } = useUser();
 
   if (isLoading) {
     return (
