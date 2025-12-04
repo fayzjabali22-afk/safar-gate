@@ -36,7 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { collection, serverTimestamp } from 'firebase/firestore';
-import { Loader2, CalendarIcon, Send, Clock, MapPin, PlaneTakeoff, PlaneLanding, Settings } from 'lucide-react';
+import { Loader2, CalendarIcon, Send, Clock, PlaneTakeoff, PlaneLanding, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from "date-fns";
 import { Label } from '@/components/ui/label';
@@ -91,6 +91,13 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
 
   const form = useForm<AddTripFormValues>({
     resolver: zodResolver(addTripSchema),
+    defaultValues: {
+      origin: '',
+      destination: '',
+      price: 0,
+      availableSeats: 1,
+      estimatedDurationHours: 0,
+    }
   });
 
   const onSubmit = async (data: AddTripFormValues) => {
