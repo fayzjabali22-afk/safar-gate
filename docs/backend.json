@@ -80,6 +80,7 @@
         "photoURL": { "type": "string", "format": "uri", "description": "URL of the carrier's profile picture."},
         "vehicleType": { "type": "string", "description": "The primary vehicle type used by the carrier (e.g., GMC Yukon 2023)." },
         "vehicleCategory": { "type": "string", "enum": ["small", "bus"], "description": "The category of the primary vehicle."},
+        "vehicleCapacity": { "type": "number", "description": "The total number of seats in the carrier's vehicle." },
         "specialization": {
             "type": "object",
             "description": "The carrier's specialized route.",

@@ -37,6 +37,7 @@ export type CarrierProfile = {
   photoURL?: string;
   vehicleType?: string;
   vehicleCategory?: 'small' | 'bus';
+  vehicleCapacity?: number;
   primaryRoute?: CarrierSpecialization;
   paymentInformation?: string; // Added for flexibility
   createdAt?: any;
@@ -66,6 +67,7 @@ export type Trip = {
   updatedAt?: any;
   durationHours?: number; // Added field for trip duration
   conditions?: string; // Carrier's conditions for the trip
+  vehicleType?: string; // Denormalized from CarrierProfile
 };
 
 export type Booking = {

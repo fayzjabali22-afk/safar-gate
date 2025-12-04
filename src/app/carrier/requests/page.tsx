@@ -3,7 +3,7 @@
 import { RequestCard } from '@/components/carrier/request-card';
 import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, where, doc, getDoc } from 'firebase/firestore';
-import { PackageOpen, Settings, AlertTriangle, ListFilter, ShipWheel, Sparkles } from 'lucide-react';
+import { PackageOpen, Settings, AlertTriangle, ListFilter, ShipWheel, Sparkles, User, Armchair } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Trip, CarrierProfile } from '@/lib/data';
 import { useEffect, useState, useMemo } from 'react';
@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { OfferDialog } from '@/components/carrier/offer-dialog';
 import { suggestOfferPrice, type SuggestOfferPriceInput } from '@/ai/flows/suggest-offer-price-flow';
 import { useToast } from '@/hooks/use-toast';
+import { useUserProfile } from '@/hooks/use-user-profile';
 
 const mockRequests: Trip[] = [
     {
@@ -66,29 +67,7 @@ const mockRequests: Trip[] = [
       origin: 'riyadh',
       destination: 'damascus',
       departureDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-      passengers: 1,
-      status: 'Awaiting-Offers',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: 'mock_trip_6',
-      userId: 'mock_user_6',
-      origin: 'amman',
-      destination: 'riyadh',
-      departureDate: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(),
-      passengers: 1,
-      status: 'Awaiting-Offers',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: 'mock_trip_7',
-      userId: 'mock_user_7',
-      origin: 'homs',
-      destination: 'zarqa',
-      departureDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
-      passengers: 5,
+      passengers: 8, // This should be filtered out for small cars
       status: 'Awaiting-Offers',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -102,7 +81,8 @@ const mockCarrierProfile: CarrierProfile = {
     primaryRoute: {
         origin: 'amman',
         destination: 'riyadh'
-    }
+    },
+    vehicleCapacity: 4, // Carrier's vehicle can take up to 4 passengers
 }
 
 function LoadingState() {
@@ -119,9 +99,9 @@ function NoSpecializationState() {
     return (
         <div className="flex flex-col items-center justify-center text-center py-16 border-2 border-dashed rounded-lg bg-card/50">
             <AlertTriangle className="mx-auto h-12 w-12 text-yellow-500/80 mb-4" />
-            <h3 className="text-xl font-bold">يرجى تحديد تخصصك أولاً</h3>
+            <h3 className="text-xl font-bold">يرجى تحديد بيانات مركبتك أولاً</h3>
             <p className="text-muted-foreground mt-2 max-w-md">
-              للاستفادة من الفلترة الذكية، يرجى الذهاب إلى صفحة الملف الشخصي وتحديد "خط السير المفضل" الذي تعمل عليه.
+              للاستفادة من الفلترة الذكية، يرجى الذهاب إلى صفحة الملف الشخصي وتحديد "خط السير المفضل" و "السعة القصوى للمركبة".
             </p>
              <Button asChild className="mt-6">
                 <Link href="/profile">
@@ -138,7 +118,7 @@ function NoRequestsState({ isFiltered }: { isFiltered: boolean }) {
       <div className="flex flex-col items-center justify-center text-center py-16 border-2 border-dashed rounded-lg bg-card/50">
         <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
         <h3 className="text-xl font-bold">
-            {isFiltered ? "لا توجد طلبات تطابق تخصصك" : "لا توجد طلبات متاحة حالياً"}
+            {isFiltered ? "لا توجد طلبات تطابق تخصصك وسعة مركبتك" : "لا توجد طلبات متاحة حالياً"}
         </h3>
         <p className="text-muted-foreground mt-2">
           {isFiltered ? "يمكنك إيقاف الفلترة لعرض كل طلبات السوق." : "سيتم عرض الطلبات الجديدة هنا فور وصولها."}
@@ -149,8 +129,7 @@ function NoRequestsState({ isFiltered }: { isFiltered: boolean }) {
 
 
 export default function CarrierRequestsPage() {
-  const [carrierProfile, setCarrierProfile] = useState<CarrierProfile | null>(mockCarrierProfile);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const { profile: userProfile, isLoading: isLoadingProfile } = useUserProfile();
   const [filterBySpecialization, setFilterBySpecialization] = useState(true);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
@@ -158,20 +137,25 @@ export default function CarrierRequestsPage() {
   const [suggestion, setSuggestion] = useState<{price: number, justification: string} | null>(null);
   const { toast } = useToast();
 
-
   const filteredRequests = useMemo(() => {
-    const uniqueRequests = mockRequests;
+    let requests = mockRequests;
+    
+    // Smart Filter: Filter by vehicle capacity
+    if (userProfile?.vehicleCapacity) {
+        requests = requests.filter(req => (req.passengers || 1) <= userProfile.vehicleCapacity!);
+    }
 
-    if (filterBySpecialization && carrierProfile?.primaryRoute?.origin && carrierProfile.primaryRoute.destination) {
-      const from = carrierProfile.primaryRoute.origin.toLowerCase();
-      const to = carrierProfile.primaryRoute.destination.toLowerCase();
-      return uniqueRequests.filter(req => 
+    if (filterBySpecialization && userProfile?.primaryRoute?.origin && userProfile.primaryRoute.destination) {
+      const from = userProfile.primaryRoute.origin.toLowerCase();
+      const to = userProfile.primaryRoute.destination.toLowerCase();
+      requests = requests.filter(req => 
         req.origin.toLowerCase() === from &&
         req.destination.toLowerCase() === to
       );
     }
-    return uniqueRequests.sort((a, b) => new Date(a.departureDate).getTime() - new Date(b.departureDate).getTime());
-  }, [filterBySpecialization, carrierProfile]);
+    
+    return requests.sort((a, b) => new Date(a.departureDate).getTime() - new Date(b.departureDate).getTime());
+  }, [filterBySpecialization, userProfile]);
 
   const isLoading = isLoadingProfile;
   
@@ -216,28 +200,35 @@ export default function CarrierRequestsPage() {
     return <LoadingState />;
   }
   
-  const canFilter = !!(carrierProfile?.primaryRoute?.origin && carrierProfile?.primaryRoute?.destination);
+  const canFilter = !!(userProfile?.primaryRoute?.origin && userProfile?.primaryRoute?.destination);
+  const hasCapacity = !!(userProfile?.vehicleCapacity && userProfile.vehicleCapacity > 0);
 
-  if (!canFilter && filterBySpecialization) {
+  if (!canFilter || !hasCapacity) {
     return <NoSpecializationState />
   }
 
   return (
     <>
     <div className="space-y-4">
-        {canFilter && (
-            <div className="flex items-center justify-end space-x-2 rtl:space-x-reverse bg-card p-3 rounded-lg border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="flex items-center justify-center sm:justify-start space-x-2 rtl:space-x-reverse bg-card p-3 rounded-lg border">
                 <Label htmlFor="filter-switch" className="flex items-center gap-2 font-semibold">
                     <ListFilter className="h-4 w-4" />
-                    <span>فلترة حسب خط السير المفضل</span>
+                    <span>فلترة حسب خط السير</span>
                 </Label>
                 <Switch
                     id="filter-switch"
                     checked={filterBySpecialization}
                     onCheckedChange={setFilterBySpecialization}
+                    disabled={!canFilter}
                 />
             </div>
-        )}
+            <div className="flex items-center justify-center sm:justify-end gap-2 text-sm font-bold bg-card p-3 rounded-lg border text-primary">
+                <Armchair className="h-5 w-5" />
+                <span>السعة القصوى لمركبتك:</span>
+                <span>{userProfile?.vehicleCapacity || 'غير محدد'} ركاب</span>
+            </div>
+        </div>
 
         {filteredRequests && filteredRequests.length > 0 ? (
             <div className="space-y-3">
