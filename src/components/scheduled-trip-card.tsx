@@ -124,7 +124,6 @@ export function ScheduledTripCard({
     onClosureAction,
     onCancelBooking,
     onMessageCarrier,
-    isCancelledByCarrier = false,
     context = 'dashboard' 
 }: { 
     trip: Trip; 
@@ -133,7 +132,6 @@ export function ScheduledTripCard({
     onClosureAction?: (trip: Trip) => void;
     onCancelBooking?: (trip: Trip, booking: Booking) => void;
     onMessageCarrier?: (booking: Booking, trip: Trip) => void;
-    isCancelledByCarrier?: boolean;
     context?: 'dashboard' | 'history' 
 }) {
   const depositAmount = (trip.price || 0) * ((trip.depositPercentage || 0) / 100);
@@ -145,7 +143,6 @@ export function ScheduledTripCard({
   const StatusComponent = booking?.status ? statusMap[booking.status] : null;
   const isMessageable = context === 'history' && booking?.status === 'Confirmed';
 
-  const smartSearchLink = `/dashboard?origin=${trip.origin}&destination=${trip.destination}&date=${new Date(trip.departureDate).toISOString().split('T')[0]}`;
 
   return (
     <Card className="w-full overflow-hidden shadow-lg transition-all hover:shadow-primary/20 border-2 border-border/60 flex flex-col justify-between bg-card">
@@ -208,19 +205,6 @@ export function ScheduledTripCard({
                 حجز الآن
             </Button>
           )}
-          {context === 'history' && isCancelledByCarrier && (
-            <>
-              <div className="p-2 text-xs text-center text-destructive bg-destructive/10 rounded-md w-full">
-                نعتذر، لقد قام الناقل بإلغاء هذه الرحلة.
-              </div>
-              <Button asChild size="sm" variant="default" className="w-full bg-accent hover:bg-accent/90">
-                <Link href={smartSearchLink}>
-                  <Search className="ml-2 h-4 w-4" />
-                  البحث عن رحلة بديلة
-                </Link>
-              </Button>
-            </>
-          )}
           {context === 'history' && onClosureAction && (
             <Button size="sm" variant="default" className="w-full bg-accent hover:bg-accent/90" onClick={() => onClosureAction(trip)}>
                 <Flag className="ml-2 h-4 w-4"/>
@@ -243,5 +227,3 @@ export function ScheduledTripCard({
     </Card>
   );
 }
-
-    
