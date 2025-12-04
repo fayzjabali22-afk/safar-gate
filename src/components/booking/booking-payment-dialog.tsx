@@ -136,9 +136,9 @@ export function BookingPaymentDialog({
                                     </div>
                                     <Separator />
                                     <div className="flex justify-between font-bold text-lg pt-1 text-accent">
-                                        <span>
-                                            <CreditCard className="inline-block ml-2 h-5 w-5" />
-                                            العربون المطلوب (الآن)
+                                        <span className="flex items-center gap-2">
+                                            <CreditCard className="inline-block h-5 w-5" />
+                                            العربون المطلوب ({depositPercentage}%)
                                         </span>
                                         <span>{depositAmount.toFixed(2)} {currency}</span>
                                     </div>
