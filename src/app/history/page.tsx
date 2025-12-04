@@ -16,14 +16,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Offer, Booking } from '@/lib/data';
-import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Sparkles, Flag, MessageSquare, Radar } from 'lucide-react';
+import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Radar, MessageSquare, Flag } from 'lucide-react';
 import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format, addHours, isFuture } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 import { BookingDialog } from '@/components/booking/booking-dialog';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
-import { TripClosureDialog } from '@/components/trip-closure/rate-trip-dialog';
 import { RateTripDialog } from '@/components/trip-closure/rate-trip-dialog';
 import { CancellationDialog } from '@/components/booking/cancellation-dialog';
 import { ChatDialog } from '@/components/chat/chat-dialog';
@@ -211,10 +210,9 @@ export default function HistoryPage() {
   const [selectedOfferForBooking, setSelectedOfferForBooking] = useState<{ trip: Trip, offer: Offer } | null>(null);
   const [isProcessingBooking, setIsProcessingBooking] = useState(false);
 
-  // Closure and Rating Dialog State
-  const [isClosureDialogOpen, setIsClosureDialogOpen] = useState(false);
+  // Rating Dialog State
   const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
-  const [selectedTripForClosure, setSelectedTripForClosure] = useState<Trip | null>(null);
+  const [selectedTripForRating, setSelectedTripForRating] = useState<Trip | null>(null);
 
   // Cancellation Dialog State
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
@@ -257,9 +255,9 @@ export default function HistoryPage() {
       setIsBookingDialogOpen(true);
   };
   
-  const handleOpenClosureDialog = (trip: Trip) => {
-      setSelectedTripForClosure(trip);
-      setIsClosureDialogOpen(true);
+  const handleOpenRatingDialog = (trip: Trip) => {
+      setSelectedTripForRating(trip);
+      setIsRatingDialogOpen(true);
   }
 
   const handleOpenCancelDialog = (trip: Trip, booking: Booking) => {
@@ -297,7 +295,7 @@ export default function HistoryPage() {
   };
 
 
-  const handleConfirmBookingFromOffer = async (passengers: PassengerDetails[]) => {
+  const handleConfirmBookingFromOffer = async (passengers: any[]) => {
       if (!firestore || !user || !selectedOfferForBooking) return;
       setIsProcessingBooking(true);
       
@@ -445,7 +443,7 @@ export default function HistoryPage() {
                             trip={trip}
                             booking={booking}
                             onBookNow={() => {}}
-                            onClosureAction={isClosureDue ? () => handleOpenClosureDialog(trip) : undefined}
+                            onClosureAction={isClosureDue ? () => handleOpenRatingDialog(trip) : undefined}
                             onCancelBooking={canCancel ? () => handleOpenCancelDialog(trip, booking) : undefined}
                             onMessageCarrier={() => handleOpenChatDialog(booking, trip)}
                             context="history"
@@ -474,12 +472,12 @@ export default function HistoryPage() {
           />
       )}
       
-      {selectedTripForClosure && (
+      {selectedTripForRating && (
         <RateTripDialog 
-            isOpen={isClosureDialogOpen}
-            onOpenChange={setIsClosureDialogOpen}
-            trip={selectedTripForClosure}
-            onConfirm={() => setSelectedTripForClosure(null)}
+            isOpen={isRatingDialogOpen}
+            onOpenChange={setIsRatingDialogOpen}
+            trip={selectedTripForRating}
+            onConfirm={() => setSelectedTripForRating(null)}
         />
       )}
       
