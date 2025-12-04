@@ -34,8 +34,7 @@ export function CancellationDialog({ isOpen, onOpenChange, isCancelling, onConfi
             <div className="p-3 text-destructive-foreground bg-destructive/80 rounded-lg text-sm space-y-1">
                 <p className="font-bold">سياسة الإلغاء وفقدان العربون:</p>
                 <p className="text-xs">
-                    بموجب سياسة الإلغاء، فإن مبلغ العربون المدفوع لهذا الحجز **غير قابل للاسترداد**. 
-                    سيتم إبلاغ الناقل بإلغائك وإعادة المقاعد لتكون متاحة للحجز مرة أخرى.
+                    بإتمام هذا الإجراء، أنت تقر بمعرفتك وموافقتك المسبقة على قيمة العربون التي حددها الناقل، وتوافق على أن هذا المبلغ غير قابل للاسترداد في حالة الإلغاء من طرفك.
                 </p>
             </div>
           </AlertDialogDescription>
