@@ -43,66 +43,6 @@ const statusMap: Record<string, { text: string; icon: React.ElementType; classNa
   'Cancelled': { text: 'ملغاة', icon: XCircle, className: 'bg-red-100 text-red-800' },
 };
 
-const mockTrips: Trip[] = [
-    {
-        id: 'mock_planned_1',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'amman',
-        destination: 'riyadh',
-        departureDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Planned',
-        price: 50,
-        availableSeats: 3,
-        vehicleType: 'GMC Yukon 2023',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'mock_planned_2',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'damascus',
-        destination: 'amman',
-        departureDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Planned',
-        price: 25,
-        availableSeats: 1,
-        vehicleType: 'Hyundai Elantra 2022',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'mock_in_transit_1',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'cairo',
-        destination: 'jeddah',
-        departureDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'In-Transit',
-        price: 120,
-        availableSeats: 0,
-        vehicleType: 'Mercedes Bus 2021',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'mock_completed_1',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'riyadh',
-        destination: 'damascus',
-        departureDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Completed',
-        price: 60,
-        availableSeats: 0,
-        vehicleType: 'Toyota Camry 2024',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    }
-];
-
-
 function TripListItem({ trip, onEdit }: { trip: Trip, onEdit: (trip: Trip) => void }) {
     const statusInfo = statusMap[trip.status] || { text: trip.status, icon: CircleDollarSign, className: 'bg-gray-100 text-gray-800' };
     const { toast } = useToast();
@@ -158,7 +98,7 @@ function TripListItem({ trip, onEdit }: { trip: Trip, onEdit: (trip: Trip) => vo
                     <DropdownMenuContent align="end">
                         <DropdownMenuItem onClick={() => onEdit(trip)}>
                             <Pencil className="ml-2 h-4 w-4" />
-                            <span>تعديل المقاعد</span>
+                            <span>تعديل الرحلة</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                             <span>عرض الحجوزات</span>
@@ -183,7 +123,6 @@ export function MyTripsList() {
 
     const tripsQuery = useMemo(() => {
         if (!firestore || !user) return null;
-        // This query now has a composite index issue. We will use mock data for now.
         return query(
             collection(firestore, 'trips'),
             where('carrierId', '==', user.uid),
@@ -192,11 +131,8 @@ export function MyTripsList() {
         );
     }, [firestore, user]);
 
-    // We will use mock data to avoid the indexing error for now.
-    // const { data: trips, isLoading } = useCollection<Trip>(tripsQuery);
-    const isLoading = false; // Set to false since we use mock data
-    const trips = mockTrips.filter(t => ['Planned', 'In-Transit'].includes(t.status));
-
+    const { data: trips, isLoading } = useCollection<Trip>(tripsQuery);
+    
     const handleEditClick = (trip: Trip) => {
         setSelectedTrip(trip);
         setIsEditDialogOpen(true);
