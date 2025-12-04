@@ -305,10 +305,10 @@ export default function ProfilePage() {
                                 name="paymentInformation"
                                 render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>تعليمات تحويل العربون للمسافرين</FormLabel>
+                                    <FormLabel>تعليمات استلام الدفعات (Payment Instructions)</FormLabel>
                                     <FormControl>
                                     <Textarea
-                                        placeholder="اكتب هنا وسيلة الدفع المفضلة لديك (مثل: رقم محفظة زين كاش، رقم CliQ، أو رقم حساب بنكي). هذه المعلومات ستظهر للمسافر عند قبولك لطلبه ليقوم بالتحويل لك مباشرة."
+                                        placeholder="اكتب هنا تفاصيل الدفع (مثل: محفظة زين كاش 079...، كليك Alias...، أو الدفع نقداً)."
                                         className="min-h-[100px]"
                                         maxLength={300}
                                         {...field}
@@ -350,5 +350,3 @@ export default function ProfilePage() {
     </>
   );
 }
-
-    
