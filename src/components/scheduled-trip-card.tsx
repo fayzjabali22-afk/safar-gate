@@ -19,6 +19,7 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  StarIcon,
 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
@@ -112,7 +113,7 @@ const CarrierInfo = ({ carrierId, carrierName }: { carrierId?: string; carrierNa
   );
 };
 
-export function ScheduledTripCard({ trip, onBookNow, context = 'dashboard' }: { trip: Trip; onBookNow: (trip: Trip) => void; context?: 'dashboard' | 'history' }) {
+export function ScheduledTripCard({ trip, onBookNow, onRateTrip, context = 'dashboard' }: { trip: Trip; onBookNow: (trip: Trip) => void; onRateTrip?: (trip: Trip) => void; context?: 'dashboard' | 'history' }) {
   const depositAmount = (trip.price || 0) * ((trip.depositPercentage || 0) / 100);
   
   const placeholderCar = PlaceHolderImages.find((img) => img.id === 'car-placeholder');
@@ -170,13 +171,19 @@ export function ScheduledTripCard({ trip, onBookNow, context = 'dashboard' }: { 
             </div>
         )}
       </CardContent>
-      {context === 'dashboard' && (
-        <CardFooter className="flex p-2 bg-background/30 gap-2">
+      <CardFooter className="flex p-2 bg-background/30 gap-2">
+          {context === 'dashboard' && (
             <Button size="sm" className="w-full" onClick={() => onBookNow(trip)}>
                 حجز الآن
             </Button>
-        </CardFooter>
-      )}
+          )}
+          {context === 'history' && trip.status === 'Completed' && onRateTrip && (
+            <Button size="sm" variant="outline" className="w-full" onClick={() => onRateTrip(trip)}>
+                <StarIcon className="ml-2 h-4 w-4"/>
+                قيّم هذه الرحلة
+            </Button>
+          )}
+      </CardFooter>
     </Card>
   );
 }

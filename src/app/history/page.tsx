@@ -23,6 +23,7 @@ import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 import { BookingDialog, type PassengerDetails } from '@/components/booking/booking-dialog';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
+import { RateTripDialog } from '@/components/rating/rate-trip-dialog';
 
 // --- Helper Functions & Data ---
 const cities: { [key: string]: string } = {
@@ -81,6 +82,10 @@ export default function HistoryPage() {
   const [selectedOfferForBooking, setSelectedOfferForBooking] = useState<{ trip: Trip, offer: Offer } | null>(null);
   const [selectedScheduledTrip, setSelectedScheduledTrip] = useState<Trip | null>(null);
   const [isProcessingBooking, setIsProcessingBooking] = useState(false);
+
+  // Rating Dialog State
+  const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
+  const [selectedTripForRating, setSelectedTripForRating] = useState<Trip | null>(null);
 
   // --- Queries ---
   const userTripsQuery = useMemo(() => {
@@ -167,6 +172,11 @@ export default function HistoryPage() {
   const handleBookScheduledTrip = (trip: Trip) => {
       setSelectedScheduledTrip(trip);
       setIsBookingDialogOpen(true);
+  }
+  
+  const handleRateTrip = (trip: Trip) => {
+      setSelectedTripForRating(trip);
+      setIsRatingDialogOpen(true);
   }
 
   const handleConfirmBookingFromOffer = async (passengers: PassengerDetails[]) => {
@@ -412,6 +422,7 @@ export default function HistoryPage() {
                         key={trip.id}
                         trip={trip}
                         onBookNow={() => {}}
+                        onRateTrip={handleRateTrip}
                         context="history"
                       />
                     ))}
@@ -436,6 +447,13 @@ export default function HistoryPage() {
             isProcessing={isProcessingBooking}
           />
       )}
+
+      {/* Rating Dialog */}
+      <RateTripDialog 
+        isOpen={isRatingDialogOpen}
+        onOpenChange={setIsRatingDialogOpen}
+        trip={selectedTripForRating}
+      />
     </AppLayout>
   );
 }
