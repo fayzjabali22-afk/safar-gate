@@ -69,7 +69,7 @@ const addTripSchema = z.object({
   departureDate: z.date({ required_error: 'تاريخ المغادرة مطلوب' }),
   price: z.coerce.number().positive('السعر يجب أن يكون رقماً موجباً'),
   availableSeats: z.coerce.number().int().min(1, 'يجب توفر مقعد واحد على الأقل'),
-  estimatedDurationHours: z.coerce.number().positive('مدة الرحلة المتوقعة مطلوبة ويجب أن تكون رقماً موجباً'),
+  durationHours: z.coerce.number().positive('مدة الرحلة المتوقعة مطلوبة ويجب أن تكون رقماً موجباً'),
 });
 
 type AddTripFormValues = z.infer<typeof addTripSchema>;
@@ -96,7 +96,7 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
       destination: '',
       price: undefined,
       availableSeats: 4,
-      estimatedDurationHours: undefined,
+      durationHours: undefined,
     }
   });
 
@@ -260,7 +260,7 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
                   
                   <FormField
                     control={form.control}
-                    name="estimatedDurationHours"
+                    name="durationHours"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="flex items-center gap-1">

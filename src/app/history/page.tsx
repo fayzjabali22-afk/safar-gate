@@ -16,14 +16,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Offer, Booking } from '@/lib/data';
-import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Sparkles } from 'lucide-react';
+import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Sparkles, Flag } from 'lucide-react';
 import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { format, addHours } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 import { BookingDialog, type PassengerDetails } from '@/components/booking/booking-dialog';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
-import { RateTripDialog } from '@/components/rating/rate-trip-dialog';
+import { TripClosureDialog } from '@/components/trip-closure/trip-closure-dialog';
+import { RateTripDialog } from '@/components/trip-closure/rate-trip-dialog';
 
 // --- Helper Functions & Data ---
 const cities: { [key: string]: string } = {
@@ -83,9 +84,11 @@ export default function HistoryPage() {
   const [selectedScheduledTrip, setSelectedScheduledTrip] = useState<Trip | null>(null);
   const [isProcessingBooking, setIsProcessingBooking] = useState(false);
 
-  // Rating Dialog State
+  // Closure and Rating Dialog State
+  const [isClosureDialogOpen, setIsClosureDialogOpen] = useState(false);
   const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
-  const [selectedTripForRating, setSelectedTripForRating] = useState<Trip | null>(null);
+  const [selectedTripForClosure, setSelectedTripForClosure] = useState<Trip | null>(null);
+  
 
   // --- Queries ---
   const userTripsQuery = useMemo(() => {
@@ -119,7 +122,7 @@ export default function HistoryPage() {
 
     const awaiting = sortedTrips.filter(t => t.status === 'Awaiting-Offers');
     const pending = sortedTrips.filter(t => t.status === 'Pending-Carrier-Confirmation');
-    const confirmed = sortedTrips.filter(t => ['Planned', 'Completed', 'Cancelled'].includes(t.status));
+    const confirmed = sortedTrips.filter(t => ['Planned', 'In-Transit', 'Completed', 'Cancelled'].includes(t.status));
     
     return { 
         awaitingTrips: awaiting, 
@@ -174,9 +177,9 @@ export default function HistoryPage() {
       setIsBookingDialogOpen(true);
   }
   
-  const handleRateTrip = (trip: Trip) => {
-      setSelectedTripForRating(trip);
-      setIsRatingDialogOpen(true);
+  const handleOpenClosureDialog = (trip: Trip) => {
+      setSelectedTripForClosure(trip);
+      setIsClosureDialogOpen(true);
   }
 
   const handleConfirmBookingFromOffer = async (passengers: PassengerDetails[]) => {
@@ -417,15 +420,21 @@ export default function HistoryPage() {
                 </AccordionTrigger>
                 <AccordionContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 p-6">
-                    {confirmedTrips.map(trip => (
-                      <ScheduledTripCard
-                        key={trip.id}
-                        trip={trip}
-                        onBookNow={() => {}}
-                        onRateTrip={handleRateTrip}
-                        context="history"
-                      />
-                    ))}
+                    {confirmedTrips.map(trip => {
+                      const isCompleted = trip.status === 'Completed';
+                      const closureTime = trip.departureDate && trip.durationHours ? addHours(new Date(trip.departureDate), trip.durationHours + 4) : null;
+                      const isClosureDue = closureTime ? new Date() > closureTime : false;
+
+                      return (
+                         <ScheduledTripCard
+                            key={trip.id}
+                            trip={trip}
+                            onBookNow={() => {}}
+                            onClosureAction={isClosureDue ? () => handleOpenClosureDialog(trip) : undefined}
+                            context="history"
+                          />
+                      )
+                    })}
                   </div>
                 </AccordionContent>
               </Card>
@@ -434,7 +443,7 @@ export default function HistoryPage() {
         </Accordion>
       </div>
 
-      {/* Booking Dialog */}
+      {/* --- Dialogs --- */}
       {(selectedOfferForBooking || selectedScheduledTrip) && (
           <BookingDialog
             isOpen={isBookingDialogOpen}
@@ -447,12 +456,25 @@ export default function HistoryPage() {
             isProcessing={isProcessingBooking}
           />
       )}
+      
+      {selectedTripForClosure && (
+        <TripClosureDialog
+            isOpen={isClosureDialogOpen}
+            onOpenChange={setIsClosureDialogOpen}
+            trip={selectedTripForClosure}
+            onRate={() => {
+                setIsClosureDialogOpen(false);
+                // A slight delay to allow dialogs to transition smoothly
+                setTimeout(() => setIsRatingDialogOpen(true), 150);
+            }}
+        />
+      )}
 
-      {/* Rating Dialog */}
       <RateTripDialog 
         isOpen={isRatingDialogOpen}
         onOpenChange={setIsRatingDialogOpen}
-        trip={selectedTripForRating}
+        trip={selectedTripForClosure}
+        onConfirm={() => setSelectedTripForClosure(null)}
       />
     </AppLayout>
   );

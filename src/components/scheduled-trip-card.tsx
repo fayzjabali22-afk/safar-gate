@@ -19,7 +19,7 @@ import {
   CheckCircle,
   Clock,
   XCircle,
-  StarIcon,
+  Flag,
 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
@@ -113,7 +113,17 @@ const CarrierInfo = ({ carrierId, carrierName }: { carrierId?: string; carrierNa
   );
 };
 
-export function ScheduledTripCard({ trip, onBookNow, onRateTrip, context = 'dashboard' }: { trip: Trip; onBookNow: (trip: Trip) => void; onRateTrip?: (trip: Trip) => void; context?: 'dashboard' | 'history' }) {
+export function ScheduledTripCard({ 
+    trip, 
+    onBookNow, 
+    onClosureAction, 
+    context = 'dashboard' 
+}: { 
+    trip: Trip; 
+    onBookNow: (trip: Trip) => void; 
+    onClosureAction?: (trip: Trip) => void;
+    context?: 'dashboard' | 'history' 
+}) {
   const depositAmount = (trip.price || 0) * ((trip.depositPercentage || 0) / 100);
   
   const placeholderCar = PlaceHolderImages.find((img) => img.id === 'car-placeholder');
@@ -177,10 +187,10 @@ export function ScheduledTripCard({ trip, onBookNow, onRateTrip, context = 'dash
                 حجز الآن
             </Button>
           )}
-          {context === 'history' && trip.status === 'Completed' && onRateTrip && (
-            <Button size="sm" variant="outline" className="w-full" onClick={() => onRateTrip(trip)}>
-                <StarIcon className="ml-2 h-4 w-4"/>
-                قيّم هذه الرحلة
+          {context === 'history' && onClosureAction && (
+            <Button size="sm" variant="default" className="w-full bg-accent hover:bg-accent/90" onClick={() => onClosureAction(trip)}>
+                <Flag className="ml-2 h-4 w-4"/>
+                إجراءات إغلاق الرحلة
             </Button>
           )}
       </CardFooter>

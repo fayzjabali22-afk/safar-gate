@@ -57,6 +57,7 @@ export type Trip = {
   bookingIds?: string[];
   createdAt?: any;
   updatedAt?: any;
+  durationHours?: number; // Added field for trip duration
 };
 
 export type Booking = {
