@@ -246,7 +246,10 @@ export default function HistoryPage() {
       
       // SIMULATION
       setTimeout(() => {
-        toast({ title: 'محاكاة: تم إلغاء الحجز بنجاح', description: 'تم استرجاع المقاعد للناقل.' });
+        toast({ 
+            title: 'محاكاة: تم إلغاء الحجز بنجاح', 
+            description: 'بقرار من المسافر دون اي مسؤولية على موقع سفريات الوسيط الاكتروني تم الغاء الرحلة منقبل المسافر وعلية كامل المسؤولية' 
+        });
         setIsCancelling(false);
         setIsCancelDialogOpen(false);
       }, 1000);

@@ -30,7 +30,7 @@ export function CancellationDialog({ isOpen, onOpenChange, isCancelling, onConfi
             تأكيد إلغاء الحجز
           </AlertDialogTitle>
           <AlertDialogDescription>
-            <p className="font-bold py-2">هل أنت متأكد من رغبتك في إلغاء هذا الحجز؟</p>
+            <p className="font-bold py-2">هل أنت متأكد من رغبتك في إلغاء هذا الحجز؟ وتقر أنك المسؤول وحدك عن هذا الإجراء.</p>
             <div className="p-3 text-destructive-foreground bg-destructive/80 rounded-lg text-sm space-y-1">
                 <p className="font-bold">سياسة الإلغاء وفقدان العربون:</p>
                 <p className="text-xs">
