@@ -53,7 +53,6 @@ export type Trip = {
   price?: number;
   availableSeats?: number;
   depositPercentage?: number;
-  vehicleCategory?: 'small' | 'bus';
   acceptedOfferId?: string | null;
   bookingIds?: string[];
   createdAt?: any;
@@ -114,5 +113,3 @@ export type Message = {
   content: string;
   timestamp: string;
 };
-
-    

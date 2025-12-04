@@ -144,7 +144,7 @@
         },
         "status": {
           "type": "string",
-          "enum": ["Planned", "In-Transit", "Completed", "Cancelled", "Awaiting-Offers"],
+          "enum": ["Planned", "In-Transit", "Completed", "Cancelled", "Awaiting-Offers", "Pending-Carrier-Confirmation"],
           "description": "The current status of the trip."
         },
         "cargoDetails": {
@@ -506,5 +506,3 @@
     ]
   }
 }
-
-    
