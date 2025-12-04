@@ -3,7 +3,7 @@
 import { RequestCard } from '@/components/carrier/request-card';
 import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, where, doc, getDoc } from 'firebase/firestore';
-import { PackageOpen, Settings, AlertTriangle, ListFilter, ShipWheel } from 'lucide-react';
+import { PackageOpen, Settings, AlertTriangle, ListFilter, ShipWheel, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Trip, CarrierProfile } from '@/lib/data';
 import { useEffect, useState, useMemo } from 'react';
@@ -12,6 +12,8 @@ import Link from 'next/link';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { OfferDialog } from '@/components/carrier/offer-dialog';
+import { suggestOfferPrice, type SuggestOfferPriceInput } from '@/ai/flows/suggest-offer-price-flow';
+import { useToast } from '@/hooks/use-toast';
 
 const mockRequests: Trip[] = [
     {
@@ -93,6 +95,16 @@ const mockRequests: Trip[] = [
     },
 ];
 
+const mockCarrierProfile: CarrierProfile = {
+    id: 'carrier_user_id',
+    name: 'Safar Transport',
+    contactEmail: 'carrier@safar.com',
+    primaryRoute: {
+        origin: 'amman',
+        destination: 'riyadh'
+    }
+}
+
 function LoadingState() {
   return (
     <div className="space-y-3">
@@ -137,37 +149,16 @@ function NoRequestsState({ isFiltered }: { isFiltered: boolean }) {
 
 
 export default function CarrierRequestsPage() {
-  const firestore = useFirestore();
-  const { user } = useUser();
-  const [carrierProfile, setCarrierProfile] = useState<CarrierProfile | null>(null);
-  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [carrierProfile, setCarrierProfile] = useState<CarrierProfile | null>(mockCarrierProfile);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [filterBySpecialization, setFilterBySpecialization] = useState(true);
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [isOfferDialogOpen, setIsOfferDialogOpen] = useState(false);
+  const [isGettingSuggestion, setIsGettingSuggestion] = useState(false);
+  const [suggestion, setSuggestion] = useState<{price: number, justification: string} | null>(null);
+  const { toast } = useToast();
 
 
-  useEffect(() => {
-    const fetchCarrierProfile = async () => {
-      if (!firestore || !user) {
-        setIsLoadingProfile(false);
-        return;
-      };
-      setIsLoadingProfile(true);
-      const carrierRef = doc(firestore, 'carriers', user.uid);
-      try {
-        const carrierSnap = await getDoc(carrierRef);
-        if (carrierSnap.exists()) {
-          setCarrierProfile(carrierSnap.data() as CarrierProfile);
-        }
-      } catch (e) {
-          console.error("Failed to fetch carrier profile:", e);
-      } finally {
-        setIsLoadingProfile(false);
-      }
-    };
-    fetchCarrierProfile();
-  }, [firestore, user]);
-  
   const filteredRequests = useMemo(() => {
     const uniqueRequests = mockRequests;
 
@@ -179,15 +170,47 @@ export default function CarrierRequestsPage() {
         req.destination.toLowerCase() === to
       );
     }
-    return uniqueRequests;
+    return uniqueRequests.sort((a, b) => new Date(a.departureDate).getTime() - new Date(b.departureDate).getTime());
   }, [filterBySpecialization, carrierProfile]);
 
   const isLoading = isLoadingProfile;
   
   const handleOfferClick = (trip: Trip) => {
+    setSuggestion(null); // Clear previous suggestion
     setSelectedTrip(trip);
     setIsOfferDialogOpen(true);
   }
+  
+  const handlePriceSuggestion = async () => {
+    if (!selectedTrip) return;
+    setIsGettingSuggestion(true);
+    try {
+        const input: SuggestOfferPriceInput = {
+            origin: selectedTrip.origin,
+            destination: selectedTrip.destination,
+            passengers: selectedTrip.passengers || 1,
+            departureDate: selectedTrip.departureDate
+        };
+        const result = await suggestOfferPrice(input);
+        setSuggestion({
+            price: result.suggestedPrice,
+            justification: result.justification
+        });
+        toast({
+            title: 'تم إنشاء الاقتراح بنجاح',
+            description: 'تم تحديث حقل السعر بالاقتراح الجديد.',
+        });
+    } catch(e) {
+        toast({
+            variant: 'destructive',
+            title: 'فشل إنشاء الاقتراح',
+            description: 'حدث خطأ أثناء التواصل مع الذكاء الاصطناعي.',
+        });
+    } finally {
+        setIsGettingSuggestion(false);
+    }
+  }
+
 
   if (isLoading) {
     return <LoadingState />;
@@ -231,6 +254,9 @@ export default function CarrierRequestsPage() {
             isOpen={isOfferDialogOpen}
             onOpenChange={setIsOfferDialogOpen}
             trip={selectedTrip}
+            suggestion={suggestion}
+            onSuggestPrice={handlePriceSuggestion}
+            isSuggestingPrice={isGettingSuggestion}
         />
     )}
     </>

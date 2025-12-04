@@ -1,8 +1,7 @@
 'use client';
 
-import { useDoc, useFirestore, useUser } from '@/firebase';
+import { useUser } from '@/firebase';
 import type { Chat, UserProfile } from '@/lib/data';
-import { doc } from 'firebase/firestore';
 import { useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
@@ -11,23 +10,21 @@ import { usePathname } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { arSA } from 'date-fns/locale';
+import { mockChatUsers } from './carrier-chat-list';
 
 export function CarrierChatListItem({ chat }: { chat: Chat }) {
-  const { user } = useUser();
-  const firestore = useFirestore();
+  const { user } = useUser(); // Still useful to determine the "other" participant
   const pathname = usePathname();
 
   const travelerId = useMemo(() => {
-    if (!user) return null;
-    return chat.participants.find(p => p !== user.uid);
-  }, [chat.participants, user]);
+    // This logic remains the same.
+    const mockUserId = 'carrier_user_id';
+    return chat.participants.find(p => p !== mockUserId);
+  }, [chat.participants]);
 
-  const travelerUserRef = useMemo(() => {
-    if (!firestore || !travelerId) return null;
-    return doc(firestore, 'users', travelerId);
-  }, [firestore, travelerId]);
-
-  const { data: travelerUser, isLoading } = useDoc<UserProfile>(travelerUserRef);
+  // SIMULATION: Directly use mock data instead of fetching from Firestore
+  const travelerUser = travelerId ? mockChatUsers[travelerId] : null;
+  const isLoading = false; // We are not loading from a hook anymore.
 
   if (isLoading) {
     return (

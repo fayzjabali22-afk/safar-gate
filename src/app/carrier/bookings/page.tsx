@@ -16,6 +16,7 @@ const mockTrip: Trip = {
     status: 'Planned',
     price: 80,
     availableSeats: 2, // SCENARIO: Trip has only 2 seats left
+    depositPercentage: 25,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
 };
@@ -59,8 +60,51 @@ const mockHistoricalBookings: Booking[] = [
         totalPrice: 70,
         createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
         updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    },
+    {
+        id: 'booking_hist_2',
+        tripId: 'trip_789_past',
+        userId: 'traveler_D',
+        carrierId: 'carrier_user_id',
+        seats: 2,
+        passengersDetails: [{ name: 'Mona Ali', type: 'adult' }, { name: 'Hassan Ali', type: 'adult' }],
+        status: 'Cancelled',
+        totalPrice: 180,
+        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+        updatedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
     }
 ];
+
+const mockHistoricalTrips: { [key: string]: Trip } = {
+    'trip_456_past': {
+        id: 'trip_456_past',
+        userId: 'carrier_user_id',
+        carrierId: 'carrier_user_id',
+        origin: 'cairo',
+        destination: 'jeddah',
+        departureDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Completed',
+        price: 70,
+        availableSeats: 0,
+        depositPercentage: 20,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    },
+    'trip_789_past': {
+        id: 'trip_789_past',
+        userId: 'carrier_user_id',
+        carrierId: 'carrier_user_id',
+        origin: 'damascus',
+        destination: 'amman',
+        departureDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Cancelled',
+        price: 90,
+        availableSeats: 4,
+        depositPercentage: 30,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    }
+}
 // --- END SIMULATION DATA ---
 
 
@@ -123,7 +167,11 @@ export default function CarrierBookingsPage() {
                 {historicalBookings.length > 0 ? (
                      <div className="space-y-4">
                         {historicalBookings.map(booking => (
-                            <BookingActionCard key={booking.id} booking={booking} trip={null}/>
+                            <BookingActionCard 
+                                key={booking.id} 
+                                booking={booking} 
+                                trip={mockHistoricalTrips[booking.tripId] || null}
+                            />
                         ))}
                     </div>
                 ) : (

@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { logEvent } from '@/lib/analytics';
 import { Separator } from '../ui/separator';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+
 
 const cities: { [key: string]: string } = {
     damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص',
@@ -29,16 +31,26 @@ const statusMap: Record<string, { text: string; className: string }> = {
     'Completed': { text: 'مكتمل', className: 'bg-blue-100 text-blue-800 border-blue-300' },
 };
 
-function UserInfo({ userId }: { userId: string }) {
-    // This component can still fetch live user data if needed, or be mocked.
-    // For this scenario, we keep it as is, assuming user profiles are not part of the core simulation.
-    const firestore = useFirestore();
-    const userRef = useMemo(() => userId ? doc(firestore, 'users', userId) : null, [firestore, userId]);
-    const { data: userProfile, isLoading } = useDoc<UserProfile>(userRef);
 
-    if (isLoading) return <Skeleton className="h-6 w-32" />;
-    if (!userProfile) return <span className="font-bold">{userId}</span>; // Fallback to ID
-    return <span className="font-bold">{userProfile?.firstName} {userProfile?.lastName}</span>;
+const mockTravelers: { [key: string]: UserProfile } = {
+    'traveler_A': { id: 'traveler_A', firstName: 'أحمد', lastName: 'صالح', email: 'ahmad@email.com' },
+    'traveler_B': { id: 'traveler_B', firstName: 'خالد', lastName: 'جمعة', email: 'khalid@email.com' },
+    'traveler_C': { id: 'traveler_C', firstName: 'سارة', lastName: 'فؤاد', email: 'sara@email.com' },
+    'traveler_D': { id: 'traveler_D', firstName: 'منى', lastName: 'علي', email: 'mona@email.com' },
+};
+
+function UserInfo({ userId }: { userId: string }) {
+    const userProfile = mockTravelers[userId];
+    if (!userProfile) return <span className="font-bold">{userId}</span>;
+    
+    return (
+        <div className="flex items-center gap-2">
+            <Avatar className="h-8 w-8">
+                <AvatarFallback>{userProfile.firstName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <span className="font-bold">{userProfile?.firstName} {userProfile?.lastName}</span>
+        </div>
+    )
 }
 
 function TripInfo({ trip }: { trip?: Trip | null }) {
@@ -51,12 +63,9 @@ function TripInfo({ trip }: { trip?: Trip | null }) {
     );
 }
 
-// In Simulation Mode, the trip data is passed directly as a prop.
 export function BookingActionCard({ booking, trip }: { booking: Booking, trip: Trip | null }) {
     const { toast } = useToast();
     const [isProcessing, setIsProcessing] = useState(false);
-    
-    // In simulation mode, we don't fetch the trip, we use the one passed in.
     const isLoadingTrip = false; 
     
     const { depositAmount, remainingAmount } = useMemo(() => {
@@ -78,7 +87,6 @@ export function BookingActionCard({ booking, trip }: { booking: Booking, trip: T
     const statusInfo = statusMap[booking.status] || { text: booking.status, className: 'bg-gray-100 text-gray-800' };
     const isPending = booking.status === 'Pending-Carrier-Confirmation';
     
-    // SMART CAPACITY CHECK LOGIC - This now works with the mocked trip data passed in.
     const hasSufficientSeats = trip ? booking.seats <= (trip.availableSeats || 0) : false;
 
     return (
@@ -88,7 +96,7 @@ export function BookingActionCard({ booking, trip }: { booking: Booking, trip: T
                     <CardTitle className="text-base"><UserInfo userId={booking.userId} /></CardTitle>
                     <TripInfo trip={trip} />
                 </div>
-                 <Badge className={statusInfo.className}>{statusInfo.text}</Badge>
+                 <Badge className={cn(statusInfo.className, "text-xs")}>{statusInfo.text}</Badge>
             </CardHeader>
             <CardContent className="space-y-4 pb-4">
                  <div className="grid grid-cols-2 gap-4 text-sm">

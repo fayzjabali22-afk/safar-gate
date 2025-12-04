@@ -18,6 +18,53 @@ import { Button } from '../ui/button';
 import { EditTripDialog } from './edit-trip-dialog';
 import { useToast } from '@/hooks/use-toast';
 
+// --- MOCK DATA FOR SIMULATION ---
+const mockActiveTrips: Trip[] = [
+    {
+        id: 'mock_planned_1',
+        userId: 'carrier_user_id',
+        carrierId: 'carrier_user_id',
+        origin: 'amman',
+        destination: 'riyadh',
+        departureDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Planned',
+        price: 80,
+        availableSeats: 3,
+        vehicleType: 'GMC Yukon 2023',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    },
+    {
+        id: 'mock_in_transit_1',
+        userId: 'carrier_user_id',
+        carrierId: 'carrier_user_id',
+        origin: 'jeddah',
+        destination: 'damascus',
+        departureDate: new Date().toISOString(),
+        status: 'In-Transit',
+        price: 120,
+        availableSeats: 1,
+        vehicleType: 'Toyota Coaster 2022',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    },
+     {
+        id: 'mock_planned_2',
+        userId: 'carrier_user_id',
+        carrierId: 'carrier_user_id',
+        origin: 'cairo',
+        destination: 'amman',
+        departureDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Planned',
+        price: 95,
+        availableSeats: 4,
+        vehicleType: 'Mercedes-Benz Sprinter',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    }
+];
+// --- END MOCK DATA ---
+
 
 const cities: { [key: string]: string } = {
     damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص',
@@ -118,19 +165,10 @@ function TripListItem({ trip, onEdit }: { trip: Trip, onEdit: (trip: Trip) => vo
 export function MyTripsList() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-    const { user } = useUser();
-    const firestore = useFirestore();
+    const [bookedSeatsCount, setBookedSeatsCount] = useState(0);
 
-    const tripsQuery = useMemo(() => {
-        if (!firestore || !user) return null;
-        return query(
-            collection(firestore, 'trips'),
-            where('carrierId', '==', user.uid),
-            where('status', 'in', ['Planned', 'In-Transit'])
-        );
-    }, [firestore, user]);
-
-    const { data: trips, isLoading } = useCollection<Trip>(tripsQuery);
+    const isLoading = false;
+    const trips = mockActiveTrips;
 
     const sortedTrips = useMemo(() => {
         if (!trips) return [];
@@ -138,6 +176,12 @@ export function MyTripsList() {
     }, [trips]);
     
     const handleEditClick = (trip: Trip) => {
+        // SIMULATION: Manually set a mock booked seats count for testing the guard
+        if (trip.id === 'mock_planned_1') {
+            setBookedSeatsCount(2); 
+        } else {
+            setBookedSeatsCount(0);
+        }
         setSelectedTrip(trip);
         setIsEditDialogOpen(true);
     };
@@ -171,6 +215,7 @@ export function MyTripsList() {
                 isOpen={isEditDialogOpen}
                 onOpenChange={setIsEditDialogOpen}
                 trip={selectedTrip}
+                bookedSeatsCount={bookedSeatsCount}
             />
         </>
     );

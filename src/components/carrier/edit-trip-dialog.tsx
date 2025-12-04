@@ -24,9 +24,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useFirestore } from '@/firebase';
-import { doc, updateDoc, Timestamp } from 'firebase/firestore';
+import { doc, updateDoc, Timestamp, getDocs, collection, query, where } from 'firebase/firestore';
 import type { Trip } from '@/lib/data';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, AlertCircle } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
@@ -37,9 +37,9 @@ interface EditTripDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   trip: Trip | null;
+  bookedSeatsCount: number; // SIMULATION PROP
 }
 
-// Schema reverted to its simpler state as requested.
 const editTripSchema = z.object({
   price: z.coerce.number().positive('السعر يجب أن يكون رقماً موجباً'),
   availableSeats: z.coerce.number().int().min(0, 'عدد المقاعد لا يمكن أن يكون سالباً'),
@@ -48,9 +48,8 @@ const editTripSchema = z.object({
 
 type EditTripFormValues = z.infer<typeof editTripSchema>;
 
-export function EditTripDialog({ isOpen, onOpenChange, trip }: EditTripDialogProps) {
+export function EditTripDialog({ isOpen, onOpenChange, trip, bookedSeatsCount }: EditTripDialogProps) {
   const { toast } = useToast();
-  const firestore = useFirestore();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<EditTripFormValues>({
@@ -68,39 +67,43 @@ export function EditTripDialog({ isOpen, onOpenChange, trip }: EditTripDialogPro
         availableSeats: trip.availableSeats || 0,
         departureDate: trip.departureDate ? new Date(trip.departureDate) : new Date(),
       });
+      // Clear previous errors when dialog opens
+      form.clearErrors();
     }
   }, [trip, isOpen, form]);
 
   const onSubmit = async (data: EditTripFormValues) => {
-    if (!firestore || !trip) {
-      toast({ variant: 'destructive', title: 'خطأ', description: 'لا يمكن تحديث الرحلة حالياً.' });
-      return;
+    // --- INTEGRITY GUARD ---
+    if (data.availableSeats < bookedSeatsCount) {
+        form.setError("availableSeats", {
+            type: "manual",
+            message: `وضع محاكاة: لا يمكن تقليل السعة عن ${bookedSeatsCount} لوجود حجوزات مؤكدة`,
+        });
+        return;
     }
+    // --- END INTEGRITY GUARD ---
     
     setIsSubmitting(true);
-    try {
-      const tripRef = doc(firestore, 'trips', trip.id);
-      await updateDoc(tripRef, {
-        price: data.price,
-        availableSeats: data.availableSeats,
-        departureDate: Timestamp.fromDate(data.departureDate),
-      });
-      toast({ title: 'تم تحديث الرحلة بنجاح!' });
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Failed to update trip:', error);
-      toast({ variant: 'destructive', title: 'فشل تحديث الرحلة', description: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.' });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Simulate API call
+    setTimeout(() => {
+        toast({ title: 'محاكاة: تم تحديث الرحلة بنجاح!' });
+        setIsSubmitting(false);
+        onOpenChange(false);
+    }, 1000);
   };
-
+  
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>تعديل تفاصيل الرحلة</DialogTitle>
-          <DialogDescription>
+           {bookedSeatsCount > 0 && (
+              <div className="!mt-4 p-2 text-xs text-center bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md flex items-center justify-center gap-2">
+                  <AlertCircle className="h-4 w-4"/>
+                  <span>تنبيه: هذه الرحلة عليها <strong>{bookedSeatsCount}</strong> حجوزات مؤكدة.</span>
+              </div>
+          )}
+          <DialogDescription className="pt-2">
             قم بتحديث تفاصيل رحلتك. التغييرات ستكون مرئية للمستخدمين.
           </DialogDescription>
         </DialogHeader>
@@ -170,7 +173,7 @@ export function EditTripDialog({ isOpen, onOpenChange, trip }: EditTripDialogPro
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isSubmitting}>إلغاء</Button>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
-                  <><Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري التحميل...</>
+                  <><Loader2 className="ml-2 h-4 w-4 animate-spin" /> جاري الحفظ...</>
                 ) : (
                   <><Save className="ml-2 h-4 w-4" /> حفظ التغييرات</>
                 )}

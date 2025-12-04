@@ -24,10 +24,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
-import { collection, serverTimestamp } from 'firebase/firestore';
 import type { Trip } from '@/lib/data';
-import { Loader2, Send } from 'lucide-react';
+import { Loader2, Send, Sparkles } from 'lucide-react';
+import React from 'react';
 
 const offerFormSchema = z.object({
   price: z.coerce.number().positive('يجب أن يكون السعر رقماً موجباً'),
@@ -42,12 +41,13 @@ interface OfferDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   trip: Trip;
+  suggestion: { price: number; justification: string } | null;
+  isSuggestingPrice: boolean;
+  onSuggestPrice: () => void;
 }
 
-export function OfferDialog({ isOpen, onOpenChange, trip }: OfferDialogProps) {
+export function OfferDialog({ isOpen, onOpenChange, trip, suggestion, isSuggestingPrice, onSuggestPrice }: OfferDialogProps) {
   const { toast } = useToast();
-  const firestore = useFirestore();
-  const { user: carrierUser } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<OfferFormValues>({
@@ -60,58 +60,24 @@ export function OfferDialog({ isOpen, onOpenChange, trip }: OfferDialogProps) {
     },
   });
 
+  React.useEffect(() => {
+    if (suggestion) {
+        form.setValue('price', suggestion.price);
+    }
+  }, [suggestion, form]);
+
   const onSubmit = async (data: OfferFormValues) => {
-    if (!firestore || !carrierUser) {
-      toast({
-        variant: 'destructive',
-        title: 'خطأ في المصادقة',
-        description: 'يجب أن تكون ناقلاً مسجلاً لتقديم العروض.',
-      });
-      return;
-    }
     setIsSubmitting(true);
-
-    try {
-      const offersCollection = collection(firestore, 'trips', trip.id, 'offers');
-      const newOffer = {
-        tripId: trip.id,
-        carrierId: carrierUser.uid,
-        price: data.price,
-        vehicleType: data.vehicleType,
-        notes: data.notes,
-        depositPercentage: data.depositPercentage,
-        status: 'Pending',
-        createdAt: serverTimestamp(),
-      };
-      await addDocumentNonBlocking(offersCollection, newOffer);
-
-      const notificationsCollection = collection(firestore, 'notifications');
-      await addDocumentNonBlocking(notificationsCollection, {
-        userId: trip.userId,
-        title: 'لديك عرض جديد!',
-        message: `وصلك عرض جديد لرحلتك من ${trip.origin} إلى ${trip.destination}.`,
-        type: 'new_offer',
-        isRead: false,
-        link: `/history#${trip.id}`,
-        createdAt: serverTimestamp(),
-      });
-      
-      toast({
-        title: 'تم إرسال العرض بنجاح',
-        description: 'سيتم إعلام المسافر بعرضك.',
-      });
-      onOpenChange(false);
-      form.reset();
-    } catch (error) {
-      console.error('Failed to submit offer:', error);
-      toast({
-        variant: 'destructive',
-        title: 'فشل إرسال العرض',
-        description: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // SIMULATION
+    setTimeout(() => {
+        toast({
+            title: 'محاكاة: تم إرسال العرض بنجاح',
+            description: 'سيتم إعلام المسافر بعرضك.',
+        });
+        setIsSubmitting(false);
+        onOpenChange(false);
+        form.reset();
+    }, 1500);
   };
 
   return (
@@ -153,6 +119,15 @@ export function OfferDialog({ isOpen, onOpenChange, trip }: OfferDialogProps) {
                     )}
                 />
             </div>
+             <Button type="button" variant="outline" className="w-full" onClick={onSuggestPrice} disabled={isSuggestingPrice}>
+                {isSuggestingPrice ? <Loader2 className="ml-2 h-4 w-4 animate-spin"/> : <Sparkles className="ml-2 h-4 w-4 text-yellow-500" />}
+                {isSuggestingPrice ? 'جاري التفكير...' : 'اقترح لي سعراً مناسباً (AI)'}
+             </Button>
+            {suggestion && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-800">
+                    <p><strong>تعليل الاقتراح:</strong> {suggestion.justification}</p>
+                </div>
+            )}
              <FormField
               control={form.control}
               name="vehicleType"

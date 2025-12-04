@@ -1,28 +1,49 @@
 'use client';
 
 import { useCollection, useFirestore, useUser } from '@/firebase';
-import type { Chat } from '@/lib/data';
+import type { Chat, UserProfile } from '@/lib/data';
 import { collection, query, where } from 'firebase/firestore';
 import { CarrierChatListItem } from './carrier-chat-list-item';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageSquareOff } from 'lucide-react';
 import { useMemo } from 'react';
 
+// --- MOCK DATA ---
+const mockChats: Chat[] = [
+    {
+        id: 'chat_1',
+        tripId: 'trip_123',
+        participants: ['carrier_user_id', 'traveler_A'],
+        lastMessage: 'أهلاً بك، هل يمكن تأكيد موعد الانطلاق؟',
+        updatedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString() // 5 minutes ago
+    },
+    {
+        id: 'chat_2',
+        tripId: 'trip_456',
+        participants: ['carrier_user_id', 'traveler_B'],
+        lastMessage: 'تمام، سأكون في الانتظار عند نقطة التجمع.',
+        updatedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
+    },
+    {
+        id: 'chat_3',
+        tripId: 'trip_789',
+        participants: ['carrier_user_id', 'traveler_C'],
+        lastMessage: 'شكراً جزيلاً لك.',
+        updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+    }
+];
+
+export const mockChatUsers: { [key: string]: UserProfile } = {
+    'traveler_A': { id: 'traveler_A', firstName: 'أحمد', lastName: 'خالد', email: 'ahmad@email.com' },
+    'traveler_B': { id: 'traveler_B', firstName: 'فاطمة', lastName: 'علي', email: 'fatima@email.com' },
+    'traveler_C': { id: 'traveler_C', firstName: 'يوسف', lastName: 'محمد', email: 'yusuf@email.com' },
+};
+// --- END MOCK DATA ---
+
 
 export function CarrierChatList() {
-  const { user } = useUser();
-  const firestore = useFirestore();
-
-  const chatsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    // Removed orderBy to prevent index error. Sorting will be done client-side.
-    return query(
-        collection(firestore, 'chats'), 
-        where('participants', 'array-contains', user.uid)
-    );
-  }, [firestore, user]);
-
-  const { data: chats, isLoading } = useCollection<Chat>(chatsQuery);
+  const isLoading = false;
+  const chats = mockChats;
 
   const sortedChats = useMemo(() => {
     if (!chats) return [];
