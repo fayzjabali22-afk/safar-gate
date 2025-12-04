@@ -21,13 +21,13 @@ const mockTrip: Trip = {
     updatedAt: new Date().toISOString(),
 };
 
-const mockPendingBookings: Booking[] = [
+const mockAllPendingBookings: Booking[] = [
     {
         id: 'booking_pending_1',
         tripId: 'trip_123_live',
         userId: 'traveler_A',
         carrierId: 'carrier_user_id',
-        seats: 2, // SCENARIO: This booking should be acceptable
+        seats: 2, // SCENARIO: This booking is acceptable
         passengersDetails: [{ name: 'Ahmad Saleh', type: 'adult' }, { name: 'Fatima Saleh', type: 'adult' }],
         status: 'Pending-Carrier-Confirmation',
         totalPrice: 160,
@@ -39,7 +39,7 @@ const mockPendingBookings: Booking[] = [
         tripId: 'trip_123_live',
         userId: 'traveler_B',
         carrierId: 'carrier_user_id',
-        seats: 3, // SCENARIO: This booking should be rejected visually
+        seats: 3, // SCENARIO: This booking should be filtered out and not appear at all
         passengersDetails: [{ name: 'Khalid Jama', type: 'adult' }, { name: 'Aisha Jama', type: 'adult' }, { name: 'Omar Jama', type: 'child' }],
         status: 'Pending-Carrier-Confirmation',
         totalPrice: 240,
@@ -110,7 +110,13 @@ const mockHistoricalTrips: { [key: string]: Trip } = {
 
 export default function CarrierBookingsPage() {
     const isLoading = false;
-    const pendingBookings = mockPendingBookings;
+    
+    // Smart Filter: Only show pending bookings that can actually be fulfilled.
+    const pendingBookings = useMemo(() => {
+        const tripSeats = mockTrip.availableSeats || 0;
+        return mockAllPendingBookings.filter(booking => booking.seats <= tripSeats);
+    }, []);
+    
     const historicalBookings = mockHistoricalBookings;
 
     if (isLoading) {
