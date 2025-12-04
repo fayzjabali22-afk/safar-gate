@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star, ArrowRightLeft } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import type { Trip, CarrierProfile } from '@/lib/data';
+import type { Trip, CarrierProfile, Booking } from '@/lib/data';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -45,7 +45,58 @@ import { Badge } from '@/components/ui/badge';
 import { BookingDialog, type PassengerDetails } from '@/components/booking-dialog';
 import { logEvent } from '@/lib/analytics';
 import Link from 'next/link';
+import { Skeleton } from '@/components/ui/skeleton';
 
+
+// --- MOCK DATA ---
+const mockScheduledTrips: Trip[] = [
+    {
+        id: 'mock_scheduled_1',
+        userId: 'carrier_user_1',
+        carrierId: 'carrier_user_1',
+        carrierName: 'النقل السريع',
+        origin: 'amman',
+        destination: 'riyadh',
+        departureDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Planned',
+        price: 80,
+        currency: 'JOD',
+        availableSeats: 3,
+        depositPercentage: 15,
+        vehicleType: 'GMC Yukon 2023',
+    },
+    {
+        id: 'mock_scheduled_2',
+        userId: 'carrier_user_2',
+        carrierId: 'carrier_user_2',
+        carrierName: 'راحة الطريق',
+        origin: 'damascus',
+        destination: 'amman',
+        departureDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Planned',
+        price: 55,
+        currency: 'JOD',
+        availableSeats: 4,
+        depositPercentage: 10,
+        vehicleType: 'Hyundai Staria 2024',
+    },
+    {
+        id: 'mock_scheduled_3',
+        userId: 'carrier_user_3',
+        carrierId: 'carrier_user_3',
+        carrierName: 'ملوك الطريق',
+        origin: 'amman',
+        destination: 'riyadh',
+        departureDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+        status: 'Planned',
+        price: 120,
+        currency: 'JOD',
+        availableSeats: 1,
+        depositPercentage: 20,
+        vehicleType: 'باص مرسيدس 50 راكب',
+        vehicleCategory: 'bus',
+    },
+];
 
 // Mock data for countries and cities
 const countries: { [key: string]: { name: string; cities: string[] } } = {
@@ -77,17 +128,10 @@ export default function DashboardPage() {
   const [selectedTripForBooking, setSelectedTripForBooking] = useState<Trip | null>(null);
   const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
 
-  const scheduledTripsQuery = useMemo(() => {
-    if (!firestore) return null;
-    // DEV MODE: Bypassing auth check for now.
-    // This query is intentionally left open for demonstration.
-    // In a real app, you'd likely filter by date, e.g., where('departureDate', '>=', new Date())
-    return query(
-      collection(firestore, 'trips'),
-      where('status', '==', 'Planned')
-    );
-  }, [firestore]);
-  const { data: allTrips, isLoading } = useCollection<Trip>(scheduledTripsQuery);
+  // USE MOCK DATA INSTEAD OF FIREBASE
+  const allTrips = mockScheduledTrips;
+  const isLoading = false;
+
 
   const [searchOriginCountry, setSearchOriginCountry] = useState('');
   const [searchOriginCity, setSearchOriginCity] = useState('');
@@ -122,14 +166,11 @@ export default function DashboardPage() {
 
     let foundCarrier: CarrierProfile | null = null;
 
-    const carriersRef = collection(firestore, 'carriers');
-    const q = query(carriersRef, where("name", "==", carrierSearchInput));
-    const querySnapshot = await getDocs(q);
-    
-    if (!querySnapshot.empty) {
-        const carrierDoc = querySnapshot.docs[0];
-        foundCarrier = { id: carrierDoc.id, ...carrierDoc.data() } as CarrierProfile;
+    // SIMULATION
+    if(carrierSearchInput === "النقل السريع") {
+        foundCarrier = { id: "carrier_user_1", name: "النقل السريع", contactEmail: "a@b.c" };
     }
+
 
     if (foundCarrier) {
         setSelectedCarrier(foundCarrier);
@@ -170,7 +211,7 @@ export default function DashboardPage() {
         filteredTrips = filteredTrips.filter(trip => new Date(trip.departureDate).toDateString() === date.toDateString());
     }
     if (searchMode === 'all-carriers' && searchVehicleType !== 'all') {
-      filteredTrips = filteredTrips.filter(trip => trip.vehicleType?.toLowerCase().includes(searchVehicleType));
+      filteredTrips = filteredTrips.filter(trip => (trip.vehicleCategory || 'small') === searchVehicleType);
     }
     
     const grouped = filteredTrips.reduce((acc: GroupedTrips, trip) => {
@@ -211,36 +252,8 @@ export default function DashboardPage() {
     const handleConfirmBooking = (passengers: PassengerDetails[]) => {
         if (!firestore || !user || !selectedTripForBooking) return;
         
-        const bookingsCollection = collection(firestore, 'bookings');
-        const newBooking = {
-            tripId: selectedTripForBooking.id,
-            userId: user.uid,
-            carrierId: selectedTripForBooking.carrierId!,
-            seats: passengers.length,
-            passengersDetails: passengers,
-            status: 'Pending-Carrier-Confirmation',
-            totalPrice: (selectedTripForBooking.price || 0) * passengers.length,
-            createdAt: new Date().toISOString(),
-        };
-
-        addDocumentNonBlocking(bookingsCollection, newBooking);
-
-        if (selectedTripForBooking.carrierId) {
-            // ✅ Use root collection for notifications
-            const notificationsCollection = collection(firestore, 'notifications');
-            addDocumentNonBlocking(notificationsCollection, {
-                userId: selectedTripForBooking.carrierId,
-                title: 'طلب حجز جديد',
-                message: `لديك طلب حجز جديد لرحلة ${cities[selectedTripForBooking.origin]} - ${cities[selectedTripForBooking.destination]}.`,
-                type: 'new_booking_request',
-                isRead: false,
-                createdAt: new Date().toISOString(),
-                link: `/carrier/bookings` // Assuming a future carrier dashboard
-            });
-        }
-        
         toast({
-            title: 'تم إرسال طلب الحجز بنجاح!',
+            title: 'محاكاة: تم إرسال طلب الحجز بنجاح!',
             description: 'سيتم إعلامك عند تأكيد الناقل للحجز. يمكنك المتابعة من صفحة إدارة الحجز.',
         });
         
@@ -293,64 +306,21 @@ export default function DashboardPage() {
   
   const handleGeneralBookingRequestSubmit = async () => {
       if (!firestore || !user) return;
-      const tripsCollection = collection(firestore, 'trips');
-      try {
-        await addDoc(tripsCollection, {
-            userId: user.uid,
-            origin: searchOriginCity,
-            destination: searchDestinationCity,
-            passengers: searchSeats,
-            status: 'Awaiting-Offers',
-            departureDate: date ? date.toISOString() : new Date().toISOString(),
-        });
         toast({
-            title: "تم إرسال طلبك بنجاح!",
+            title: "محاكاة: تم إرسال طلبك بنجاح!",
             description: "سيتم توجيهك الآن لصفحة حجوزاتك لمتابعة طلبك.",
         });
         router.push('/history');
-      } catch (e) {
-          toast({ title: 'Error', description: 'Could not send request.', variant: 'destructive'});
-      }
   };
   
   const handleSpecificCarrierRequestSubmit = async () => {
     if (!firestore || !user || !selectedCarrier) return;
 
-    try {
-        // 1. Create a new trip document directed at the specific carrier
-        const tripsCollection = collection(firestore, 'trips');
-        const newTripRef = await addDoc(tripsCollection, {
-            userId: user.uid,
-            carrierId: selectedCarrier.id, // Direct the request to this carrier
-            origin: searchOriginCity,
-            destination: searchDestinationCity,
-            passengers: searchSeats,
-            status: 'Awaiting-Offers',
-            departureDate: date ? date.toISOString() : new Date().toISOString(),
-        });
-
-        // 2. Send a notification ONLY to that carrier
-        // ✅ Use root collection for notifications
-        const notificationsCollection = collection(firestore, 'notifications');
-        await addDoc(notificationsCollection, {
-            userId: selectedCarrier.id,
-            title: 'لديك طلب رحلة خاص',
-            message: `المستخدم ${user.displayName || user.email} أرسل لك طلبًا مباشرًا لرحلة من ${cities[searchOriginCity]} إلى ${cities[searchDestinationCity]}.`,
-            type: 'new_booking_request', // Can be a more specific type later
-            isRead: false,
-            createdAt: new Date().toISOString(),
-            link: `/history#${newTripRef.id}` // Link to the specific offer
-        });
-
-        toast({
-            title: `تم إرسال طلبك إلى ${selectedCarrier.name}`,
-            description: "سيتم توجيهك الآن لصفحة حجوزاتك لمتابعة العرض.",
-        });
-        router.push('/history');
-
-    } catch (e) {
-        toast({ title: 'خطأ', description: 'لم نتمكن من إرسال الطلب.', variant: 'destructive'});
-    }
+    toast({
+        title: `محاكاة: تم إرسال طلبك إلى ${selectedCarrier.name}`,
+        description: "سيتم توجيهك الآن لصفحة حجوزاتك لمتابعة العرض.",
+    });
+    router.push('/history');
   };
   
 
@@ -569,8 +539,8 @@ export default function DashboardPage() {
               <h2 className="text-2xl font-bold mb-4">الرحلات المجدولة القادمة</h2>
               
                {isLoading ? (
-                    <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">
-                       <p>جاري تحميل الرحلات...</p>
+                    <div className="space-y-4">
+                      {[...Array(3)].map((_,i) => <Skeleton key={i} className="h-48 w-full" />)}
                     </div>
                 ) : showNoResultsMessage ? (
                     <div className="text-center text-muted-foreground py-12 border-2 border-dashed rounded-lg">

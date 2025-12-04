@@ -21,12 +21,105 @@ import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format, addHours, isFuture } from 'date-fns';
 import { arSA } from 'date-fns/locale';
-import { BookingDialog, type PassengerDetails } from '@/components/booking/booking-dialog';
+import { BookingDialog } from '@/components/booking/booking-dialog';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
 import { TripClosureDialog } from '@/components/trip-closure/trip-closure-dialog';
 import { RateTripDialog } from '@/components/trip-closure/rate-trip-dialog';
 import { CancellationDialog } from '@/components/booking/cancellation-dialog';
 import { ChatDialog } from '@/components/chat/chat-dialog';
+
+// --- MOCK DATA ---
+const mockAwaitingTrips: Trip[] = [
+    {
+        id: 'trip_req_1',
+        userId: 'user1',
+        origin: 'amman',
+        destination: 'riyadh',
+        departureDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+        passengers: 2,
+        status: 'Awaiting-Offers',
+        createdAt: new Date().toISOString(),
+    }
+];
+
+const mockPendingConfirmationTrips: { trip: Trip, booking: Booking }[] = [
+    {
+        trip: {
+            id: 'trip_pending_1',
+            userId: 'user1',
+            carrierId: 'carrier2',
+            carrierName: 'الناقل السريع',
+            origin: 'damascus',
+            destination: 'amman',
+            departureDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+            status: 'Pending-Carrier-Confirmation',
+        },
+        booking: {
+            id: 'booking_pending_1',
+            tripId: 'trip_pending_1',
+            userId: 'user1',
+            carrierId: 'carrier2',
+            seats: 1,
+            passengersDetails: [{ name: 'Fayez Al-Harbi', type: 'adult' }],
+            status: 'Pending-Carrier-Confirmation',
+            totalPrice: 40,
+            currency: 'JOD',
+            createdAt: new Date().toISOString(),
+        }
+    }
+];
+
+const mockConfirmedTrips: { trip: Trip, booking: Booking }[] = [
+    {
+        trip: {
+            id: 'trip_confirmed_1',
+            userId: 'user1',
+            carrierId: 'carrier3',
+            carrierName: 'راحة الطريق',
+            origin: 'cairo',
+            destination: 'jeddah',
+            departureDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            status: 'Planned',
+        },
+        booking: {
+            id: 'booking_confirmed_1',
+            tripId: 'trip_confirmed_1',
+            userId: 'user1',
+            carrierId: 'carrier3',
+            seats: 2,
+            passengersDetails: [{ name: 'Hassan', type: 'adult' }, { name: 'Ali', type: 'child' }],
+            status: 'Confirmed',
+            totalPrice: 180,
+            currency: 'USD',
+            createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        }
+    },
+    {
+        trip: {
+            id: 'trip_completed_1',
+            userId: 'user1',
+            carrierId: 'carrier4',
+            carrierName: 'ملوك الطريق',
+            origin: 'riyadh',
+            destination: 'amman',
+            departureDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+            status: 'Completed',
+            durationHours: 8,
+        },
+        booking: {
+            id: 'booking_completed_1',
+            tripId: 'trip_completed_1',
+            userId: 'user1',
+            carrierId: 'carrier4',
+            seats: 1,
+            passengersDetails: [{ name: 'Sara', type: 'adult' }],
+            status: 'Completed',
+            totalPrice: 70,
+            currency: 'JOD',
+            createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+        }
+    }
+];
 
 // --- Helper Functions & Data ---
 const cities: { [key: string]: string } = {
@@ -101,65 +194,17 @@ export default function HistoryPage() {
   const [selectedChatInfo, setSelectedChatInfo] = useState<{bookingId: string, otherPartyName: string} | null>(null);
   
 
-  // --- Queries ---
-  const userTripsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    return query(
-      collection(firestore, 'trips'),
-      where('userId', '==', user.uid)
-    );
-  }, [firestore, user]);
-
-  const userBookingsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    return query(
-        collection(firestore, 'bookings'),
-        where('userId', '==', user.uid)
-    )
-  }, [firestore, user]);
-  
-  const { data: allUserTrips, isLoading: isLoadingTrips } = useCollection<Trip>(userTripsQuery);
-  const { data: allUserBookings, isLoading: isLoadingBookings } = useCollection<Booking>(userBookingsQuery);
-
-  const { awaitingTrips, pendingConfirmationTrips, confirmedTrips } = useMemo(() => {
-    const tripMap = new Map(allUserTrips?.map(t => [t.id, t]));
-    const bookings = allUserBookings || [];
-
-    const awaiting: Trip[] = [];
-    const pending: { trip: Trip, booking: Booking }[] = [];
-    const confirmed: { trip: Trip, booking: Booking }[] = [];
-
-    bookings.forEach(booking => {
-        const trip = tripMap.get(booking.tripId);
-        if (trip) {
-            if (booking.status === 'Pending-Carrier-Confirmation') {
-                pending.push({ trip, booking });
-            } else if (['Confirmed', 'Completed', 'Cancelled'].includes(booking.status)) {
-                confirmed.push({ trip, booking });
-            }
-        }
-    });
-    
-    // Add trips that are still awaiting offers (no bookings yet)
-    allUserTrips?.forEach(trip => {
-      if(trip.status === 'Awaiting-Offers') {
-        awaiting.push(trip);
-      }
-    })
-
-    return { 
-        awaitingTrips: awaiting.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()), 
-        pendingConfirmationTrips: pending.sort((a,b) => new Date(b.booking.createdAt).getTime() - new Date(a.booking.createdAt).getTime()), 
-        confirmedTrips: confirmed.sort((a,b) => new Date(b.trip.departureDate).getTime() - new Date(a.trip.departureDate).getTime())
-    };
-  }, [allUserTrips, allUserBookings]);
-
+  // --- USE MOCK DATA ---
+  const awaitingTrips = mockAwaitingTrips;
+  const pendingConfirmationTrips = mockPendingConfirmationTrips;
+  const confirmedTrips = mockConfirmedTrips;
+  const totalLoading = false;
+  // --- END MOCK DATA ---
 
   const hasAwaitingTrips = awaitingTrips && awaitingTrips.length > 0;
   const hasPendingConfirmationTrips = pendingConfirmationTrips && pendingConfirmationTrips.length > 0;
   const hasConfirmedTrips = confirmedTrips && confirmedTrips.length > 0;
 
-  const totalLoading = isUserLoading || isLoadingTrips || isLoadingBookings;
   const noHistoryAtAll = !totalLoading && !hasAwaitingTrips && !hasPendingConfirmationTrips && !hasConfirmedTrips;
 
   useEffect(() => {
@@ -197,102 +242,28 @@ export default function HistoryPage() {
   const handleConfirmCancellation = async () => {
       if (!firestore || !user || !selectedBookingForCancellation) return;
       
-      const { trip, booking } = selectedBookingForCancellation;
       setIsCancelling(true);
-
-      try {
-        const batch = writeBatch(firestore);
-        
-        // 1. Update booking status
-        const bookingRef = doc(firestore, 'bookings', booking.id);
-        batch.update(bookingRef, { status: 'Cancelled' });
-
-        // 2. Restore seats to the trip
-        const tripRef = doc(firestore, 'trips', trip.id);
-        batch.update(tripRef, { availableSeats: increment(booking.seats) });
-        
-        await batch.commit();
-
-        // 3. Send notification (non-blocking)
-        addDocumentNonBlocking(collection(firestore, 'notifications'), {
-            userId: trip.carrierId,
-            title: 'إلغاء حجز',
-            message: `قام المسافر ${user.displayName || 'أحد المسافرين'} بإلغاء حجزه في رحلة ${cities[trip.origin]} إلى ${cities[trip.destination]}.`,
-            type: 'trip_update', // Re-using trip_update for simplicity
-            isRead: false,
-            createdAt: new Date().toISOString(),
-            link: `/carrier/trips` 
-        });
-
-        toast({ title: 'تم إلغاء الحجز بنجاح', description: 'تم استرجاع المقاعد للناقل.' });
+      
+      // SIMULATION
+      setTimeout(() => {
+        toast({ title: 'محاكاة: تم إلغاء الحجز بنجاح', description: 'تم استرجاع المقاعد للناقل.' });
+        setIsCancelling(false);
         setIsCancelDialogOpen(false);
-
-      } catch (error) {
-          console.error("Cancellation Error:", error);
-          toast({ variant: 'destructive', title: 'فشل الإلغاء', description: 'حدث خطأ أثناء إلغاء الحجز.' });
-      } finally {
-          setIsCancelling(false);
-      }
+      }, 1000);
   };
 
 
   const handleConfirmBookingFromOffer = async (passengers: PassengerDetails[]) => {
       if (!firestore || !user || !selectedOfferForBooking) return;
       setIsProcessingBooking(true);
-      const { trip, offer } = selectedOfferForBooking;
-  
-      try {
-        const batch = writeBatch(firestore);
-        
-        const bookingRef = doc(collection(firestore, 'bookings'));
-        
-        const bookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'> = {
-            tripId: trip.id,
-            userId: user.uid,
-            carrierId: offer.carrierId,
-            seats: passengers.length,
-            passengersDetails: passengers,
-            status: 'Pending-Carrier-Confirmation',
-            totalPrice: offer.price,
-        };
-        batch.set(bookingRef, {
-            ...bookingData,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        });
-        
-        batch.update(doc(firestore, 'trips', trip.id), { 
-            status: 'Pending-Carrier-Confirmation',
-            acceptedOfferId: offer.id,
-            // We now create the booking first, so we use the booking ID
-        });
-
-        // Link booking to trip
-        batch.update(doc(firestore, 'trips', trip.id), {
-            bookingIds: arrayUnion(bookingRef.id),
-        });
-        
-        addDocumentNonBlocking(collection(firestore, 'notifications'), {
-            userId: offer.carrierId,
-            title: 'طلب حجز جديد',
-            message: `لديك طلب حجز جديد لرحلة ${cities[trip.origin]} - ${cities[trip.destination]}.`,
-            type: 'new_booking_request',
-            isRead: false,
-            createdAt: new Date().toISOString(),
-            link: `/carrier/bookings`
-        });
-  
-        await batch.commit();
-        
-        toast({ title: 'تم إرسال طلب الحجز بنجاح!', description: 'بانتظار موافقة الناقل. تم نقل الطلب إلى قسم "بانتظار التأكيد".' });
+      
+      // SIMULATION
+      setTimeout(() => {
+        toast({ title: 'محاكاة: تم إرسال طلب الحجز!', description: 'بانتظار موافقة الناقل.' });
+        setIsProcessingBooking(false);
         setIsBookingDialogOpen(false);
         setSelectedOfferForBooking(null);
-      } catch (error) {
-        console.error("Booking Error:", error);
-        toast({ variant: 'destructive', title: 'فشلت العملية', description: 'حدث خطأ أثناء الحجز، حاول لاحقاً.' });
-      } finally {
-        setIsProcessingBooking(false);
-      }
+      }, 1500);
   };
 
 
@@ -445,7 +416,7 @@ export default function HistoryPage() {
             trip={bookingDialogData!.trip}
             seatCount={bookingDialogData!.trip?.passengers || 1}
             offerPrice={bookingDialogData!.offer.price}
-            depositPercentage={bookingDialogData!.offer.depositPercentage || 20}
+            depositPercentage={bookingDialogData!.offer.depositPercentage || 25}
             onConfirm={handleConfirmBookingFromOffer}
             isProcessing={isProcessingBooking}
           />

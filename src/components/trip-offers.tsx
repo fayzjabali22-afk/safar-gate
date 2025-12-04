@@ -2,12 +2,47 @@
 
 import { useState, useMemo } from 'react';
 import { useCollection, useFirestore } from '@/firebase';
-import { collection, query, orderBy } from 'firebase/firestore'; // Added orderBy for better sorting
+import { collection, query, orderBy } from 'firebase/firestore'; 
 import type { Offer, Trip } from '@/lib/data';
 import { OfferCard } from '@/components/offer-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PackageOpen } from 'lucide-react';
-// Removed unused useToast import
+
+// --- MOCK DATA ---
+const mockOffers: Offer[] = [
+    {
+        id: 'offer1',
+        tripId: 'trip_req_1',
+        carrierId: 'carrier_A',
+        price: 90,
+        currency: 'JOD',
+        notes: 'توقف للاستراحة في الطريق، واي فاي متوفر.',
+        status: 'Pending',
+        createdAt: new Date().toISOString(),
+        vehicleType: 'GMC Yukon 2023',
+        vehicleCategory: 'small',
+        vehicleModelYear: 2023,
+        availableSeats: 4,
+        depositPercentage: 20,
+        conditions: 'حقيبة واحدة فقط لكل راكب.'
+    },
+    {
+        id: 'offer2',
+        tripId: 'trip_req_1',
+        carrierId: 'carrier_B',
+        price: 85,
+        currency: 'JOD',
+        notes: 'رحلة مباشرة بدون توقف.',
+        status: 'Pending',
+        createdAt: new Date().toISOString(),
+        vehicleType: 'Hyundai Staria 2024',
+        vehicleCategory: 'small',
+        vehicleModelYear: 2024,
+        availableSeats: 6,
+        depositPercentage: 15,
+    }
+];
+// --- END MOCK DATA ---
 
 interface TripOffersProps {
   trip: Trip;
@@ -15,20 +50,13 @@ interface TripOffersProps {
 }
 
 export function TripOffers({ trip, onAcceptOffer }: TripOffersProps) {
-  const firestore = useFirestore();
-  // State to track which offer is currently being processed
   const [acceptingOfferId, setAcceptingOfferId] = useState<string | null>(null);
 
-  const offersQuery = useMemo(() => {
-    if (!firestore || !trip?.id) return null;
-    // Added orderBy to show newest offers first or by price (optional, defaulted to price here or creation time)
-    return query(
-        collection(firestore, 'trips', trip.id, 'offers'),
-        orderBy('price', 'asc') // Example: Show cheapest first
-    );
-  }, [firestore, trip.id]);
+  // --- USE MOCK DATA ---
+  const offers = mockOffers.filter(o => o.tripId === trip.id);
+  const isLoading = false;
+  // --- END MOCK DATA ---
 
-  const { data: offers, isLoading } = useCollection<Offer>(offersQuery);
 
   const handleAcceptClick = async (offer: Offer) => {
     setAcceptingOfferId(offer.id);
@@ -36,7 +64,7 @@ export function TripOffers({ trip, onAcceptOffer }: TripOffersProps) {
         await onAcceptOffer(trip, offer);
     } catch (error) {
         console.error("Error accepting offer:", error);
-        setAcceptingOfferId(null); // Reset on error
+        setAcceptingOfferId(null); 
     }
   };
 
