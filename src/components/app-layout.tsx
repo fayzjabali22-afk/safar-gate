@@ -83,6 +83,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile, isLoading: isProfileLoading } = useUserProfile();
   const [isSwitchingRole, setIsSwitchingRole] = useState(false);
   
+  // FIX: State to track if the component has mounted on the client
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
