@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -235,6 +234,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           "bg-accent text-accent-foreground border-b border-border/10"
         )}>
 
+          {/* Hamburger Menu (Mobile) */}
           <div className="flex items-center md:hidden">
             {!isCarrierPath && (
               <Sheet>
@@ -271,7 +271,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </Sheet>
             )}
           </div>
-          
+
+          {/* Logo */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <Link href="/">
                 <Image
@@ -285,12 +286,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </div>
 
+          {/* Actions (Notifications, User Menu) */}
           <div className="flex items-center gap-2 ms-auto">
             
             {isDevUser && (
                  <Tooltip>
                     <TooltipTrigger asChild>
-                       <Button 
+                        <Button 
                             variant="ghost" 
                             size="icon" 
                             className="rounded-full hover:bg-black/10 relative"
@@ -349,28 +351,30 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenu>
             )}
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/10">
-                  <Avatar className="h-9 w-9 border-2 border-background">
-                    {user?.photoURL && (
-                      <AvatarImage
-                        src={user.photoURL}
-                        alt={profile?.firstName || ''}
-                      />
-                    )}
-                    <AvatarFallback className={cn(isCarrierPath ? "bg-gray-200 text-black" : "bg-primary text-primary-foreground")}>
-                      {profile?.firstName
-                        ? profile.firstName.charAt(0)
-                        : user?.email?.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <UserMenuContent />
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="hidden md:flex">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/10">
+                    <Avatar className="h-9 w-9 border-2 border-background">
+                      {user?.photoURL && (
+                        <AvatarImage
+                          src={user.photoURL}
+                          alt={profile?.firstName || ''}
+                        />
+                      )}
+                      <AvatarFallback className={cn(isCarrierPath ? "bg-gray-200 text-black" : "bg-primary text-primary-foreground")}>
+                        {profile?.firstName
+                          ? profile.firstName.charAt(0)
+                          : user?.email?.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <UserMenuContent />
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </header>
 
