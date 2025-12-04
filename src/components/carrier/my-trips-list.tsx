@@ -165,7 +165,6 @@ function TripListItem({ trip, onEdit }: { trip: Trip, onEdit: (trip: Trip) => vo
 export function MyTripsList() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-    const [bookedSeatsCount, setBookedSeatsCount] = useState(0);
 
     const isLoading = false;
     const trips = mockActiveTrips;
@@ -176,12 +175,6 @@ export function MyTripsList() {
     }, [trips]);
     
     const handleEditClick = (trip: Trip) => {
-        // SIMULATION: Manually set a mock booked seats count for testing the guard
-        if (trip.id === 'mock_planned_1') {
-            setBookedSeatsCount(2); 
-        } else {
-            setBookedSeatsCount(0);
-        }
         setSelectedTrip(trip);
         setIsEditDialogOpen(true);
     };
@@ -215,7 +208,6 @@ export function MyTripsList() {
                 isOpen={isEditDialogOpen}
                 onOpenChange={setIsEditDialogOpen}
                 trip={selectedTrip}
-                bookedSeatsCount={bookedSeatsCount}
             />
         </>
     );

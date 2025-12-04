@@ -23,10 +23,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { useFirestore } from '@/firebase';
-import { doc, updateDoc, Timestamp, getDocs, collection, query, where } from 'firebase/firestore';
 import type { Trip } from '@/lib/data';
-import { Loader2, Save, AlertCircle } from 'lucide-react';
+import { Loader2, Save } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '../ui/popover';
 import { Calendar } from '../ui/calendar';
 import { cn } from '@/lib/utils';
@@ -37,7 +35,6 @@ interface EditTripDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   trip: Trip | null;
-  bookedSeatsCount: number; // SIMULATION PROP
 }
 
 const editTripSchema = z.object({
@@ -48,7 +45,7 @@ const editTripSchema = z.object({
 
 type EditTripFormValues = z.infer<typeof editTripSchema>;
 
-export function EditTripDialog({ isOpen, onOpenChange, trip, bookedSeatsCount }: EditTripDialogProps) {
+export function EditTripDialog({ isOpen, onOpenChange, trip }: EditTripDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -67,26 +64,16 @@ export function EditTripDialog({ isOpen, onOpenChange, trip, bookedSeatsCount }:
         availableSeats: trip.availableSeats || 0,
         departureDate: trip.departureDate ? new Date(trip.departureDate) : new Date(),
       });
-      // Clear previous errors when dialog opens
       form.clearErrors();
     }
   }, [trip, isOpen, form]);
 
   const onSubmit = async (data: EditTripFormValues) => {
-    // --- INTEGRITY GUARD ---
-    if (data.availableSeats < bookedSeatsCount) {
-        form.setError("availableSeats", {
-            type: "manual",
-            message: `وضع محاكاة: لا يمكن تقليل السعة عن ${bookedSeatsCount} لوجود حجوزات مؤكدة`,
-        });
-        return;
-    }
-    // --- END INTEGRITY GUARD ---
-    
     setIsSubmitting(true);
-    // Simulate API call
+    // Simulate API call for mock data
     setTimeout(() => {
         toast({ title: 'محاكاة: تم تحديث الرحلة بنجاح!' });
+        console.log("Updated Trip Data (Simulated):", { tripId: trip?.id, ...data });
         setIsSubmitting(false);
         onOpenChange(false);
     }, 1000);
@@ -97,12 +84,6 @@ export function EditTripDialog({ isOpen, onOpenChange, trip, bookedSeatsCount }:
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>تعديل تفاصيل الرحلة</DialogTitle>
-           {bookedSeatsCount > 0 && (
-              <div className="!mt-4 p-2 text-xs text-center bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-md flex items-center justify-center gap-2">
-                  <AlertCircle className="h-4 w-4"/>
-                  <span>تنبيه: هذه الرحلة عليها <strong>{bookedSeatsCount}</strong> حجوزات مؤكدة.</span>
-              </div>
-          )}
           <DialogDescription className="pt-2">
             قم بتحديث تفاصيل رحلتك. التغييرات ستكون مرئية للمستخدمين.
           </DialogDescription>
