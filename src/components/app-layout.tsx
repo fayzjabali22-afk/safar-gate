@@ -236,38 +236,40 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         )}>
 
           <div className="flex items-center md:hidden">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-black/10">
-                  <Menu className="h-4 w-4" />
-                  <span className="sr-only">القائمة الرئيسية</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="right"
-                className="w-full max-w-xs p-0 bg-secondary text-secondary-foreground"
-              >
-                <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle>
-                <nav className="grid gap-6 text-lg font-medium p-6">
-                  <div className="mb-4 flex items-center justify-center">
-                    <span className="text-xl font-bold">Safar Carrier</span>
-                  </div>
-                  {mobileMenuItems.map((item) => {
-                    const isLinkActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-                    return (
-                      <Link
-                        key={item.label}
-                        href={item.href}
-                        className={cn("font-bold text-white hover:text-white/80 flex items-center gap-2", isLinkActive && "underline")}
-                      >
-                        {item.icon && <item.icon className="h-4 w-4" />}
-                        {item.label}
-                      </Link>
-                    );
-                  })}
-                </nav>
-              </SheetContent>
-            </Sheet>
+            {!isCarrierPath && (
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-black/10">
+                    <Menu className="h-4 w-4" />
+                    <span className="sr-only">القائمة الرئيسية</span>
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side="right"
+                  className="w-full max-w-xs p-0 bg-secondary text-secondary-foreground"
+                >
+                  <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle>
+                  <nav className="grid gap-6 text-lg font-medium p-6">
+                    <div className="mb-4 flex items-center justify-center">
+                      <span className="text-xl font-bold">Safar Carrier</span>
+                    </div>
+                    {mobileMenuItems.map((item) => {
+                      const isLinkActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                      return (
+                        <Link
+                          key={item.label}
+                          href={item.href}
+                          className={cn("font-bold text-white hover:text-white/80 flex items-center gap-2", isLinkActive && "underline")}
+                        >
+                          {item.icon && <item.icon className="h-4 w-4" />}
+                          {item.label}
+                        </Link>
+                      );
+                    })}
+                  </nav>
+                </SheetContent>
+              </Sheet>
+            )}
           </div>
 
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
@@ -374,7 +376,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <nav className="sticky top-16 z-40 hidden h-12 items-center justify-center gap-8 border-b border-b-border/10 bg-secondary px-6 text-secondary-foreground shadow-sm md:flex">
+        {!isCarrierPath && <nav className="sticky top-16 z-40 hidden h-12 items-center justify-center gap-8 border-b border-b-border/10 bg-secondary px-6 text-secondary-foreground shadow-sm md:flex">
           {menuItems.map((item) => {
             const isDisabled = item.auth && !user;
             const linkClass = cn(
@@ -410,7 +412,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </Link>
             )
           })}
-        </nav>
+        </nav>}
 
         {user && !user.emailVerified && !isDevUser && (
           <div className="sticky top-16 md:top-28 z-40 bg-yellow-600 text-white text-sm text-center p-2 flex items-center justify-center gap-2 animate-in slide-in-from-top duration-300">
