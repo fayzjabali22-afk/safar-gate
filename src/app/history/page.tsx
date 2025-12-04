@@ -21,11 +21,10 @@ import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
-import { BookingDialog, type PassengerDetails } from '@/components/booking-dialog';
+import { BookingDialog, type PassengerDetails } from '@/components/booking/booking-dialog';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
 
 // --- Helper Functions & Data ---
-// Note: Consider moving these to @/lib/constants.ts for reusability
 const cities: { [key: string]: string } = {
     damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص',
     amman: 'عمّان', irbid: 'إربد', zarqa: 'الزرقاء',
@@ -87,7 +86,6 @@ export default function HistoryPage() {
       return { awaitingTrips: [], pendingConfirmationTrips: [], confirmedTrips: [] };
     }
     
-    // Sort after fetching, as Firestore doesn't allow multiple inequality filters with orderBy
     const sortedTrips = [...allUserTrips].sort((a, b) => 
         new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime()
     );
@@ -107,11 +105,6 @@ export default function HistoryPage() {
   const hasAwaitingTrips = awaitingTrips && awaitingTrips.length > 0;
   const hasPendingConfirmationTrips = pendingConfirmationTrips && pendingConfirmationTrips.length > 0;
   const hasConfirmedTrips = confirmedTrips && confirmedTrips.length > 0;
-
-  // DEV MODE: Authentication check disabled
-  // useEffect(() => {
-  //   if (!isUserLoading && !user) router.push('/login');
-  // }, [user, isUserLoading, router]);
 
   const totalLoading = isUserLoading || isLoadingTrips;
   const noTripsAtAll = !totalLoading && !hasAwaitingTrips && !hasPendingConfirmationTrips && !hasConfirmedTrips;
@@ -138,7 +131,6 @@ export default function HistoryPage() {
       try {
         const batch = writeBatch(firestore);
         
-        // This process is now simplified. We create a Booking document and set the trip to pending.
         const bookingData: Omit<Booking, 'id'> = {
             tripId: trip.id,
             userId: user.uid,
@@ -146,27 +138,23 @@ export default function HistoryPage() {
             seats: passengers.length,
             passengersDetails: passengers,
             status: 'Pending-Carrier-Confirmation',
-            totalPrice: offer.price, // Using the offer price
+            totalPrice: offer.price * passengers.length, // Correctly calculate total price
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
         };
 
-        // Create booking doc
         const bookingRef = doc(collection(firestore, 'bookings'));
         batch.set(bookingRef, bookingData);
         
-        // Update trip status and link to the booking
         batch.update(doc(firestore, 'trips', trip.id), { 
             status: 'Pending-Carrier-Confirmation',
             acceptedOfferId: offer.id,
             bookingIds: arrayUnion(bookingRef.id),
             carrierId: offer.carrierId,
-            carrierName: (offer as any).carrierName || 'Unknown Carrier' // Get carrier name if available
+            carrierName: (offer as any).carrierName || 'Unknown Carrier'
         });
         
-        // Notify the carrier
-        const notificationsCollection = collection(firestore, 'notifications');
-        addDocumentNonBlocking(notificationsCollection, {
+        addDocumentNonBlocking(collection(firestore, 'notifications'), {
             userId: offer.carrierId,
             title: 'طلب حجز جديد',
             message: `لديك طلب حجز جديد لرحلة ${cities[trip.origin]} - ${cities[trip.destination]}.`,
@@ -322,7 +310,9 @@ export default function HistoryPage() {
             isOpen={isBookingDialogOpen}
             onOpenChange={setIsBookingDialogOpen}
             trip={selectedOfferForBooking.trip}
-            seatCount={selectedOfferForBooking.trip.passengers || selectedOfferForBooking.offer.availableSeats || 1}
+            seatCount={selectedOfferForBooking.trip.passengers || 1}
+            offerPrice={selectedOfferForBooking.offer.price}
+            depositPercentage={selectedOfferForBooking.offer.depositPercentage || 20}
             onConfirm={handleConfirmBookingFromOffer}
             isProcessing={isProcessingBooking}
           />
