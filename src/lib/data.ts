@@ -30,6 +30,7 @@ export type CarrierProfile = {
   phoneNumber?: string;
   averageRating?: number;
   photoURL?: string;
+  vehicleType?: string;
   vehicleCategory?: 'small' | 'bus';
   primaryRoute?: CarrierSpecialization;
   createdAt?: any;
@@ -45,13 +46,13 @@ export type Trip = {
   destination: string;
   departureDate: string;
   arrivalDate?: string;
+  estimatedDurationHours?: number;
   status: 'Planned' | 'In-Transit' | 'Completed' | 'Cancelled' | 'Awaiting-Offers' | 'Pending-Carrier-Confirmation';
   cargoDetails?: string;
   passengers?: number;
   price?: number;
   availableSeats?: number;
   depositPercentage?: number;
-  vehicleType?: string;
   vehicleCategory?: 'small' | 'bus';
   acceptedOfferId?: string | null;
   bookingIds?: string[];
@@ -113,5 +114,5 @@ export type Message = {
   content: string;
   timestamp: string;
 };
-    
+
     

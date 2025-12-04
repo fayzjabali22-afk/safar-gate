@@ -74,6 +74,7 @@
         "phoneNumber": { "type": "string", "description": "The contact phone number for the carrier." },
         "averageRating": { "type": "number", "description": "The carrier's average rating, from 0 to 5.", "minimum": 0, "maximum": 5 },
         "photoURL": { "type": "string", "format": "uri", "description": "URL of the carrier's profile picture."},
+        "vehicleType": { "type": "string", "description": "The primary vehicle type used by the carrier (e.g., GMC Yukon 2023)." },
         "vehicleCategory": { "type": "string", "enum": ["small", "bus"], "description": "The category of the primary vehicle."},
         "specialization": {
             "type": "object",
@@ -109,11 +110,11 @@
         },
         "userId": {
           "type": "string",
-          "description": "ID of the user who created the trip."
+          "description": "ID of the user who created the trip (can be a traveler or a carrier)."
         },
         "carrierId": {
           "type": "string",
-          "description": "ID of the carrier providing the trip."
+          "description": "ID of the carrier providing the trip. If created by a carrier, this is the same as userId."
         },
         "carrierName": {
             "type": "string",
@@ -136,6 +137,10 @@
           "type": "string",
           "format": "date-time",
           "description": "The estimated date and time of arrival."
+        },
+        "estimatedDurationHours": {
+            "type": "number",
+            "description": "The estimated duration of the trip in hours, set by the carrier."
         },
         "status": {
           "type": "string",
@@ -170,10 +175,6 @@
         "depositPercentage": {
             "type": "number",
             "description": "The percentage of the total price required as a deposit."
-        },
-        "vehicleType": {
-            "type": "string",
-            "description": "The type of vehicle used for the trip."
         },
         "createdAt": {
             "type": "string",
@@ -505,5 +506,5 @@
     ]
   }
 }
-    
+
     
