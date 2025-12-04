@@ -16,7 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from '../ui/button';
 import { EditTripDialog } from './edit-trip-dialog';
-import { useToast } from '@/hooks/use-toast';
+import { CancelTripDialog } from './cancel-trip-dialog';
+
 
 // --- MOCK DATA FOR SIMULATION ---
 const mockActiveTrips: Trip[] = [
@@ -33,6 +34,7 @@ const mockActiveTrips: Trip[] = [
         vehicleType: 'GMC Yukon 2023',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        bookingIds: ['booking_A1', 'booking_A2'],
     },
     {
         id: 'mock_in_transit_1',
@@ -47,6 +49,7 @@ const mockActiveTrips: Trip[] = [
         vehicleType: 'Toyota Coaster 2022',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        bookingIds: ['booking_B1'],
     },
      {
         id: 'mock_planned_2',
@@ -61,6 +64,7 @@ const mockActiveTrips: Trip[] = [
         vehicleType: 'Mercedes-Benz Sprinter',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        bookingIds: [],
     }
 ];
 // --- END MOCK DATA ---
@@ -90,9 +94,8 @@ const statusMap: Record<string, { text: string; icon: React.ElementType; classNa
   'Cancelled': { text: 'ملغاة', icon: XCircle, className: 'bg-red-100 text-red-800' },
 };
 
-function TripListItem({ trip, onEdit }: { trip: Trip, onEdit: (trip: Trip) => void }) {
+function TripListItem({ trip, onEdit, onCancel }: { trip: Trip, onEdit: (trip: Trip) => void, onCancel: (trip: Trip) => void }) {
     const statusInfo = statusMap[trip.status] || { text: trip.status, icon: CircleDollarSign, className: 'bg-gray-100 text-gray-800' };
-    const { toast } = useToast();
     const [formattedDate, setFormattedDate] = useState('');
 
     useEffect(() => {
@@ -100,14 +103,8 @@ function TripListItem({ trip, onEdit }: { trip: Trip, onEdit: (trip: Trip) => vo
     }, [trip.departureDate]);
 
 
-    const handleCancelTrip = () => {
-        toast({
-            title: "إجراء غير متاح حالياً",
-            description: "لإلغاء الرحلة وتنسيق إعادة المبالغ للمسافرين، يرجى التواصل مع إدارة التطبيق مباشرة.",
-            variant: "destructive",
-            duration: 8000,
-        });
-    }
+    const isCancellable = trip.status === 'Planned' || trip.status === 'In-Transit';
+
 
     return (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full p-3 border-b md:border md:rounded-lg bg-card shadow-sm transition-shadow hover:shadow-md">
@@ -151,7 +148,11 @@ function TripListItem({ trip, onEdit }: { trip: Trip, onEdit: (trip: Trip) => vo
                             <span>عرض الحجوزات</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-500 focus:text-red-500" onClick={handleCancelTrip}>
+                        <DropdownMenuItem 
+                            className="text-red-500 focus:text-red-500" 
+                            onClick={() => onCancel(trip)}
+                            disabled={!isCancellable}
+                        >
                             <Ban className="ml-2 h-4 w-4" />
                             <span>إلغاء الرحلة</span>
                         </DropdownMenuItem>
@@ -164,6 +165,7 @@ function TripListItem({ trip, onEdit }: { trip: Trip, onEdit: (trip: Trip) => vo
 
 export function MyTripsList() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 
     const isLoading = false;
@@ -178,6 +180,11 @@ export function MyTripsList() {
         setSelectedTrip(trip);
         setIsEditDialogOpen(true);
     };
+
+    const handleCancelClick = (trip: Trip) => {
+        setSelectedTrip(trip);
+        setIsCancelDialogOpen(true);
+    }
 
     if (isLoading) {
         return (
@@ -202,11 +209,23 @@ export function MyTripsList() {
     return (
         <>
             <div className="space-y-2 md:space-y-3">
-                {sortedTrips.map((trip) => <TripListItem key={trip.id} trip={trip} onEdit={handleEditClick} />)}
+                {sortedTrips.map((trip) => (
+                    <TripListItem 
+                        key={trip.id} 
+                        trip={trip} 
+                        onEdit={handleEditClick}
+                        onCancel={handleCancelClick}
+                    />
+                ))}
             </div>
             <EditTripDialog
                 isOpen={isEditDialogOpen}
                 onOpenChange={setIsEditDialogOpen}
+                trip={selectedTrip}
+            />
+            <CancelTripDialog
+                isOpen={isCancelDialogOpen}
+                onOpenChange={setIsCancelDialogOpen}
                 trip={selectedTrip}
             />
         </>
