@@ -126,14 +126,8 @@ export default function HistoryPage() {
   }, [totalLoading, hasAwaitingTrips, hasPendingConfirmationTrips, hasConfirmedTrips]);
 
   const handleAcceptOffer = (trip: Trip, offer: Offer) => {
-      // For now, we will handle this via chat. The actual booking confirmation will be done by carrier.
-      // This function can be used to initiate the chat.
-      if (!firestore || !user) {
-        toast({ variant: 'destructive', title: 'خطأ', description: 'يجب تسجيل الدخول لبدء محادثة.'});
-        return;
-      }
-      const chatId = `${trip.id}_${user.uid}_${offer.carrierId}`;
-      router.push(`/chats/${chatId}`);
+      setSelectedOfferForBooking({ trip, offer });
+      setIsBookingDialogOpen(true);
   };
 
   const handleConfirmBookingFromOffer = async (passengers: PassengerDetails[]) => {
@@ -154,6 +148,7 @@ export default function HistoryPage() {
             status: 'Pending-Carrier-Confirmation',
             totalPrice: offer.price, // Using the offer price
             createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
         };
 
         // Create booking doc
@@ -250,7 +245,7 @@ export default function HistoryPage() {
                           تاريخ الطلب: {safeDateFormat(trip.departureDate)} | عدد الركاب: {trip.passengers || 'غير محدد'}
                         </CardDescription>
                       </div>
-                      <TripOffers trip={trip} onAcceptOffer={() => {}} />
+                      <TripOffers trip={trip} onAcceptOffer={handleAcceptOffer} />
                     </CardContent>
                   ))}
                 </AccordionContent>

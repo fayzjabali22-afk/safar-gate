@@ -11,7 +11,7 @@ import { PackageOpen } from 'lucide-react';
 
 interface TripOffersProps {
   trip: Trip;
-  onAcceptOffer: (offer: Offer) => void;
+  onAcceptOffer: (trip: Trip, offer: Offer) => void;
 }
 
 export function TripOffers({ trip, onAcceptOffer }: TripOffersProps) {
@@ -33,13 +33,11 @@ export function TripOffers({ trip, onAcceptOffer }: TripOffersProps) {
   const handleAcceptClick = async (offer: Offer) => {
     setAcceptingOfferId(offer.id);
     try {
-        await onAcceptOffer(offer);
+        await onAcceptOffer(trip, offer);
     } catch (error) {
         console.error("Error accepting offer:", error);
         setAcceptingOfferId(null); // Reset on error
     }
-    // Note: If onAcceptOffer redirects, we might not need to reset state, 
-    // but good practice to have error handling.
   };
 
   const handleActionComplete = () => {

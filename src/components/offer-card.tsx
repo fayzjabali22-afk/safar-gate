@@ -4,11 +4,11 @@ import type { Offer, CarrierProfile, Trip } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
-import { HandCoins, Star, Car, Loader2, MessageSquarePlus } from 'lucide-react';
+import { HandCoins, Star, Car, Loader2, MessageSquarePlus, Send } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
 import { useDoc, useFirestore, useUser } from '@/firebase';
-import { doc, collection, writeBatch } from 'firebase/firestore';
+import { doc } from 'firebase/firestore';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -18,7 +18,7 @@ interface OfferCardProps {
   offer: Offer;
   trip: Trip;
   onAccept: () => void;
-  onActionComplete: () => void; // New prop for resetting state
+  onActionComplete: () => void;
   isAccepting: boolean;
 }
 
@@ -89,43 +89,9 @@ export function OfferCard({ offer, trip, onAccept, onActionComplete, isAccepting
   const { user } = useUser();
   const { toast } = useToast();
 
-  const handleStartChat = async () => {
-    if (!firestore || !user) {
-        toast({ variant: 'destructive', title: 'خطأ', description: 'يجب تسجيل الدخول لبدء محادثة.'});
-        return;
-    }
-
-    onAccept(); // This will set the loading state in the parent
-
-    try {
-        const batch = writeBatch(firestore);
-        
-        const chatId = `${trip.id}_${user.uid}_${offer.carrierId}`;
-        const chatRef = doc(firestore, 'chats', chatId);
-
-        batch.set(chatRef, {
-            tripId: trip.id,
-            participants: [user.uid, offer.carrierId],
-            updatedAt: new Date().toISOString(),
-            lastMessage: "بدأت المحادثة...",
-        }, { merge: true });
-
-        const messageRef = doc(collection(firestore, 'chats', chatId, 'messages'));
-        batch.set(messageRef, {
-            senderId: user.uid,
-            content: `مرحباً، بخصوص عرضكم لرحلة ${trip.origin} إلى ${trip.destination}، أود مناقشة بعض التفاصيل.`,
-            timestamp: new Date().toISOString(),
-        });
-        
-        await batch.commit();
-
-        router.push(`/chats/${chatId}`);
-    } catch (error) {
-        console.error("Error starting chat:", error);
-        toast({ variant: 'destructive', title: 'فشل بدء المحادثة', description: 'حدث خطأ ما، يرجى المحاولة مرة أخرى.' });
-        onActionComplete(); // Reset loading state on error
-    }
-  };
+  const handleBookNow = () => {
+      onAccept();
+  }
 
   const depositAmount = Math.max(0, (offer.price || 0) * ((offer.depositPercentage || 20) / 100));
   const vehicleImage = PlaceHolderImages.find((img) => img.id === 'car-placeholder');
@@ -198,7 +164,7 @@ export function OfferCard({ offer, trip, onAccept, onActionComplete, isAccepting
         )}
       </CardContent>
       <CardFooter className="flex p-2 bg-background/30">
-          <Button className="w-full" onClick={handleStartChat} disabled={isAccepting}>
+          <Button className="w-full" onClick={handleBookNow} disabled={isAccepting}>
               {isAccepting ? (
                   <>
                       <Loader2 className="ms-2 h-4 w-4 animate-spin" />
@@ -206,8 +172,8 @@ export function OfferCard({ offer, trip, onAccept, onActionComplete, isAccepting
                   </>
               ) : (
                   <>
-                      <MessageSquarePlus className="ms-2 h-4 w-4" />
-                      بدء محادثة مع الناقل
+                      <Send className="ms-2 h-4 w-4" />
+                      قبول العرض والحجز الآن
                   </>
               )}
           </Button>
