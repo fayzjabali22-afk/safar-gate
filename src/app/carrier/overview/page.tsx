@@ -3,7 +3,6 @@
 import { DashboardStats } from '@/components/carrier/dashboard-stats';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Info } from 'lucide-react';
-import { BankDetailsForm } from '@/components/carrier/bank-details-form';
 import { PaymentInstructionsDisplay } from '@/components/carrier/payment-instructions-display';
 
 export default function OverviewPage() {
@@ -21,5 +20,3 @@ export default function OverviewPage() {
         </div>
     )
 }
-
-    

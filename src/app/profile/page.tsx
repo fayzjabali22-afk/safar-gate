@@ -84,18 +84,18 @@ export default function ProfilePage() {
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: { 
-        firstName: '', 
-        lastName: '', 
-        email: '', 
-        phoneNumber: '',
-        vehicleType: '',
-        vehicleModel: '',
-        vehicleYear: '',
-        vehicleCapacity: 0,
-        vehicleImageUrls: ['',''],
-        primaryRoute: { origin: '', destination: '' },
-        paymentInformation: ''
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phoneNumber: '',
+      vehicleType: '',
+      vehicleModel: '',
+      vehicleYear: '',
+      vehicleCapacity: 0,
+      vehicleImageUrls: ['', ''],
+      primaryRoute: { origin: '', destination: '' },
+      paymentInformation: '',
     },
   });
 
@@ -112,47 +112,49 @@ export default function ProfilePage() {
         vehicleModel: profile.vehicleModel || '',
         vehicleYear: profile.vehicleYear || '',
         vehicleCapacity: profile.vehicleCapacity || 0,
-        vehicleImageUrls: profile.vehicleImageUrls || ['',''],
+        vehicleImageUrls: profile.vehicleImageUrls && profile.vehicleImageUrls.length > 0 ? (profile.vehicleImageUrls.length > 1 ? profile.vehicleImageUrls : [profile.vehicleImageUrls[0], '']) : ['', ''],
         primaryRoute: profile.primaryRoute || { origin: '', destination: '' },
         paymentInformation: profile.paymentInformation || '',
       });
     } else if (user) {
-        form.reset({
+      form.reset({
         ...form.getValues(),
         email: user.email || '',
-        phoneNumber: user.phoneNumber || ''
-        });
+        phoneNumber: user.phoneNumber || '',
+      });
     }
   }, [profile, user, form]);
-  
+
   function onUserSubmit(data: ProfileFormValues) {
     if (!userProfileRef) return;
-    
+
     // Create a mutable copy
     const dataToSave: Partial<ProfileFormValues> = { ...data };
 
     // Ensure vehicleCapacity is a number or deleted
     if (dataToSave.vehicleCapacity && typeof dataToSave.vehicleCapacity === 'string') {
-        dataToSave.vehicleCapacity = parseInt(dataToSave.vehicleCapacity, 10);
+      dataToSave.vehicleCapacity = parseInt(dataToSave.vehicleCapacity, 10);
     }
     if (isNaN(dataToSave.vehicleCapacity!)) {
-        delete dataToSave.vehicleCapacity;
+      delete dataToSave.vehicleCapacity;
     }
-    
+
     // Filter out empty image URLs
     if (dataToSave.vehicleImageUrls) {
-        dataToSave.vehicleImageUrls = dataToSave.vehicleImageUrls.filter(url => url && url.trim() !== '');
+      dataToSave.vehicleImageUrls = dataToSave.vehicleImageUrls.filter(
+        (url) => url && url.trim() !== ''
+      );
     }
 
     if (profile?.role !== 'carrier') {
-        // Don't save carrier fields if user is not a carrier
-        delete dataToSave.vehicleType;
-        delete dataToSave.vehicleModel;
-        delete dataToSave.vehicleYear;
-        delete dataToSave.vehicleCapacity;
-        delete dataToSave.vehicleImageUrls;
-        delete dataToSave.primaryRoute;
-        delete dataToSave.paymentInformation;
+      // Don't save carrier fields if user is not a carrier
+      delete dataToSave.vehicleType;
+      delete dataToSave.vehicleModel;
+      delete dataToSave.vehicleYear;
+      delete dataToSave.vehicleCapacity;
+      delete dataToSave.vehicleImageUrls;
+      delete dataToSave.primaryRoute;
+      delete dataToSave.paymentInformation;
     }
 
     updateDoc(userProfileRef, dataToSave);
@@ -164,64 +166,64 @@ export default function ProfilePage() {
     if (!userProfileRef || !user) return;
     setIsSwitchingRole(true);
     try {
-        await updateDoc(userProfileRef, { role: newRole });
+      await updateDoc(userProfileRef, { role: newRole });
 
-        toast({
-            title: `تم تغيير الدور إلى ${newRole === 'carrier' ? 'ناقل' : 'مسافر'}`,
-            description: "سيتم تحديث صلاحياتك."
-        });
+      toast({
+        title: `تم تغيير الدور إلى ${newRole === 'carrier' ? 'ناقل' : 'مسافر'}`,
+        description: "سيتم تحديث صلاحياتك."
+      });
 
-        if (newRole === 'carrier') {
-            router.push('/carrier');
-        } else {
-            router.push('/dashboard');
-        }
+      if (newRole === 'carrier') {
+        router.push('/carrier');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (e) {
-         toast({ variant: "destructive", title: "فشل تحديث الدور", description: "حدث خطأ ما." });
+      toast({ variant: "destructive", title: "فشل تحديث الدور", description: "حدث خطأ ما." });
     } finally {
-        setIsSwitchingRole(false);
+      setIsSwitchingRole(false);
     }
   }
 
   const handleResendVerification = async () => {
     if (user && !user.emailVerified) {
-        try {
-            await sendEmailVerification(user, actionCodeSettings);
-            toast({ title: 'تم إرسال البريد', description: 'تم إرسال بريد تفعيل جديد. الرجاء التحقق من صندوق الوارد.' });
-        } catch (error) {
-            toast({ variant: 'destructive', title: 'خطأ', description: 'فشل إرسال بريد التفعيل. الرجاء المحاولة مرة أخرى قريبًا.' });
-        }
+      try {
+        await sendEmailVerification(user, actionCodeSettings);
+        toast({ title: 'تم إرسال البريد', description: 'تم إرسال بريد تفعيل جديد. الرجاء التحقق من صندوق الوارد.' });
+      } catch (error) {
+        toast({ variant: 'destructive', title: 'خطأ', description: 'فشل إرسال بريد التفعيل. الرجاء المحاولة مرة أخرى قريبًا.' });
+      }
     }
   };
 
-    const handleDeleteAccount = async () => {
+  const handleDeleteAccount = async () => {
     if (!user || !auth || !firestore) {
-        toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم العثور على المستخدم أو خدمات Firebase.' });
-        setIsDeleteConfirmOpen(false);
-        return;
+      toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم العثور على المستخدم أو خدمات Firebase.' });
+      setIsDeleteConfirmOpen(false);
+      return;
     }
 
     const userDocRef = doc(firestore, 'users', user.uid);
 
     try {
-        await deleteDoc(userDocRef);
-        
-        await deleteUser(user);
-        
-        toast({ title: 'تم حذف الحساب بنجاح', description: 'نأمل أن نراك مرة أخرى قريبًا.' });
-        router.push('/signup');
+      await deleteDoc(userDocRef);
+
+      await deleteUser(user);
+
+      toast({ title: 'تم حذف الحساب بنجاح', description: 'نأمل أن نراك مرة أخرى قريبًا.' });
+      router.push('/signup');
 
     } catch (error: any) {
-        console.error("Delete account error:", error);
-        
-        if (error.code === 'auth/requires-recent-login') {
-             toast({ variant: 'destructive', title: 'فشل حذف المصادقة', description: 'هذه العملية تتطلب إعادة تسجيل دخول حديثة. تم حذف بياناتك، يرجى تسجيل الخروج ثم الدخول مرة أخرى لإكمال الحذف.' });
-             router.push('/login'); 
-        } else {
-             toast({ variant: 'destructive', title: 'فشل حذف الحساب', description: 'حدث خطأ أثناء محاولة حذف حسابك.' });
-        }
+      console.error("Delete account error:", error);
+
+      if (error.code === 'auth/requires-recent-login') {
+        toast({ variant: 'destructive', title: 'فشل حذف المصادقة', description: 'هذه العملية تتطلب إعادة تسجيل دخول حديثة. تم حذف بياناتك، يرجى تسجيل الخروج ثم الدخول مرة أخرى لإكمال الحذف.' });
+        router.push('/login');
+      } else {
+        toast({ variant: 'destructive', title: 'فشل حذف الحساب', description: 'حدث خطأ أثناء محاولة حذف حسابك.' });
+      }
     } finally {
-        setIsDeleteConfirmOpen(false);
+      setIsDeleteConfirmOpen(false);
     }
   };
 
@@ -231,136 +233,136 @@ export default function ProfilePage() {
 
   return (
     <>
-    <AppLayout>
-      <div className="max-w-4xl mx-auto space-y-8 p-4">
-        
-        {user && !user.emailVerified && !isDevUser && (
-          <Card className="border-yellow-500 shadow-lg">
-            <CardHeader>
+      <AppLayout>
+        <div className="max-w-4xl mx-auto space-y-8 p-4">
+
+          {user && !user.emailVerified && !isDevUser && (
+            <Card className="border-yellow-500 shadow-lg">
+              <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-yellow-500"><ShieldAlert /> تفعيل الحساب</CardTitle>
                 <CardDescription>حسابك غير مُفعّل. الرجاء التحقق من بريدك الإلكتروني أو طلب رابط تفعيل جديد.</CardDescription>
-            </CardHeader>
-            <CardFooter>
-                 <Button variant="outline" onClick={handleResendVerification}><MailCheck className="ml-2 h-4 w-4" /> إعادة إرسال بريد التفعيل</Button>
-            </CardFooter>
-          </Card>
-        )}
+              </CardHeader>
+              <CardFooter>
+                <Button variant="outline" onClick={handleResendVerification}><MailCheck className="ml-2 h-4 w-4" /> إعادة إرسال بريد التفعيل</Button>
+              </CardFooter>
+            </Card>
+          )}
 
-        {isDevUser && (
-          <Card className="border-accent shadow-lg">
-             <CardHeader>
+          {isDevUser && (
+            <Card className="border-accent shadow-lg">
+              <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-accent"><TestTube2 /> منطقة المطور (Dev Zone)</CardTitle>
                 <CardDescription>أنت تستخدم حساب المطور. يمكنك تبديل دورك لأغراض الاختبار. الدور الحالي: <span className="font-bold text-foreground">{profile?.role || '...'}</span></CardDescription>
-             </CardHeader>
-             <CardFooter className="flex flex-col sm:flex-row gap-4">
-                 <Button variant={profile?.role === 'traveler' ? 'default' : 'outline'} onClick={() => handleRoleChange('traveler')} disabled={roleIsLoading} className="flex-1">
-                    {roleIsLoading && profile?.role !== 'traveler' ? <Loader2 className="ml-2 h-4 w-4 animate-spin"/> : <ArrowRightLeft className="ml-2 h-4 w-4" />}
-                    التحويل إلى مسافر (Traveler)
+              </CardHeader>
+              <CardFooter className="flex flex-col sm:flex-row gap-4">
+                <Button variant={profile?.role === 'traveler' ? 'default' : 'outline'} onClick={() => handleRoleChange('traveler')} disabled={roleIsLoading} className="flex-1">
+                  {roleIsLoading && profile?.role !== 'traveler' ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <ArrowRightLeft className="ml-2 h-4 w-4" />}
+                  التحويل إلى مسافر (Traveler)
                 </Button>
                 <Button variant={profile?.role === 'carrier' ? 'default' : 'outline'} onClick={() => handleRoleChange('carrier')} disabled={roleIsLoading} className="flex-1">
-                    {roleIsLoading && profile?.role !== 'carrier' ? <Loader2 className="ml-2 h-4 w-4 animate-spin"/> : <ArrowRightLeft className="ml-2 h-4 w-4" />}
-                    التحويل إلى ناقل (Carrier)
+                  {roleIsLoading && profile?.role !== 'carrier' ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <ArrowRightLeft className="ml-2 h-4 w-4" />}
+                  التحويل إلى ناقل (Carrier)
                 </Button>
-             </CardFooter>
-          </Card>  
-        )}
+              </CardFooter>
+            </Card>
+          )}
 
 
-        <Form {...form}>
+          <Form {...form}>
             <form onSubmit={form.handleSubmit(onUserSubmit)} className="space-y-8">
-                <Card className="shadow-lg">
-                    <CardHeader>
-                        <CardTitle className="font-headline">إعدادات الهوية</CardTitle>
-                        <CardDescription>إدارة معلومات حسابك الأساسية.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex items-center space-x-6 rtl:space-x-reverse">
-                            <Avatar className="h-20 w-20"><AvatarImage src={user?.photoURL || ''} alt={user?.displayName || ''} /><AvatarFallback>{profile?.firstName ? profile.firstName.charAt(0) : user?.email?.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
-                            <Button variant="outline" type="button" onClick={() => toast({ title: 'قيد التطوير', description: 'ميزة رفع الصور ستكون متاحة قريباً.' })}><Upload className="ml-2 h-4 w-4" /> تغيير الصورة</Button>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>الاسم الأول</FormLabel><FormControl><Input placeholder="اسمك الأول" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>الاسم الأخير</FormLabel><FormControl><Input placeholder="اسمك الأخير" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        </div>
-                        <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" placeholder="بريدك الإلكتروني" {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="phoneNumber" render={({ field }) => (<FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input type="tel" placeholder="رقم هاتفك" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </CardContent>
-                </Card>
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="font-headline">إعدادات الهوية</CardTitle>
+                  <CardDescription>إدارة معلومات حسابك الأساسية.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center space-x-6 rtl:space-x-reverse">
+                    <Avatar className="h-20 w-20"><AvatarImage src={user?.photoURL || ''} alt={user?.displayName || ''} /><AvatarFallback>{profile?.firstName ? profile.firstName.charAt(0) : user?.email?.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
+                    <Button variant="outline" type="button" onClick={() => toast({ title: 'قيد التطوير', description: 'ميزة رفع الصور ستكون متاحة قريباً.' })}><Upload className="ml-2 h-4 w-4" /> تغيير الصورة</Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>الاسم الأول</FormLabel><FormControl><Input placeholder="اسمك الأول" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>الاسم الأخير</FormLabel><FormControl><Input placeholder="اسمك الأخير" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                  </div>
+                  <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" placeholder="بريدك الإلكتروني" {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
+                  <FormField control={form.control} name="phoneNumber" render={({ field }) => (<FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input type="tel" placeholder="رقم هاتفك" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                </CardContent>
+              </Card>
 
-                {profile?.role === 'carrier' && (
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><Briefcase /> بيانات الناقل</CardTitle>
-                            <CardDescription>إدارة بيانات مركبتك ومعلومات استقبال الدفعات.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-6">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                <FormField control={form.control} name="vehicleType" render={({ field }) => (<FormItem><FormLabel>نوع المركبة</FormLabel><FormControl><Input placeholder="e.g., GMC Yukon" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="vehicleModel" render={({ field }) => (<FormItem><FormLabel>موديل المركبة</FormLabel><FormControl><Input placeholder="e.g., Suburban" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="vehicleYear" render={({ field }) => (<FormItem><FormLabel>سنة الصنع</FormLabel><FormControl><Input placeholder="e.g., 2024" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="vehicleCapacity" render={({ field }) => (<FormItem><FormLabel>سعة الركاب</FormLabel><FormControl><Input type="number" placeholder="e.g., 4" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            </div>
-                            <Separator/>
-                             <div className="space-y-4">
-                                <FormLabel className="flex items-center gap-2 font-semibold"><Car className="h-4 w-4"/>روابط صور المركبة</FormLabel>
-                                <FormField control={form.control} name="vehicleImageUrls.0" render={({ field }) => (<FormItem><FormLabel className="text-xs">الصورة الأساسية</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/main-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="vehicleImageUrls.1" render={({ field }) => (<FormItem><FormLabel className="text-xs">صورة إضافية</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/extra-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            </div>
-                            <Separator/>
-                            <div className="space-y-2">
-                                <FormLabel className="font-semibold">خط السير المفضل (للفلترة الذكية)</FormLabel>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <FormField control={form.control} name="primaryRoute.origin" render={({ field }) => (<FormItem><FormLabel>من</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر دولة" /></SelectTrigger></FormControl><SelectContent>{Object.entries(countries).map(([key, {name}]) => (<SelectItem key={key} value={key}>{name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                    <FormField control={form.control} name="primaryRoute.destination" render={({ field }) => (<FormItem><FormLabel>إلى</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر دولة" /></SelectTrigger></FormControl><SelectContent>{Object.entries(countries).filter(([key]) => key !== form.watch('primaryRoute.origin')).map(([key, {name}]) => (<SelectItem key={key} value={key}>{name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                                </div>
-                            </div>
-                            <Separator/>
-                            <FormField
-                                control={form.control}
-                                name="paymentInformation"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>تعليمات استلام الدفعات (Payment Instructions)</FormLabel>
-                                    <FormControl>
-                                    <Textarea
-                                        placeholder="اكتب هنا تفاصيل الدفع (مثل: محفظة زين كاش 079...، كليك Alias...، أو الدفع نقداً)."
-                                        className="min-h-[100px]"
-                                        maxLength={300}
-                                        {...field}
-                                    />
-                                    </FormControl>
-                                    <div className="text-xs text-muted-foreground text-end">
-                                      {paymentInfoValue?.length || 0}/300
-                                    </div>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
+              {profile?.role === 'carrier' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Briefcase /> بيانات الناقل</CardTitle>
+                    <CardDescription>إدارة بيانات مركبتك ومعلومات استقبال الدفعات.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <FormField control={form.control} name="vehicleType" render={({ field }) => (<FormItem><FormLabel>نوع المركبة</FormLabel><FormControl><Input placeholder="e.g., GMC Yukon" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="vehicleModel" render={({ field }) => (<FormItem><FormLabel>موديل المركبة</FormLabel><FormControl><Input placeholder="e.g., Suburban" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="vehicleYear" render={({ field }) => (<FormItem><FormLabel>سنة الصنع</FormLabel><FormControl><Input placeholder="e.g., 2024" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="vehicleCapacity" render={({ field }) => (<FormItem><FormLabel>سعة الركاب</FormLabel><FormControl><Input type="number" placeholder="e.g., 4" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                    <Separator />
+                    <div className="space-y-4">
+                      <FormLabel className="flex items-center gap-2 font-semibold"><Car className="h-4 w-4" />روابط صور المركبة</FormLabel>
+                      <FormField control={form.control} name="vehicleImageUrls.0" render={({ field }) => (<FormItem><FormLabel className="text-xs">الصورة الأساسية</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/main-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="vehicleImageUrls.1" render={({ field }) => (<FormItem><FormLabel className="text-xs">صورة إضافية</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/extra-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                    <Separator />
+                    <div className="space-y-2">
+                      <FormLabel className="font-semibold">خط السير المفضل (للفلترة الذكية)</FormLabel>
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField control={form.control} name="primaryRoute.origin" render={({ field }) => (<FormItem><FormLabel>من</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر دولة" /></SelectTrigger></FormControl><SelectContent>{Object.entries(countries).map(([key, { name }]) => (<SelectItem key={key} value={key}>{name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="primaryRoute.destination" render={({ field }) => (<FormItem><FormLabel>إلى</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر دولة" /></SelectTrigger></FormControl><SelectContent>{Object.entries(countries).filter(([key]) => key !== form.watch('primaryRoute.origin')).map(([key, { name }]) => (<SelectItem key={key} value={key}>{name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      </div>
+                    </div>
+                    <Separator />
+                    <FormField
+                      control={form.control}
+                      name="paymentInformation"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>تعليمات استلام الدفعات (Payment Instructions)</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="اكتب هنا تفاصيل الدفع (مثل: محفظة زين كاش 079...، كليك Alias...، أو الدفع نقداً عند الالتقاء)."
+                              className="min-h-[100px]"
+                              maxLength={300}
+                              {...field}
                             />
-                        </CardContent>
-                    </Card>
-                )}
-                
-                <div className="flex justify-end">
-                    <Button type="submit">حفظ التغييرات</Button>
-                </div>
-            </form>
-        </Form>
-        
+                          </FormControl>
+                          <div className="text-xs text-muted-foreground text-end">
+                            {paymentInfoValue?.length || 0}/300
+                          </div>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </CardContent>
+                </Card>
+              )}
 
-        <Card className="border-destructive shadow-lg">
+              <div className="flex justify-end">
+                <Button type="submit">حفظ التغييرات</Button>
+              </div>
+            </form>
+          </Form>
+
+
+          <Card className="border-destructive shadow-lg">
             <CardHeader><CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert /> منطقة الخطر</CardTitle><CardDescription>هذه الإجراءات دائمة ولا يمكن التراجع عنها. يرجى المتابعة بحذر.</CardDescription></CardHeader>
             <CardContent><p>بمجرد حذف حسابك، ستفقد كل بياناتك الشخصية وسجل الحجوزات بشكل نهائي.</p></CardContent>
             <CardFooter><Button variant="destructive" onClick={() => setIsDeleteConfirmOpen(true)}><Trash2 className="ml-2 h-4 w-4" /> حذف الحساب بشكل نهائي</Button></CardFooter>
-        </Card>
-      </div>
-    </AppLayout>
+          </Card>
+        </div>
+      </AppLayout>
 
-    <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <AlertDialogContent dir="rtl">
-            <AlertDialogHeader><AlertDialogTitle className="flex items-center gap-2"><ShieldAlert className="h-6 w-6 text-red-500" /> هل أنت متأكد من حذف حسابك؟</AlertDialogTitle><AlertDialogDescription>هذا الإجراء سيقوم بحذف حسابك بشكل نهائي. لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع بياناتك الشخصية وحجوزاتك وسجل رحلاتك.</AlertDialogDescription></AlertDialogHeader>
-            <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">نعم، قم بحذف حسابي</AlertDialogAction></AlertDialogFooter>
+          <AlertDialogHeader><AlertDialogTitle className="flex items-center gap-2"><ShieldAlert className="h-6 w-6 text-red-500" /> هل أنت متأكد من حذف حسابك؟</AlertDialogTitle><AlertDialogDescription>هذا الإجراء سيقوم بحذف حسابك بشكل نهائي. لا يمكن التراجع عن هذا الإجراء. سيتم حذف جميع بياناتك الشخصية وحجوزاتك وسجل رحلاتك.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel>إلغاء</AlertDialogCancel><AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">نعم، قم بحذف حسابي</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
-    </AlertDialog>
+      </AlertDialog>
     </>
   );
 }
