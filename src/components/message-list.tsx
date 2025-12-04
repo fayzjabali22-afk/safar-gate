@@ -1,5 +1,5 @@
 'use client';
-import { useUser } from '@/firebase';
+import { useUserProfile } from '@/hooks/use-user-profile';
 import type { Message } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { Skeleton } from './ui/skeleton';
@@ -8,7 +8,7 @@ import { arSA } from 'date-fns/locale';
 
 
 export function MessageList({ messages, isLoading }: { messages: Message[], isLoading: boolean }) {
-  const { user } = useUser();
+  const { user } = useUserProfile();
 
   if (isLoading) {
     return (
@@ -41,8 +41,8 @@ export function MessageList({ messages, isLoading }: { messages: Message[], isLo
               >
                 <p className="text-sm">{message.content}</p>
               </div>
-              <span className="text-xs text-muted-foreground mt-1">
-                {format(new Date(message.timestamp), 'p', { locale: arSA })}
+              <span className="text-xs text-muted-foreground mt-1 px-1">
+                 {message.timestamp ? format(new Date(message.timestamp), 'p', { locale: arSA }) : ''}
               </span>
             </div>
           );

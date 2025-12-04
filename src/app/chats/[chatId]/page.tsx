@@ -1,15 +1,27 @@
 'use client';
 import { useUser, useFirestore, useDoc, useCollection, addDocumentNonBlocking } from '@/firebase';
-import { doc, collection, query, orderBy } from 'firebase/firestore';
+import { doc, collection, query, orderBy, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
-import type { Chat, UserProfile } from '@/lib/data';
-import { MessageList } from '@/components/message-list';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import type { Chat, UserProfile, Trip } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Send, Paperclip } from 'lucide-react';
+import { Send, Paperclip, ArrowRight } from 'lucide-react';
+import { MessageList } from '@/components/message-list';
+import Link from 'next/link';
+import { useUserProfile } from '@/hooks/use-user-profile';
+
+const cities: { [key: string]: string } = {
+    damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص',
+    amman: 'عمّان', irbid: 'إربد', zarqa: 'الزرقاء',
+    riyadh: 'الرياض', jeddah: 'جدة', dammam: 'الدمام',
+    cairo: 'القاهرة', alexandria: 'الاسكندرية', giza: 'الجيزة',
+};
+
+const getCityName = (key: string) => cities[key] || key;
+
 
 function ChatHeader({ chat }: { chat: Chat }) {
   const { user } = useUser();
@@ -23,41 +35,62 @@ function ChatHeader({ chat }: { chat: Chat }) {
     if (!firestore || !otherParticipantId) return null;
     return doc(firestore, 'users', otherParticipantId);
   }, [firestore, otherParticipantId]);
+  
+  const tripRef = useMemo(() => {
+      if(!firestore || !chat.tripId) return null;
+      return doc(firestore, 'trips', chat.tripId);
+  }, [firestore, chat.tripId]);
 
-  const { data: otherUser, isLoading } = useDoc<UserProfile>(otherUserRef);
+  const { data: otherUser, isLoading: isLoadingOtherUser } = useDoc<UserProfile>(otherUserRef);
+  const { data: trip, isLoading: isLoadingTrip } = useDoc<Trip>(tripRef);
 
-  if (isLoading) {
+
+  if (isLoadingOtherUser || isLoadingTrip) {
     return (
-      <div className="flex items-center space-x-4 p-4 border-b">
-        <Skeleton className="h-12 w-12 rounded-full" />
+      <div className="flex items-center space-x-4 rtl:space-x-reverse p-3 border-b bg-card">
+        <Skeleton className="h-10 w-10 rounded-full" />
         <div className="space-y-2">
           <Skeleton className="h-4 w-[150px]" />
+           <Skeleton className="h-3 w-[100px]" />
         </div>
       </div>
     );
   }
 
+  const userLink = `/profile/${otherParticipantId}`; // Future profile view
+  const tripLink = '/history';
+
   return (
-    <div className="flex items-center gap-4 p-3 border-b bg-card" dir="rtl">
-       <Avatar>
-            <AvatarImage src={(otherUser as any)?.photoURL} alt={otherUser?.firstName || 'User'} />
-            <AvatarFallback>{otherUser?.firstName?.charAt(0) || 'U'}</AvatarFallback>
-        </Avatar>
-      <div className="flex flex-col">
-        <span className="font-bold">{otherUser?.firstName} {otherUser?.lastName}</span>
-        <span className="text-xs text-muted-foreground">متصل الآن</span>
-      </div>
+    <div className="flex items-center justify-between gap-4 p-2 border-b bg-card" dir="rtl">
+       <div className='flex items-center gap-3'>
+         <Avatar className="h-10 w-10">
+              <AvatarImage src={(otherUser as any)?.photoURL} alt={otherUser?.firstName || 'User'} />
+              <AvatarFallback>{otherUser?.firstName?.charAt(0) || 'U'}</AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <span className="font-bold text-sm">{otherUser?.firstName} {otherUser?.lastName}</span>
+            <span className="text-xs text-muted-foreground">متصل الآن</span>
+          </div>
+       </div>
+       {trip && (
+           <Link href={tripLink} className="text-xs text-primary hover:underline font-semibold flex items-center gap-1">
+               <span>رحلة {getCityName(trip.origin)}</span>
+               <ArrowRight className="h-3 w-3"/>
+               <span>{getCityName(trip.destination)}</span>
+           </Link>
+       )}
     </div>
   );
 }
 
 
-export default function ChatPage() {
+export default function ChatWindowPage() {
   const { chatId } = useParams() as { chatId: string };
+  const { user, profile, isLoading: isUserLoading } = useUserProfile();
   const firestore = useFirestore();
-  const { user } = useUser();
   const router = useRouter();
   const [newMessage, setNewMessage] = useState('');
+  const messageEndRef = useRef<HTMLDivElement>(null);
 
   const chatRef = useMemo(() => {
     if (!firestore || !chatId) return null;
@@ -74,10 +107,14 @@ export default function ChatPage() {
   const { data: messages, isLoading: areMessagesLoading } = useCollection(messagesQuery);
 
   useEffect(() => {
-    if (!isChatLoading && chat && user && !chat.participants.includes(user.uid)) {
-      router.push('/chats');
+    if (!isChatLoading && !isUserLoading && chat && user && !chat.participants.includes(user.uid)) {
+      router.push('/chats'); // Redirect if user is not a participant
     }
-  }, [chat, isChatLoading, user, router]);
+  }, [chat, isChatLoading, user, isUserLoading, router]);
+
+  useEffect(() => {
+      messageEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages])
 
   const handleSendMessage = async () => {
     if (!chatRef || !user || newMessage.trim() === '') return;
@@ -87,25 +124,37 @@ export default function ChatPage() {
         content: newMessage,
         timestamp: new Date().toISOString(),
     };
-
+    
+    // Non-blocking message add
     const messagesCollection = collection(chatRef, 'messages');
-    await addDocumentNonBlocking(messagesCollection, messageData);
+    addDocumentNonBlocking(messagesCollection, messageData);
+    
+    // Non-blocking chat document update
+    const chatUpdateData = {
+        lastMessage: newMessage,
+        updatedAt: serverTimestamp(),
+    }
+    updateDocumentNonBlocking(chatRef, chatUpdateData);
+
     setNewMessage('');
   };
 
 
-  if (isChatLoading) {
-    return <div>جاري تحميل المحادثة...</div>;
+  if (isChatLoading || isUserLoading) {
+    return <div className="flex h-full items-center justify-center text-muted-foreground">جاري تحميل المحادثة...</div>;
   }
 
   if (!chat) {
-    return <div>لم يتم العثور على المحادثة</div>;
+    return <div className="flex h-full items-center justify-center text-muted-foreground">لم يتم العثور على المحادثة</div>;
   }
 
   return (
     <div className="flex flex-col h-full bg-background" dir="rtl">
         <ChatHeader chat={chat} />
-        <MessageList messages={messages || []} isLoading={areMessagesLoading} />
+        <div className="flex-1 overflow-y-auto">
+            <MessageList messages={messages || []} isLoading={areMessagesLoading} />
+            <div ref={messageEndRef} />
+        </div>
         <div className="p-4 border-t bg-card">
             <div className="flex items-center gap-2">
                 <Input
@@ -114,11 +163,12 @@ export default function ChatPage() {
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     placeholder="اكتب رسالتك هنا..."
                     className="flex-1"
+                    dir="auto"
                 />
                 <Button onClick={handleSendMessage} size="icon">
                     <Send className="h-5 w-5" />
                 </Button>
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" disabled>
                     <Paperclip className="h-5 w-5" />
                 </Button>
             </div>
