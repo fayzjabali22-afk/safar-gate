@@ -2,15 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Archive, Search, PlusCircle } from 'lucide-react';
+import { Archive, Search, Route, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
+// New nav items structure for the 5-column grid
 const navItems = [
-  { href: '/carrier/trips', label: 'رحلاتي', icon: Home },
   { href: '/carrier/requests', label: 'الطلبات', icon: Search },
+  { href: '/carrier/trips', label: 'رحلاتي', icon: Route },
   null, // Placeholder for the central FAB
   { href: '/carrier/archive', label: 'الأرشيف', icon: Archive },
+  { href: '/carrier/bookings', label: 'الحجوزات', icon: 'Briefcase' }, // Placeholder for a potential 4th item
 ];
 
 interface CarrierBottomNavProps {
@@ -37,14 +39,20 @@ export function CarrierBottomNav({ onAddTripClick }: CarrierBottomNavProps) {
 
         <nav className="grid grid-cols-5 h-full items-center px-2">
           {navItems.map((item, index) => {
+            // The middle item is a spacer for the FAB
             if (!item) {
-                // This is the spacer for the central button
-                return <div key={index} />;
+                return <div key={`spacer-${index}`} aria-hidden="true" />;
             }
+
             const isActive = pathname === item.href;
+            const Icon = item.icon;
+
+            // Do not render the 5th item for now.
+            if (index === 4) return null;
+
             return (
-              <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 w-full py-2 h-full col-span-2">
-                <item.icon
+              <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 w-full py-2 h-full">
+                <Icon
                   className={cn(
                     'h-6 w-6 transition-colors',
                     isActive ? 'text-primary' : 'text-muted-foreground'
