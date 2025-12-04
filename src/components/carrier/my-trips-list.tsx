@@ -123,15 +123,22 @@ export function MyTripsList() {
 
     const tripsQuery = useMemo(() => {
         if (!firestore || !user) return null;
+        // The orderBy clause was removed to prevent the composite index error.
+        // Sorting will be handled client-side.
         return query(
             collection(firestore, 'trips'),
             where('carrierId', '==', user.uid),
-            where('status', 'in', ['Planned', 'In-Transit']),
-            orderBy('departureDate', 'desc')
+            where('status', 'in', ['Planned', 'In-Transit'])
         );
     }, [firestore, user]);
 
     const { data: trips, isLoading } = useCollection<Trip>(tripsQuery);
+    
+    // Sort the trips on the client-side after they are fetched.
+    const sortedTrips = useMemo(() => {
+        if (!trips) return [];
+        return [...trips].sort((a, b) => new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime());
+    }, [trips]);
     
     const handleEditClick = (trip: Trip) => {
         setSelectedTrip(trip);
@@ -146,7 +153,7 @@ export function MyTripsList() {
         );
     }
 
-    if (!trips || trips.length === 0) {
+    if (!sortedTrips || sortedTrips.length === 0) {
         return (
           <div className="flex flex-col items-center justify-center text-center py-16 border-2 border-dashed rounded-lg bg-card/50 mx-2 md:mx-0">
             <CalendarX className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
@@ -161,7 +168,7 @@ export function MyTripsList() {
     return (
         <>
             <div className="space-y-2 md:space-y-3">
-                {trips.map((trip) => <TripListItem key={trip.id} trip={trip} onEdit={handleEditClick} />)}
+                {sortedTrips.map((trip) => <TripListItem key={trip.id} trip={trip} onEdit={handleEditClick} />)}
             </div>
             <EditTripDialog
                 isOpen={isEditDialogOpen}
