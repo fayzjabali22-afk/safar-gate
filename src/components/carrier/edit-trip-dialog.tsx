@@ -63,25 +63,25 @@ export function EditTripDialog({ isOpen, onOpenChange, trip }: EditTripDialogPro
   });
 
   useEffect(() => {
-    const fetchBookedSeats = async () => {
-      if (!firestore || !trip) return;
-      setIsLoadingBookings(true);
-      try {
-        const bookingsQuery = query(
-          collection(firestore, 'bookings'),
-          where('tripId', '==', trip.id),
-          where('status', '==', 'Confirmed')
-        );
-        const querySnapshot = await getDocs(bookingsQuery);
-        const confirmedSeats = querySnapshot.docs.reduce((sum, doc) => sum + (doc.data() as Booking).seats, 0);
-        setBookedSeatsCount(confirmedSeats);
-      } catch (error) {
-        console.error("Failed to fetch booked seats:", error);
-        setBookedSeatsCount(0);
-      } finally {
-        setIsLoadingBookings(false);
-      }
-    };
+    // const fetchBookedSeats = async () => {
+    //   if (!firestore || !trip) return;
+    //   setIsLoadingBookings(true);
+    //   try {
+    //     const bookingsQuery = query(
+    //       collection(firestore, 'bookings'),
+    //       where('tripId', '==', trip.id),
+    //       where('status', '==', 'Confirmed')
+    //     );
+    //     const querySnapshot = await getDocs(bookingsQuery);
+    //     const confirmedSeats = querySnapshot.docs.reduce((sum, doc) => sum + (doc.data() as Booking).seats, 0);
+    //     setBookedSeatsCount(confirmedSeats);
+    //   } catch (error) {
+    //     console.error("Failed to fetch booked seats:", error);
+    //     setBookedSeatsCount(0);
+    //   } finally {
+    //     setIsLoadingBookings(false);
+    //   }
+    // };
 
     if (trip && isOpen) {
       form.reset({
@@ -89,7 +89,10 @@ export function EditTripDialog({ isOpen, onOpenChange, trip }: EditTripDialogPro
         availableSeats: trip.availableSeats || 0,
         departureDate: trip.departureDate ? new Date(trip.departureDate) : new Date(),
       });
-      fetchBookedSeats();
+      // fetchBookedSeats();
+
+      // SIMULATION MODE
+      setBookedSeatsCount(3); 
     }
   }, [trip, isOpen, firestore, form]);
 
@@ -103,7 +106,7 @@ export function EditTripDialog({ isOpen, onOpenChange, trip }: EditTripDialogPro
     if (data.availableSeats < bookedSeatsCount) {
         form.setError("availableSeats", {
             type: "manual",
-            message: `لا يمكن تقليل السعة عن ${bookedSeatsCount} لوجود حجوزات مؤكدة.`
+            message: `وضع محاكاة: لا يمكن تقليل السعة عن ${bookedSeatsCount} لوجود حجوزات مؤكدة`,
         });
         return;
     }
@@ -201,7 +204,7 @@ export function EditTripDialog({ isOpen, onOpenChange, trip }: EditTripDialogPro
                  <Alert variant="default" className="bg-yellow-50 border-yellow-200 text-yellow-800">
                     <AlertCircle className="h-4 w-4 !text-yellow-500" />
                     <AlertDescription>
-                        لديك {bookedSeatsCount} مقعد(مقاعد) محجوزة ومؤكدة في هذه الرحلة.
+                        وضع محاكاة: نفترض وجود {bookedSeatsCount} مقاعد محجوزة.
                     </AlertDescription>
                 </Alert>
             )}
