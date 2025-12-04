@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star, ArrowRightLeft } from 'lucide-react';
+import { Users, Search, ShipWheel, CalendarIcon, UserSearch, Globe, Star, ArrowRightLeft, Send } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import type { Trip, CarrierProfile } from '@/lib/data';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
@@ -360,15 +360,15 @@ export default function DashboardPage() {
                           className="flex items-center gap-4"
                           onValueChange={setSearchVehicleType}
                         >
-                          <div className="flex items-center space-x-2 space-x-reverse">
+                          <div className="flex items-center space-x-2 rtl:space-x-reverse">
                             <RadioGroupItem value="all" id="r-all" />
                             <Label htmlFor="r-all" className="mr-2">المتوفر</Label>
                           </div>
-                          <div className="flex items-center space-x-2 space-x-reverse">
+                          <div className="flex items-center space-x-2 rtl:space-x-reverse">
                             <RadioGroupItem value="small" id="r-small" />
                             <Label htmlFor="r-small" className="mr-2">مركبة صغيرة</Label>
                           </div>
-                          <div className="flex items-center space-x-2 space-x-reverse">
+                          <div className="flex items-center space-x-2 rtl:space-x-reverse">
                             <RadioGroupItem value="bus" id="r-bus" />
                             <Label htmlFor="r-bus" className="mr-2">حافلة</Label>
                           </div>

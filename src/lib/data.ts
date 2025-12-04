@@ -80,6 +80,7 @@ export type Trip = {
   preferredVehicle?: 'any' | 'small' | 'bus';
   isShared?: boolean;
   targetPrice?: number;
+  notes?: string;
 };
 
 export type Booking = {

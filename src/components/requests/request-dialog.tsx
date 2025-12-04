@@ -106,7 +106,7 @@ export function RequestDialog({ isOpen, onOpenChange, searchParams, onSuccess }:
             status: 'Awaiting-Offers',
             userId: user.uid,
             requestType: searchParams.requestType,
-            targetCarrierId: searchParams.targetCarrierId,
+            targetCarrierId: searchParams.targetCarrierId || null,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
         };
@@ -178,6 +178,20 @@ export function RequestDialog({ isOpen, onOpenChange, searchParams, onSuccess }:
                     <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                 </FormItem>
              )}/>
+
+            <FormField
+              control={form.control}
+              name="targetPrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>السعر المستهدف (اختياري)</FormLabel>
+                  <FormControl>
+                    <Input type="number" placeholder="كم تتوقع أن تدفع؟" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <FormField control={form.control} name="notes" render={({ field }) => (
                 <FormItem>
