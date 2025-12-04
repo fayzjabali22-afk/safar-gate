@@ -13,10 +13,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useState, useEffect } from 'react';
-import type { Trip } from '@/lib/data';
-import { Send, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import type { Trip, Offer } from '@/lib/data';
+import { Send, Loader2, Wallet, CircleDollarSign, HandCoins } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 
 export interface PassengerDetails {
   name: string;
@@ -27,15 +28,19 @@ interface BookingDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   trip: Trip;
+  offerPrice: number;
+  depositPercentage: number;
   seatCount: number;
   onConfirm: (passengers: PassengerDetails[]) => void;
-  isProcessing?: boolean; // خاصية التحكم بحالة التحميل
+  isProcessing?: boolean;
 }
 
 export function BookingDialog({ 
   isOpen, 
   onOpenChange, 
-  trip, 
+  trip,
+  offerPrice,
+  depositPercentage,
   seatCount, 
   onConfirm, 
   isProcessing = false 
@@ -45,17 +50,24 @@ export function BookingDialog({
 
     useEffect(() => {
         if (isOpen) {
-            // إعادة تعيين النموذج عند فتح النافذة
             setPassengers(Array.from({ length: seatCount }, () => ({ name: '', type: 'adult' })));
         }
     }, [isOpen, seatCount]);
+    
+    const { totalAmount, depositAmount, remainingAmount } = useMemo(() => {
+        const total = offerPrice * seatCount;
+        const deposit = total * (depositPercentage / 100);
+        const remaining = total - deposit;
+        return {
+            totalAmount: total,
+            depositAmount: deposit,
+            remainingAmount: remaining,
+        };
+    }, [offerPrice, seatCount, depositPercentage]);
 
-
-    // دالة تحديث بيانات الراكب مع معالجة الأنواع
     const handlePassengerChange = (index: number, field: keyof PassengerDetails, value: string) => {
         setPassengers(prev => {
             const newPassengers = [...prev];
-            // Type assertion here ensures typescript is happy treating the string as the specific union type
             newPassengers[index] = { ...newPassengers[index], [field]: value as any }; 
             return newPassengers;
         });
@@ -76,21 +88,19 @@ export function BookingDialog({
     
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !isProcessing && onOpenChange(open)}>
-            <DialogContent className="sm:max-w-[480px]">
+            <DialogContent className="sm:max-w-[520px]">
                 <DialogHeader>
-                <DialogTitle>تأكيد الحجز: تفاصيل الركاب</DialogTitle>
-                <DialogDescription>
-                    أنت على وشك حجز {seatCount} مقعد(مقاعد) لرحلة {trip.origin} - {trip.destination}.
-                </DialogDescription>
+                    <DialogTitle>تأكيد الحجز والدفع</DialogTitle>
+                    <DialogDescription>
+                        أنت على وشك حجز {seatCount} مقعد(مقاعد) لرحلة {trip.origin} - {trip.destination}.
+                    </DialogDescription>
                 </DialogHeader>
                 
-                <ScrollArea className="max-h-[60vh] p-1 pr-4">
+                <ScrollArea className="max-h-[50vh] p-1 pr-4">
                     <div className="space-y-6">
                         {passengers.map((passenger, index) => (
                         <div key={index} className="p-4 border rounded-lg space-y-4 bg-muted/30">
                             <Label className="font-bold text-primary">الراكب {index + 1}</Label>
-                            
-                            {/* حقل الاسم */}
                             <div className="grid gap-2">
                                 <Label htmlFor={`name-${index}`}>الاسم الكامل</Label>
                                 <Input
@@ -102,8 +112,6 @@ export function BookingDialog({
                                     className="bg-background"
                                 />
                             </div>
-
-                            {/* خيارات الفئة العمرية */}
                             <div className="grid gap-2">
                                 <Label>الفئة العمرية</Label>
                                 <RadioGroup
@@ -127,10 +135,28 @@ export function BookingDialog({
                     </div>
                 </ScrollArea>
                 
-                <DialogFooter className="gap-2 sm:gap-0">
+                <Separator className="my-4"/>
+
+                <div className="p-4 border rounded-lg bg-secondary/30 space-y-3">
+                    <h3 className="font-bold flex items-center gap-2"><Wallet className="h-5 w-5 text-primary"/>ملخص الدفع</h3>
+                    <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">السعر الإجمالي للرحلة:</span>
+                        <span className="font-bold">{totalAmount.toFixed(2)} د.أ</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm text-green-600 dark:text-green-400">
+                        <span className="font-bold flex items-center gap-1"><HandCoins className="h-4 w-4"/> العربون المطلوب دفعه الآن ({depositPercentage}%):</span>
+                        <span className="font-bold text-lg">{depositAmount.toFixed(2)} د.أ</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-muted-foreground">
+                        <span>المبلغ المتبقي (يُدفع للناقل مباشرة):</span>
+                        <span className="font-semibold">{remainingAmount.toFixed(2)} د.أ</span>
+                    </div>
+                </div>
+
+                <DialogFooter className="gap-2 sm:gap-0 pt-4">
                     <Button 
                         type="button" 
-                        variant="secondary" 
+                        variant="ghost" 
                         onClick={() => onOpenChange(false)} 
                         disabled={isProcessing}
                     >
@@ -150,7 +176,7 @@ export function BookingDialog({
                         ) : (
                             <>
                                 <Send className="ml-2 h-4 w-4" />
-                                تأكيد الحجز
+                                تأكيد ودفع العربون
                             </>
                         )}
                     </Button>
