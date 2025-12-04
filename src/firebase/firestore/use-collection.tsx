@@ -85,11 +85,18 @@ export function useCollection<T = any>(
             setIsLoading(false);
           },
           (err: FirestoreError) => {
-            // Error handling is now silent in the UI.
-            console.error("Firestore Permission Error (Suppressed):", err.message);
-            setError(err); // Keep the error in state for potential debugging
-            setData(null); // Clear data on error
+            const path = (targetRefOrQuery as InternalQuery)?._query?.path?.canonicalString() || '[unknown path]';
+            const contextualError = new FirestorePermissionError({
+              operation: 'list',
+              path: path,
+            });
+
+            setError(contextualError);
+            setData(null);
             setIsLoading(false);
+            
+            // trigger global error propagation
+            errorEmitter.emit('permission-error', contextualError);
           }
         );
     }
