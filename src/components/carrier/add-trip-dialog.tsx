@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -145,7 +145,8 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
         carrierId: user.uid,
         carrierName: profile.firstName,
         vehicleType: profile.vehicleType || 'غير محدد',
-        vehicleCategory: profile.vehicleCategory || 'small',
+        vehicleImageUrls: profile.vehicleImageUrls || [],
+        vehicleCategory: profile.vehicleCapacity && profile.vehicleCapacity > 7 ? 'bus' : 'small',
         status: 'Planned',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
