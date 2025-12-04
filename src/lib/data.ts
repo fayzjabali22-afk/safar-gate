@@ -1,3 +1,4 @@
+'use client';
 // src/lib/data.ts
 
 export type BankDetails = {
@@ -58,6 +59,7 @@ export type Trip = {
   createdAt?: any;
   updatedAt?: any;
   durationHours?: number; // Added field for trip duration
+  conditions?: string; // Carrier's conditions for the trip
 };
 
 export type Booking = {
@@ -86,6 +88,7 @@ export type Offer = {
   vehicleModelYear?: number;
   availableSeats?: number;
   depositPercentage?: number;
+  conditions?: string; // Carrier's conditions for the offer
 };
 
 export type Notification = {

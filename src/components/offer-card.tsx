@@ -4,7 +4,7 @@ import type { Offer, CarrierProfile, Trip } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
-import { HandCoins, Star, Car, Loader2, MessageSquarePlus, Send } from 'lucide-react';
+import { HandCoins, Star, Car, Loader2, MessageSquarePlus, Send, ListChecks } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
 import { useDoc, useFirestore, useUser } from '@/firebase';
@@ -153,6 +153,13 @@ export function OfferCard({ offer, trip, onAccept, onActionComplete, isAccepting
                 </div>
             </dl>
         </div>
+
+        {offer.conditions && (
+          <div className="text-sm text-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">
+            <p className='flex items-center gap-2 font-bold'><ListChecks className="h-4 w-4 text-accent" /> شروط الناقل:</p>
+            <p className="text-xs ps-6 whitespace-pre-wrap">{offer.conditions}</p>
+          </div>
+        )}
 
         {offer.notes && (
           <div className="text-sm text-muted-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">

@@ -20,6 +20,7 @@ import {
   XCircle,
   Flag,
   Ban,
+  ListChecks,
 } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
@@ -178,6 +179,12 @@ export function ScheduledTripCard({
                 {trip.depositPercentage && <p><strong>العربون ({trip.depositPercentage || 0}%):</strong> {depositAmount.toFixed(2)} دينار</p>}
             </div>
         </div>
+        {trip.conditions && (
+            <div className="text-sm text-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">
+                <p className='flex items-center gap-2 font-bold'><ListChecks className="h-4 w-4 text-accent" /> شروط الناقل:</p>
+                <p className="text-xs pl-6 whitespace-pre-wrap">{trip.conditions}</p>
+            </div>
+        )}
          {context === 'history' && StatusComponent && (
             <div className={cn("text-sm font-bold p-3 rounded-md border border-dashed flex items-center justify-center gap-2", StatusComponent.color)}>
                 <StatusComponent.icon className="h-5 w-5" />

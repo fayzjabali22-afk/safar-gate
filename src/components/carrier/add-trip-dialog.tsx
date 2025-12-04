@@ -36,7 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { collection, serverTimestamp } from 'firebase/firestore';
-import { Loader2, CalendarIcon, Send, Clock, PlaneTakeoff, PlaneLanding, Settings } from 'lucide-react';
+import { Loader2, CalendarIcon, Send, Clock, PlaneTakeoff, PlaneLanding, Settings, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from "date-fns";
 import { Label } from '@/components/ui/label';
@@ -47,6 +47,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import { Textarea } from '../ui/textarea';
 
 
 const countries: { [key: string]: { name: string; cities: string[] } } = {
@@ -70,6 +71,7 @@ const addTripSchema = z.object({
   price: z.coerce.number().positive('السعر يجب أن يكون رقماً موجباً'),
   availableSeats: z.coerce.number().int().min(1, 'يجب توفر مقعد واحد على الأقل'),
   durationHours: z.coerce.number().positive('مدة الرحلة المتوقعة مطلوبة ويجب أن تكون رقماً موجباً'),
+  conditions: z.string().max(200, 'الشروط يجب ألا تتجاوز 200 حرف').optional(),
 });
 
 type AddTripFormValues = z.infer<typeof addTripSchema>;
@@ -97,8 +99,11 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
       price: undefined,
       availableSeats: 4,
       durationHours: undefined,
+      conditions: '',
     }
   });
+
+  const conditionsValue = form.watch('conditions');
 
   const onSubmit = async (data: AddTripFormValues) => {
     if (!firestore || !user || !profile) {
@@ -212,12 +217,12 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
               </CardContent>
             </Card>
 
-            <Accordion type="single" collapsible className="w-full">
+            <Accordion type="single" collapsible className="w-full" defaultValue='details'>
               <AccordionItem value="details" className="border rounded-lg bg-muted/30">
                 <AccordionTrigger className="p-4 font-bold text-base hover:no-underline">
                     <div className='flex items-center gap-2'>
                         <Settings className='h-5 w-5'/>
-                        بقية التفاصيل (السعر، التاريخ، المقاعد)
+                        بقية التفاصيل (السعر، التاريخ، المقاعد، الشروط)
                     </div>
                 </AccordionTrigger>
                 <AccordionContent className="p-4 pt-0 space-y-4">
@@ -270,6 +275,30 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
                         <FormControl>
                           <Input className="bg-card" type="number" placeholder="e.g., 8" {...field} />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="conditions"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-1">
+                            <ListChecks className="h-4 w-4 text-muted-foreground" />
+                            شروط الرحلة (اختياري)
+                        </FormLabel>
+                        <FormControl>
+                            <Textarea
+                                placeholder="مثال: ممنوع التدخين، حقيبة واحدة فقط لكل راكب..."
+                                className="resize-none bg-card"
+                                {...field}
+                                maxLength={200}
+                            />
+                        </FormControl>
+                        <div className="text-xs text-muted-foreground text-left">
+                            {conditionsValue?.length || 0}/200
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}

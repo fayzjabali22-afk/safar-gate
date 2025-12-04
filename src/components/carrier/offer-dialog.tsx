@@ -25,7 +25,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import type { Trip } from '@/lib/data';
-import { Loader2, Send, Sparkles } from 'lucide-react';
+import { Loader2, Send, Sparkles, ListChecks } from 'lucide-react';
 import React from 'react';
 
 const offerFormSchema = z.object({
@@ -33,6 +33,7 @@ const offerFormSchema = z.object({
   vehicleType: z.string().min(3, 'نوع المركبة مطلوب'),
   depositPercentage: z.coerce.number().min(0).max(100).optional(),
   notes: z.string().optional(),
+  conditions: z.string().max(200, "الشروط يجب ألا تتجاوز 200 حرف").optional(),
 });
 
 type OfferFormValues = z.infer<typeof offerFormSchema>;
@@ -57,8 +58,11 @@ export function OfferDialog({ isOpen, onOpenChange, trip, suggestion, isSuggesti
       vehicleType: '',
       depositPercentage: 20,
       notes: '',
+      conditions: '',
     },
   });
+  
+  const conditionsValue = form.watch('conditions');
 
   React.useEffect(() => {
     if (suggestion) {
@@ -137,6 +141,30 @@ export function OfferDialog({ isOpen, onOpenChange, trip, suggestion, isSuggesti
                   <FormControl>
                     <Input placeholder="e.g., GMC Yukon 2023" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="conditions"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className='flex items-center gap-1'>
+                    <ListChecks className="h-4 w-4 text-muted-foreground" />
+                    شروط العرض (اختياري)
+                  </FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="شروط خاصة بهذا العرض فقط (مثل: التوقف في مكان محدد)"
+                      className="resize-none"
+                      {...field}
+                      maxLength={200}
+                    />
+                  </FormControl>
+                   <div className="text-xs text-muted-foreground text-left">
+                        {conditionsValue?.length || 0}/200
+                    </div>
                   <FormMessage />
                 </FormItem>
               )}
