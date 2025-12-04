@@ -36,7 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { collection, serverTimestamp } from 'firebase/firestore';
-import { Loader2, CalendarIcon, Send, Clock, MapPin, PlaneTakeoff, PlaneLand } from 'lucide-react';
+import { Loader2, CalendarIcon, Send, Clock, MapPin, PlaneTakeoff, PlaneLanding } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from "date-fns";
 import { Label } from '@/components/ui/label';
@@ -170,7 +170,7 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
                        )}/>
                   </div>
                    <div className='space-y-2'>
-                      <Label className='flex items-center gap-2'><PlaneLand className='h-4 w-4' /> إلى</Label>
+                      <Label className='flex items-center gap-2'><PlaneLanding className='h-4 w-4' /> إلى</Label>
                       <Select onValueChange={setDestinationCountry}>
                           <SelectTrigger className="bg-background"><SelectValue placeholder="اختر دولة الوصول" /></SelectTrigger>
                           <SelectContent>
