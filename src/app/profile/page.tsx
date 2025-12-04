@@ -1,4 +1,3 @@
-
 'use client';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -29,12 +28,12 @@ import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
 import { deleteUser, sendEmailVerification } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, Trash2, MailCheck, TestTube2, ArrowRightLeft, Loader2, Upload } from 'lucide-react';
+import { ShieldAlert, Trash2, MailCheck, TestTube2, ArrowRightLeft, Loader2, Upload, Briefcase } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { actionCodeSettings } from '@/firebase/config';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Separator } from '@/components/ui/separator';
-import { CarrierSettingsSection } from '@/components/carrier/carrier-settings-section';
+import { Textarea } from '@/components/ui/textarea';
 
 
 const profileFormSchema = z.object({
@@ -42,6 +41,11 @@ const profileFormSchema = z.object({
   lastName: z.string().min(2, 'Last name must be at least 2 characters.'),
   email: z.string().email('Invalid email address.'),
   phoneNumber: z.string().optional(),
+  // Carrier-specific fields
+  vehicleType: z.string().optional(),
+  vehicleModel: z.string().optional(),
+  vehicleYear: z.string().optional(),
+  paymentInformation: z.string().max(300, 'يجب ألا تتجاوز التعليمات 300 حرف').optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -65,9 +69,19 @@ export default function ProfilePage() {
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
-    defaultValues: { firstName: '', lastName: '', email: '', phoneNumber: '' },
+    defaultValues: { 
+        firstName: '', 
+        lastName: '', 
+        email: '', 
+        phoneNumber: '',
+        vehicleType: '',
+        vehicleModel: '',
+        vehicleYear: '',
+        paymentInformation: ''
+    },
   });
 
+  const paymentInfoValue = form.watch('paymentInformation');
 
   useEffect(() => {
     if (profile) {
@@ -75,7 +89,11 @@ export default function ProfilePage() {
         firstName: profile.firstName || '',
         lastName: profile.lastName || '',
         email: profile.email || user?.email || '',
-        phoneNumber: profile.phoneNumber || user?.phoneNumber || ''
+        phoneNumber: profile.phoneNumber || user?.phoneNumber || '',
+        vehicleType: profile.vehicleType || '',
+        vehicleModel: profile.vehicleModel || '',
+        vehicleYear: profile.vehicleYear || '',
+        paymentInformation: profile.paymentInformation || '',
       });
     } else if (user) {
         form.reset({
@@ -88,7 +106,17 @@ export default function ProfilePage() {
   
   function onUserSubmit(data: ProfileFormValues) {
     if (!userProfileRef) return;
-    setDocumentNonBlocking(userProfileRef, data, { merge: true });
+    
+    const dataToSave = { ...data };
+    if (profile?.role !== 'carrier') {
+        // Don't save carrier fields if user is not a carrier
+        delete dataToSave.vehicleType;
+        delete dataToSave.vehicleModel;
+        delete dataToSave.vehicleYear;
+        delete dataToSave.paymentInformation;
+    }
+
+    updateDoc(userProfileRef, dataToSave);
     toast({ title: 'تم تحديث الملف الشخصي', description: 'تم حفظ تغييراتك بنجاح.' });
   }
 
@@ -96,18 +124,6 @@ export default function ProfilePage() {
     if (!userProfileRef || !user) return;
     setIsSwitchingRole(true);
     try {
-        // Create a public carrier profile if switching to carrier
-        if (newRole === 'carrier') {
-            const carrierRef = doc(firestore, 'carriers', user!.uid);
-            await setDocumentNonBlocking(carrierRef, {
-                id: user!.uid,
-                name: `${form.getValues('firstName')} ${form.getValues('lastName')}`,
-                contactEmail: user!.email,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-            }, { merge: true });
-        }
-        
         await updateDoc(userProfileRef, { role: newRole });
 
         toast({
@@ -176,7 +192,7 @@ export default function ProfilePage() {
   return (
     <>
     <AppLayout>
-      <div className="max-w-2xl mx-auto space-y-8 p-4">
+      <div className="max-w-4xl mx-auto space-y-8 p-4">
         
         {user && !user.emailVerified && !isDevUser && (
           <Card className="border-yellow-500 shadow-lg">
@@ -210,33 +226,72 @@ export default function ProfilePage() {
         )}
 
 
-        <Card className="shadow-lg">
-            <CardHeader><CardTitle className="font-headline">إعدادات الملف الشخصي</CardTitle><CardDescription>قم بإدارة معلومات حسابك وتفضيلاتك.</CardDescription></CardHeader>
-            <CardContent>
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onUserSubmit)} className="space-y-8">
-                <div className="flex items-center space-x-6 rtl:space-x-reverse">
-                    <Avatar className="h-20 w-20"><AvatarImage src={user?.photoURL || ''} alt={user?.displayName || ''} /><AvatarFallback>{profile?.firstName ? profile.firstName.charAt(0) : user?.email?.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
-                    <Button variant="outline" type="button" onClick={() => toast({ title: 'قيد التطوير', description: 'ميزة رفع الصور ستكون متاحة قريباً.' })}><Upload className="ml-2 h-4 w-4" /> تغيير الصورة</Button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>الاسم الأول</FormLabel><FormControl><Input placeholder="اسمك الأول" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>الاسم الأخير</FormLabel><FormControl><Input placeholder="اسمك الأخير" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                </div>
-                <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" placeholder="بريدك الإلكتروني" {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
-                <FormField control={form.control} name="phoneNumber" render={({ field }) => (<FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input type="tel" placeholder="رقم هاتفك" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                <Button type="submit">حفظ التغييرات</Button>
-                </form>
-            </Form>
-            </CardContent>
-        </Card>
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onUserSubmit)} className="space-y-8">
+                <Card className="shadow-lg">
+                    <CardHeader>
+                        <CardTitle className="font-headline">إعدادات الهوية</CardTitle>
+                        <CardDescription>إدارة معلومات حسابك الأساسية.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                        <div className="flex items-center space-x-6 rtl:space-x-reverse">
+                            <Avatar className="h-20 w-20"><AvatarImage src={user?.photoURL || ''} alt={user?.displayName || ''} /><AvatarFallback>{profile?.firstName ? profile.firstName.charAt(0) : user?.email?.charAt(0).toUpperCase()}</AvatarFallback></Avatar>
+                            <Button variant="outline" type="button" onClick={() => toast({ title: 'قيد التطوير', description: 'ميزة رفع الصور ستكون متاحة قريباً.' })}><Upload className="ml-2 h-4 w-4" /> تغيير الصورة</Button>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField control={form.control} name="firstName" render={({ field }) => (<FormItem><FormLabel>الاسم الأول</FormLabel><FormControl><Input placeholder="اسمك الأول" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="lastName" render={({ field }) => (<FormItem><FormLabel>الاسم الأخير</FormLabel><FormControl><Input placeholder="اسمك الأخير" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        </div>
+                        <FormField control={form.control} name="email" render={({ field }) => (<FormItem><FormLabel>البريد الإلكتروني</FormLabel><FormControl><Input type="email" placeholder="بريدك الإلكتروني" {...field} disabled /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="phoneNumber" render={({ field }) => (<FormItem><FormLabel>رقم الهاتف</FormLabel><FormControl><Input type="tel" placeholder="رقم هاتفك" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </CardContent>
+                </Card>
 
-        {profile?.role === 'carrier' && (
-          <>
-            <Separator />
-            <CarrierSettingsSection />
-          </>
-        )}
+                {profile?.role === 'carrier' && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Briefcase /> بيانات الناقل</CardTitle>
+                            <CardDescription>إدارة بيانات مركبتك ومعلومات استقبال الدفعات.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <FormField control={form.control} name="vehicleType" render={({ field }) => (<FormItem><FormLabel>نوع المركبة</FormLabel><FormControl><Input placeholder="e.g., GMC Yukon" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="vehicleModel" render={({ field }) => (<FormItem><FormLabel>موديل المركبة</FormLabel><FormControl><Input placeholder="e.g., Suburban" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="vehicleYear" render={({ field }) => (<FormItem><FormLabel>سنة الصنع</FormLabel><FormControl><Input placeholder="e.g., 2024" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                            <Separator/>
+                            <FormField
+                                control={form.control}
+                                name="paymentInformation"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>تعليمات تحويل العربون للمسافرين</FormLabel>
+                                    <FormControl>
+                                    <Textarea
+                                        placeholder="اكتب هنا وسيلة الدفع المفضلة لديك (مثل: رقم محفظة زين كاش، رقم CliQ، أو رقم حساب بنكي). هذه المعلومات ستظهر للمسافر عند قبولك لطلبه ليقوم بالتحويل لك مباشرة."
+                                        className="min-h-[100px]"
+                                        maxLength={300}
+                                        {...field}
+                                    />
+                                    </FormControl>
+                                    <div className="text-xs text-muted-foreground text-end">
+                                      {paymentInfoValue?.length || 0}/300
+                                    </div>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
+                )}
+                
+                <div className="flex justify-end">
+                    <Button type="submit">حفظ التغييرات</Button>
+                </div>
+
+            </form>
+        </Form>
+        
 
         <Card className="border-destructive shadow-lg">
             <CardHeader><CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert /> منطقة الخطر</CardTitle><CardDescription>هذه الإجراءات دائمة ولا يمكن التراجع عنها. يرجى المتابعة بحذر.</CardDescription></CardHeader>
@@ -255,3 +310,5 @@ export default function ProfilePage() {
     </>
   );
 }
+
+    

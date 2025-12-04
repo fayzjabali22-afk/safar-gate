@@ -1,12 +1,6 @@
 'use client';
 // src/lib/data.ts
 
-export type BankDetails = {
-  bankName: string;
-  accountHolderName: string;
-  iban: string;
-};
-
 export type UserProfile = {
   id: string;
   firstName: string;
@@ -14,7 +8,12 @@ export type UserProfile = {
   email: string;
   phoneNumber?: string;
   role?: 'traveler' | 'carrier' | 'admin';
-  bankDetails?: BankDetails; 
+  // Carrier-specific fields are now part of the main user profile
+  // for simplicity in a single-document model.
+  vehicleType?: string;
+  vehicleModel?: string;
+  vehicleYear?: string;
+  paymentInformation?: string; // Flexible text field for payment instructions
   createdAt?: any;
   updatedAt?: any;
 };
@@ -34,6 +33,7 @@ export type CarrierProfile = {
   vehicleType?: string;
   vehicleCategory?: 'small' | 'bus';
   primaryRoute?: CarrierSpecialization;
+  paymentInformation?: string; // Added for flexibility
   createdAt?: any;
   updatedAt?: any;
 };
@@ -134,3 +134,5 @@ export type Message = {
   content: string;
   timestamp: string;
 };
+
+    
