@@ -36,11 +36,18 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { collection, serverTimestamp } from 'firebase/firestore';
-import { Loader2, CalendarIcon, Send, Clock, MapPin, PlaneTakeoff, PlaneLanding } from 'lucide-react';
+import { Loader2, CalendarIcon, Send, Clock, MapPin, PlaneTakeoff, PlaneLanding, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from "date-fns";
 import { Label } from '@/components/ui/label';
 import { logEvent } from '@/lib/analytics';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion"
+
 
 const countries: { [key: string]: { name: string; cities: string[] } } = {
   syria: { name: 'سوريا', cities: ['damascus', 'aleppo', 'homs'] },
@@ -141,10 +148,10 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             
-            <Card className="bg-muted/30">
+            <Card className="bg-muted/30 border-primary">
               <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className='space-y-2'>
-                      <Label className='flex items-center gap-2'><PlaneTakeoff className='h-4 w-4' /> من</Label>
+                      <Label className='flex items-center gap-2 font-bold'><PlaneTakeoff className='h-4 w-4' /> من</Label>
                        <Select onValueChange={setOriginCountry}>
                           <SelectTrigger className="bg-background"><SelectValue placeholder="اختر دولة الانطلاق" /></SelectTrigger>
                           <SelectContent>
@@ -170,7 +177,7 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
                        )}/>
                   </div>
                    <div className='space-y-2'>
-                      <Label className='flex items-center gap-2'><PlaneLanding className='h-4 w-4' /> إلى</Label>
+                      <Label className='flex items-center gap-2 font-bold'><PlaneLanding className='h-4 w-4' /> إلى</Label>
                       <Select onValueChange={setDestinationCountry}>
                           <SelectTrigger className="bg-background"><SelectValue placeholder="اختر دولة الوصول" /></SelectTrigger>
                           <SelectContent>
@@ -197,62 +204,73 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
                   </div>
               </CardContent>
             </Card>
-            
-             <FormField control={form.control} name="departureDate" render={({ field }) => (
-                <FormItem className="flex flex-col">
-                    <FormLabel>تاريخ المغادرة</FormLabel>
-                    <Popover>
-                        <PopoverTrigger asChild>
+
+            <Accordion type="single" collapsible defaultValue="details" className="w-full">
+              <AccordionItem value="details" className="border rounded-lg bg-muted/30">
+                <AccordionTrigger className="p-4 font-bold text-base hover:no-underline">
+                    <div className='flex items-center gap-2'>
+                        <Settings className='h-5 w-5'/>
+                        بقية التفاصيل (السعر، التاريخ، المقاعد)
+                    </div>
+                </AccordionTrigger>
+                <AccordionContent className="p-4 pt-0 space-y-4">
+                  <FormField control={form.control} name="departureDate" render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                          <FormLabel>تاريخ المغادرة</FormLabel>
+                          <Popover>
+                              <PopoverTrigger asChild>
+                              <FormControl>
+                                  <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal bg-card", !field.value && "text-muted-foreground")}>
+                                      {field.value ? format(field.value, "PPP") : <span>اختر تاريخاً</span>}
+                                      <CalendarIcon className="mr-auto h-4 w-4 opacity-50" />
+                                  </Button>
+                              </FormControl>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-auto p-0" align="start">
+                                  <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                              </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                      </FormItem>
+                  )}/>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <FormField control={form.control} name="price" render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>سعر المقعد (بالدينار)</FormLabel>
+                              <FormControl><Input className="bg-card" type="number" placeholder="e.g., 50" {...field} /></FormControl>
+                              <FormMessage />
+                          </FormItem>
+                      )}/>
+                      <FormField control={form.control} name="availableSeats" render={({ field }) => (
+                          <FormItem>
+                              <FormLabel>عدد المقاعد المتاحة</FormLabel>
+                              <FormControl><Input className="bg-card" type="number" placeholder="e.g., 4" {...field} /></FormControl>
+                              <FormMessage />
+                          </FormItem>
+                      )}/>
+                  </div>
+                  
+                  <FormField
+                    control={form.control}
+                    name="estimatedDurationHours"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-1">
+                          <Clock className="h-4 w-4 text-muted-foreground"/>
+                          مدة الرحلة المتوقعة (بالساعات)
+                        </FormLabel>
                         <FormControl>
-                            <Button variant={"outline"} className={cn("w-full pl-3 text-left font-normal bg-card", !field.value && "text-muted-foreground")}>
-                                {field.value ? format(field.value, "PPP") : <span>اختر تاريخاً</span>}
-                                <CalendarIcon className="mr-auto h-4 w-4 opacity-50" />
-                            </Button>
+                          <Input className="bg-card" type="number" placeholder="e.g., 8" {...field} />
                         </FormControl>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                        </PopoverContent>
-                    </Popover>
-                    <FormMessage />
-                </FormItem>
-             )}/>
-
-            <Card className="bg-muted/30">
-              <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="price" render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>سعر المقعد (بالدينار)</FormLabel>
-                          <FormControl><Input className="bg-background" type="number" placeholder="e.g., 50" {...field} /></FormControl>
-                          <FormMessage />
+                        <FormMessage />
                       </FormItem>
-                  )}/>
-                  <FormField control={form.control} name="availableSeats" render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>عدد المقاعد المتاحة</FormLabel>
-                          <FormControl><Input className="bg-background" type="number" placeholder="e.g., 4" {...field} /></FormControl>
-                          <FormMessage />
-                      </FormItem>
-                  )}/>
-              </CardContent>
-            </Card>
-
-             <FormField
-              control={form.control}
-              name="estimatedDurationHours"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center gap-1">
-                    <Clock className="h-4 w-4 text-muted-foreground"/>
-                    مدة الرحلة المتوقعة (بالساعات)
-                  </FormLabel>
-                  <FormControl>
-                    <Input className="bg-card" type="number" placeholder="e.g., 8" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    )}
+                  />
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+            
             <DialogFooter className="gap-2 sm:gap-0 pt-4">
               <Button type="button" variant="secondary" onClick={() => onOpenChange(false)} disabled={isSubmitting}>إلغاء</Button>
               <Button type="submit" disabled={isSubmitting}>
