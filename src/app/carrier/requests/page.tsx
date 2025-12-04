@@ -280,9 +280,10 @@ export default function CarrierRequestsPage() {
   const canFilter = !!(userProfile?.primaryRoute?.origin && userProfile?.primaryRoute?.destination);
   const hasCapacity = !!(userProfile?.vehicleCapacity && userProfile.vehicleCapacity > 0);
 
-  if (!canFilter || !hasCapacity) {
-    return <NoSpecializationState />
-  }
+  // This check is now removed for simulation purposes to always show requests
+  // if (!canFilter || !hasCapacity) {
+  //   return <NoSpecializationState />
+  // }
 
   return (
     <>
