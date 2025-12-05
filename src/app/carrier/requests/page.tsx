@@ -46,22 +46,8 @@ const mockRequests: Trip[] = [
         notes: 'رحلة عمل عاجلة، أفضل الانطلاق في الصباح الباكر.',
         createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
     },
-    {
-        id: 'mock_req_3',
-        userId: 'traveler_mock_3',
-        origin: 'cairo',
-        destination: 'jeddah',
-        departureDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-        passengers: 4,
-        status: 'Awaiting-Offers',
-        requestType: 'Direct', // This is a direct request
-        targetCarrierId: 'carrier_user_id', // Assuming this is the current carrier's ID
-        isShared: false,
-        targetPrice: 400,
-        currency: 'SAR',
-        notes: 'عائلة ترغب برحلة خاصة ومريحة.',
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    },
+    // This direct request should NOT appear on this page anymore.
+    // It's moved to the new direct-requests page.
 ];
 // --- END STRATEGIC FALLBACK DATA ---
 
@@ -122,13 +108,13 @@ export default function CarrierRequestsPage() {
   const canFilter = !!(userProfile?.primaryRoute?.origin && userProfile?.primaryRoute?.destination);
   
   const requestsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
+    if (!firestore) return null;
 
     let q = query(
         collection(firestore, 'trips'), 
         where('status', '==', 'Awaiting-Offers'),
-        // Show both general requests and direct requests to this carrier
-        where('targetCarrierId', 'in', [null, user.uid])
+        // IMPORTANT: Only show General requests here now.
+        where('requestType', '==', 'General')
     );
 
     // Smart Filter: Filter by carrier's specialization route if enabled and defined
@@ -144,7 +130,7 @@ export default function CarrierRequestsPage() {
     
     return q;
 
-  }, [firestore, user, filterBySpecialization, canFilter, userProfile]);
+  }, [firestore, filterBySpecialization, canFilter, userProfile]);
 
   const { data: realRequests, isLoading: isLoadingRequests } = useCollection<Trip>(requestsQuery);
 

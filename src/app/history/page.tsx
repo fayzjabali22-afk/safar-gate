@@ -16,7 +16,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Offer, Booking } from '@/lib/data';
-import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Radar, MessageSquare, Flag, CreditCard } from 'lucide-react';
+import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Radar, MessageSquare, Flag, CreditCard, UserCheck } from 'lucide-react';
 import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format, addHours, isFuture } from 'date-fns';
@@ -39,6 +39,20 @@ const mockAwaitingTrips: Trip[] = [
         passengers: 2,
         passengersDetails: [{ name: 'Ahmad Al-Masri', type: 'adult' }, { name: 'Reem Al-Masri', type: 'child' }],
         status: 'Awaiting-Offers',
+        requestType: 'General', // General request
+        createdAt: new Date().toISOString(),
+    },
+    {
+        id: 'trip_req_direct_1',
+        userId: 'user1',
+        origin: 'damascus',
+        destination: 'jeddah',
+        departureDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
+        passengers: 1,
+        passengersDetails: [{ name: 'Nour Halabi', type: 'adult' }],
+        status: 'Awaiting-Offers', // Still awaiting offers, but it's a direct request
+        requestType: 'Direct', // Direct request
+        targetCarrierId: 'carrier_special',
         createdAt: new Date().toISOString(),
     }
 ];
@@ -113,7 +127,7 @@ const mockPendingPaymentTrips: { trip: Trip, booking: Booking }[] = [
             origin: 'jeddah',
             destination: 'cairo',
             departureDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
-            status: 'Planned', // Trip is planned, but booking needs payment
+            status: 'Pending-Payment', // IMPORTANT: Status is now on the trip/request itself
             price: 150,
             currency: 'SAR',
             depositPercentage: 25, // Carrier requires 25% deposit
@@ -457,21 +471,37 @@ export default function HistoryPage() {
                         <CardContent className="border-t pt-6 space-y-4">
                             <div>
                                 <div className="mb-4">
-                                    <CardTitle className="text-md">طلب رحلة: {cities[trip.origin] || trip.origin} إلى {cities[trip.destination] || trip.destination}</CardTitle>
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="text-md">طلب رحلة: {cities[trip.origin] || trip.origin} إلى {cities[trip.destination] || trip.destination}</CardTitle>
+                                        {trip.requestType === 'Direct' && (
+                                            <Badge variant="secondary" className="flex items-center gap-1">
+                                                <UserCheck className="h-3 w-3" />
+                                                بانتظار رد الناقل
+                                            </Badge>
+                                        )}
+                                    </div>
                                     <CardDescription className="text-xs">
                                     تاريخ الطلب: {safeDateFormat(trip.departureDate)} | عدد الركاب: {trip.passengers || 'غير محدد'}
                                     </CardDescription>
                                 </div>
-                                <TripOffers trip={trip} onAcceptOffer={handleAcceptOffer} isProcessing={isProcessingBooking} />
+                                {trip.requestType !== 'Direct' && (
+                                    <TripOffers trip={trip} onAcceptOffer={handleAcceptOffer} isProcessing={isProcessingBooking} />
+                                )}
+                                {trip.requestType === 'Direct' && (
+                                     <div className="text-center text-muted-foreground py-8 border-2 border-dashed rounded-lg bg-background/50">
+                                        <p className="font-bold">تم إرسال طلبك للناقل المحدد</p>
+                                        <p className="text-sm mt-1">سيتم إعلامك فور موافقته وتحديده للسعر.</p>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
-                         <CardFooter className="bg-muted/30 p-2 border-t">
+                         {trip.requestType !== 'Direct' && (<CardFooter className="bg-muted/30 p-2 border-t">
                             <Button variant="outline" className="w-full" onClick={() => handleOpenResubmissionDialog(trip)}>
                                <Radar className="ml-2 h-4 w-4" />
                                خيارات إعادة النشر الذكية
                                <Badge variant="destructive" className="mr-2">جديد</Badge>
                             </Button>
-                        </CardFooter>
+                        </CardFooter>)}
                     </div>
                   ))}
                 </AccordionContent>
