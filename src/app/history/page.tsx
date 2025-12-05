@@ -63,6 +63,37 @@ const mockConfirmed: { trip: Trip, booking: Booking } = {
     booking: { id: 'booking_confirmed_1', tripId: 'trip_confirmed_1', userId: 'user1', carrierId: 'carrier3', seats: 2, passengersDetails: [{ name: 'حسن علي', type: 'adult' }, { name: 'علي حسن', type: 'child' }], status: 'Confirmed', totalPrice: 180, currency: 'USD', createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString() }
 };
 
+const mockTripBaghdad: Trip = {
+    id: 'trip_baghdad_mock',
+    carrierId: 'carrier_mock_1',
+    carrierName: 'أسود الرافدين',
+    origin: 'amman',
+    destination: 'baghdad',
+    departureDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'Planned',
+    price: 25,
+    currency: 'دينار',
+    availableSeats: 2,
+    depositPercentage: 15,
+    vehicleType: 'Hyundai Tucson 2023',
+    userId: 'carrier_mock_1'
+};
+const mockTripRiyadh: Trip = {
+    id: 'trip_riyadh_mock',
+    carrierId: 'carrier_mock_2',
+    carrierName: 'صقور الجزيرة',
+    origin: 'amman',
+    destination: 'riyadh',
+    departureDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'Planned',
+    price: 40,
+    currency: 'دينار',
+    availableSeats: 4,
+    depositPercentage: 25,
+    vehicleType: 'Toyota Hiace 2024',
+     userId: 'carrier_mock_2'
+};
+
 
 // Helper data
 const cities: { [key: string]: string } = {
@@ -281,7 +312,7 @@ export default function HistoryPage() {
           } else if (status === 'Confirmed') {
               tickets.push(item);
           } else {
-              processing.push(item);
+             // processing.push(item);
           }
       });
       return { processingItems: processing, ticketItems: tickets };
@@ -305,6 +336,13 @@ export default function HistoryPage() {
     toast({ title: 'محاكاة: تم تأكيد الدفع بنجاح!', description: 'تم نقل حجزك إلى تذاكري النشطة.' });
     setIsBookingPaymentOpen(false);
   }
+  
+  const handleBookNow = () => {
+    toast({
+        title: "تم توجيهك للحجز",
+        description: "سيتم تنفيذ هذه الميزة لاحقاً.",
+    })
+  }
 
   return (
     <AppLayout>
@@ -318,7 +356,7 @@ export default function HistoryPage() {
 
          <Tabs defaultValue="processing" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="processing"><ListFilter className="ml-2 h-4 w-4" />قيد المعالجة ({processingItems.length})</TabsTrigger>
+                <TabsTrigger value="processing"><ListFilter className="ml-2 h-4 w-4" />قيد المعالجة ({processingItems.length + 2})</TabsTrigger>
                 <TabsTrigger value="tickets"><Ticket className="ml-2 h-4 w-4" />تذاكري النشطة ({ticketItems.length})</TabsTrigger>
             </TabsList>
 
@@ -330,11 +368,8 @@ export default function HistoryPage() {
                             <span>عمان - بغداد</span>
                             <span className="text-base text-muted-foreground font-semibold">السعر المعروض: 25 دينار</span>
                          </AccordionTrigger>
-                         <AccordionContent className="p-4 pt-0">
-                            <div className="text-sm text-muted-foreground space-y-2">
-                                <p>نسبة العربون المقترحة: 15%</p>
-                                <Button size="sm" className="mt-2 w-full">استعراض العروض (0)</Button>
-                            </div>
+                         <AccordionContent className="p-0">
+                           <ScheduledTripCard trip={mockTripBaghdad} onBookNow={handleBookNow} context="dashboard" />
                          </AccordionContent>
                        </Card>
                     </AccordionItem>
@@ -344,11 +379,8 @@ export default function HistoryPage() {
                                 <span>عمان - الرياض</span>
                                 <span className="text-base text-muted-foreground font-semibold">السعر المعروض: 40 دينار</span>
                              </AccordionTrigger>
-                             <AccordionContent className="p-4 pt-0">
-                                <div className="text-sm text-muted-foreground space-y-2">
-                                    <p>نسبة العربون المقترحة: 25%</p>
-                                    <Button size="sm" className="mt-2 w-full">استعراض العروض (0)</Button>
-                                </div>
+                             <AccordionContent className="p-0">
+                               <ScheduledTripCard trip={mockTripRiyadh} onBookNow={handleBookNow} context="dashboard" />
                              </AccordionContent>
                         </Card>
                     </AccordionItem>
