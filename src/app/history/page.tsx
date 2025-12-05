@@ -9,7 +9,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Offer, Booking, UserProfile } from '@/lib/data';
-import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Radar, MessageSquare, Flag, CreditCard, UserCheck, Archive, Ticket, ListFilter, Users, MapPin, Phone, Car, Link as LinkIcon, Edit } from 'lucide-react';
+import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Radar, MessageSquare, Flag, CreditCard, UserCheck, Archive, Ticket, ListFilter, Users, MapPin, Phone, Car, Link as LinkIcon, Edit, XCircle } from 'lucide-react';
 import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format, addHours, isFuture } from 'date-fns';
@@ -139,13 +139,14 @@ const PaymentPass = ({ trip, booking, onPayNow }: { trip: Trip, booking: Booking
 );
 
 const HeroTicket = ({ trip, booking, onCancelBooking, onMessageCarrier }: { trip: Trip, booking: Booking, onCancelBooking?: (trip: Trip, booking: Booking) => void, onMessageCarrier?: (booking: Booking, trip: Trip) => void }) => {
-    const firestore = useFirestore();
-    const carrierProfileRef = useMemo(() => {
-        if (!firestore || !trip.carrierId) return null;
-        return doc(firestore, 'users', trip.carrierId);
-    }, [firestore, trip.carrierId]);
-
-    const { data: carrierProfile } = useDoc<UserProfile>(carrierProfileRef);
+    // MOCK CARRIER DATA
+    const carrierProfile: UserProfile = {
+        id: 'carrier3',
+        firstName: 'فوزي',
+        lastName: 'الناقل',
+        email: 'carrier@safar.com',
+        phoneNumber: '+962791234567'
+    };
     
     // Financial details
     const depositAmount = (booking.totalPrice * ((trip.depositPercentage || 20) / 100));
@@ -153,31 +154,39 @@ const HeroTicket = ({ trip, booking, onCancelBooking, onMessageCarrier }: { trip
 
     return (
         <Card className="bg-gradient-to-br from-card to-muted/50 shadow-lg border-accent">
-            <CardHeader className="text-center">
-                <Badge variant="default" className="mx-auto w-fit bg-accent text-accent-foreground">تذكرة مؤكدة</Badge>
-                <CardTitle className="pt-2">{getCityName(trip.origin)} - {getCityName(trip.destination)}</CardTitle>
-                <CardDescription>الناقل: {carrierProfile?.firstName || trip.carrierName}</CardDescription>
+            <CardHeader>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <Badge variant="default" className="w-fit bg-accent text-accent-foreground mb-2">تذكرة مؤكدة</Badge>
+                        <CardTitle className="pt-1">{getCityName(trip.origin)} - {getCityName(trip.destination)}</CardTitle>
+                    </div>
+                    <Button size="icon" variant="outline" className="rounded-full h-12 w-12" onClick={() => onMessageCarrier?.(booking, trip)}>
+                        <MessageSquare className="h-6 w-6" />
+                    </Button>
+                </div>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-                 <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-background rounded-md">
-                        <div className="font-bold text-xs text-muted-foreground">التاريخ والوقت</div>
-                        <div>{format(new Date(trip.departureDate), 'd MMM yyyy, h:mm a', { locale: arSA })}</div>
+                <div className="p-3 bg-background rounded-lg border space-y-2">
+                    <p className="font-bold text-xs flex items-center gap-1"><UserCheck className="h-4 w-4 text-primary"/> بيانات الناقل</p>
+                    <div className="flex justify-between items-center text-xs">
+                        <span>اسم الناقل:</span>
+                        <span className="font-bold">{carrierProfile?.firstName || trip.carrierName}</span>
                     </div>
-                     <div className="p-3 bg-background rounded-md">
-                        <div className="font-bold text-xs text-muted-foreground">بيانات الناقل</div>
-                         <div className="flex items-center gap-2">
-                             <Phone className="h-3 w-3" />
-                             {carrierProfile?.phoneNumber ? (
-                                <a href={`tel:${carrierProfile.phoneNumber}`} className="hover:underline">{carrierProfile.phoneNumber}</a>
-                             ) : 'غير متوفر'}
-                         </div>
+                     <div className="flex justify-between items-center text-xs">
+                        <span>رقم الهاتف:</span>
+                        {carrierProfile?.phoneNumber ? (
+                           <a href={`tel:${carrierProfile.phoneNumber}`} className="font-bold hover:underline">{carrierProfile.phoneNumber}</a>
+                        ) : <span className="font-bold">غير متوفر</span>}
                     </div>
                 </div>
 
-                <div className="p-3 bg-background rounded-lg border space-y-2">
-                    <p className="font-bold text-xs flex items-center gap-1"><MapPin className="h-4 w-4 text-primary"/> نقطة الانطلاق</p>
-                    <p>{trip.meetingPoint}</p>
+                 <div className="p-3 bg-background rounded-lg border space-y-2">
+                    <p className="font-bold text-xs flex items-center gap-1"><MapPin className="h-4 w-4 text-primary"/> نقطة وتوقيت الانطلاق</p>
+                    <div className="text-xs">
+                         <div className="flex justify-between"><span>التاريخ:</span> <span className="font-bold">{format(new Date(trip.departureDate), 'd MMM yyyy', { locale: arSA })}</span></div>
+                         <div className="flex justify-between"><span>الوقت:</span> <span className="font-bold">{format(new Date(trip.departureDate), 'h:mm a', { locale: arSA })}</span></div>
+                         <div className="flex justify-between mt-1 pt-1 border-t"><span>المكان:</span> <span className="font-bold">{trip.meetingPoint}</span></div>
+                    </div>
                     {trip.meetingPointLink && (
                         <a href={trip.meetingPointLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 text-xs flex items-center gap-1 hover:underline">
                             <LinkIcon className="h-3 w-3" />
@@ -188,8 +197,14 @@ const HeroTicket = ({ trip, booking, onCancelBooking, onMessageCarrier }: { trip
 
                  <div className="p-3 bg-background rounded-lg border space-y-2">
                     <p className="font-bold text-xs flex items-center gap-1"><Car className="h-4 w-4 text-primary"/> تفاصيل المركبة</p>
-                    <p>نوع المركبة: {trip.vehicleType || 'غير محدد'}</p>
-                    <p>رقم اللوحة: {trip.vehiclePlateNumber || 'غير محدد'}</p>
+                     <div className="flex justify-between items-center text-xs">
+                        <span>نوع المركبة:</span>
+                        <span className="font-bold">{trip.vehicleType || 'غير محدد'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                        <span>رقم اللوحة:</span>
+                        <span className="font-bold">{trip.vehiclePlateNumber || 'غير محدد'}</span>
+                    </div>
                 </div>
                 
                  <div className="p-3 bg-background rounded-lg border space-y-2">
@@ -202,7 +217,7 @@ const HeroTicket = ({ trip, booking, onCancelBooking, onMessageCarrier }: { trip
                  <div className="p-3 bg-background rounded-lg border space-y-2">
                     <p className="font-bold text-xs flex items-center gap-1"><CreditCard className="h-4 w-4 text-primary"/> التفاصيل المالية</p>
                     <div className="space-y-1 text-xs">
-                        <div className="flex justify-between"><span>تاريخ الحجز:</span> <span className="font-bold">{format(new Date(booking.updatedAt || booking.createdAt!), 'd MMM yyyy', { locale: arSA })}</span></div>
+                        <div className="flex justify-between"><span>تاريخ الدفع:</span> <span className="font-bold">{format(new Date(booking.updatedAt || booking.createdAt!), 'd MMM yyyy', { locale: arSA })}</span></div>
                         <div className="flex justify-between"><span>السعر الإجمالي:</span> <span className="font-bold">{booking.totalPrice.toFixed(2)} {booking.currency}</span></div>
                         <div className="flex justify-between"><span>العربون المدفوع:</span> <span className="font-bold text-green-500">{depositAmount.toFixed(2)} {booking.currency}</span></div>
                         <div className="flex justify-between"><span>المبلغ المتبقي:</span> <span className="font-bold">{remainingAmount.toFixed(2)} {booking.currency}</span></div>
@@ -217,8 +232,12 @@ const HeroTicket = ({ trip, booking, onCancelBooking, onMessageCarrier }: { trip
                  )}
             </CardContent>
             <CardFooter className="grid grid-cols-2 gap-2 p-2">
-                 <Button variant="outline" size="sm" onClick={() => onMessageCarrier?.(booking, trip)}><MessageSquare className="ml-2 h-4 w-4" />مراسلة الناقل</Button>
-                 <Button variant="outline" size="sm" disabled><Edit className="ml-2 h-4 w-4" />تعديل الطلب</Button>
+                 <Button variant="outline" size="sm" onClick={() => toast({title: "قيد الإنشاء"})}>
+                    <Edit className="ml-2 h-4 w-4" />تعديل الطلب
+                 </Button>
+                 <Button variant="destructive" size="sm" onClick={() => toast({title: "سيتم تنفيذ هذا لاحقاً"})}>
+                    <XCircle className="ml-2 h-4 w-4" />إغلاق الرحلة
+                 </Button>
             </CardFooter>
         </Card>
     )
@@ -352,7 +371,7 @@ export default function HistoryPage() {
             
             <TabsContent value="archive" className="mt-6 space-y-4">
                  {archiveItems.length > 0 ? archiveItems.map(item => (
-                    <ArchivedCard key={item.booking.id} trip={item.trip} booking={item.booking} />
+                    <ArchivedCard key={item.booking?.id || item.trip.id} trip={item.trip} booking={item.booking} />
                  )) : <div className="text-center py-16 text-muted-foreground">الأرشيف فارغ.</div>}
             </TabsContent>
         </Tabs>
