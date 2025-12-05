@@ -332,10 +332,9 @@ export default function HistoryPage() {
         </Card>
 
          <Tabs defaultValue="processing" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="processing"><ListFilter className="ml-2 h-4 w-4" />قيد المعالجة ({processingItems.length})</TabsTrigger>
                 <TabsTrigger value="tickets"><Ticket className="ml-2 h-4 w-4" />تذاكري النشطة ({ticketItems.length})</TabsTrigger>
-                <TabsTrigger value="archive"><Archive className="ml-2 h-4 w-4" />الأرشيف ({archiveItems.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="processing" className="mt-6 space-y-4">
@@ -369,11 +368,6 @@ export default function HistoryPage() {
                 )) : <div className="text-center py-16 text-muted-foreground">لا توجد لديك تذاكر نشطة.</div>}
             </TabsContent>
             
-            <TabsContent value="archive" className="mt-6 space-y-4">
-                 {archiveItems.length > 0 ? archiveItems.map(item => (
-                    <ArchivedCard key={item.booking?.id || item.trip.id} trip={item.trip} booking={item.booking} />
-                 )) : <div className="text-center py-16 text-muted-foreground">الأرشيف فارغ.</div>}
-            </TabsContent>
         </Tabs>
       </div>
 
