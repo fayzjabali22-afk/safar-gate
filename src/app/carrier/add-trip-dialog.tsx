@@ -47,7 +47,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
-import { Textarea } from '../ui/textarea';
+import { Textarea } from '@/components/ui/textarea';
 
 
 const countries: { [key: string]: { name: string; cities: string[] } } = {
@@ -145,7 +145,6 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
         carrierId: user.uid,
         carrierName: profile.firstName,
         vehicleType: profile.vehicleType || 'غير محدد',
-        vehiclePlateNumber: profile.vehiclePlateNumber || 'غير محدد',
         vehicleImageUrls: profile.vehicleImageUrls || [],
         vehicleCategory: profile.vehicleCapacity && profile.vehicleCapacity > 7 ? 'bus' : 'small',
         status: 'Planned',
@@ -395,3 +394,5 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
     </Dialog>
   );
 }
+
+    
