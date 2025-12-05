@@ -4,7 +4,7 @@ import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, where, orderBy } from 'firebase/firestore';
 import type { Trip } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowRight, Calendar, CircleDollarSign, CheckCircle, XCircle, Ship, Users } from 'lucide-react';
+import { ArrowRight, Calendar, CircleDollarSign, CheckCircle, XCircle, Ship, Users, Hourglass } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -27,8 +27,8 @@ const safeDateFormat = (dateInput: any): string => {
 };
 
 const statusMap: Record<string, { text: string; icon: React.ElementType; className: string }> = {
-  'Completed': { text: 'مكتملة', icon: CheckCircle, className: 'bg-green-100 text-green-800' },
-  'Cancelled': { text: 'ملغاة', icon: XCircle, className: 'bg-red-100 text-red-800' },
+  'Completed': { text: 'مكتملة', icon: CheckCircle, className: 'bg-green-100 text-green-800 border-green-300' },
+  'Cancelled': { text: 'ملغاة', icon: XCircle, className: 'bg-red-100 text-red-800 border-red-300' },
 };
 
 const mockArchivedTrips: Trip[] = [
@@ -109,6 +109,14 @@ function ArchivedTripItem({ trip }: { trip: Trip }) {
     );
 }
 
+function TripListSkeleton() {
+    return (
+        <div className="space-y-3">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
+        </div>
+    );
+}
+
 function TripList({ trips }: { trips: Trip[] }) {
     if (trips.length === 0) {
         return <p className="text-center text-muted-foreground p-8">لا توجد رحلات في هذا القسم.</p>;
@@ -121,8 +129,23 @@ function TripList({ trips }: { trips: Trip[] }) {
 }
 
 export default function ArchivePage() {
-    const isLoading = false;
-    const trips = mockArchivedTrips;
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    const archivedTripsQuery = useMemo(() => {
+        if (!firestore || !user) return null;
+        return query(
+            collection(firestore, 'trips'),
+            where('carrierId', '==', user.uid),
+            where('status', 'in', ['Completed', 'Cancelled']),
+            orderBy('departureDate', 'desc')
+        );
+    }, [firestore, user]);
+
+    const { data: realTrips, isLoading } = useCollection<Trip>(archivedTripsQuery);
+
+    // Use mock data if real data is empty or still loading for demonstration
+    const trips = (!realTrips || realTrips.length === 0) ? mockArchivedTrips : realTrips;
 
     const { completedTrips, cancelledTrips } = useMemo(() => {
         const completed = trips.filter(t => t.status === 'Completed').sort((a,b) => new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime());
@@ -155,12 +178,20 @@ export default function ArchivePage() {
                             </TabsTrigger>
                         </TabsList>
                     </div>
-                    <TabsContent value="completed" className="mt-4">
-                        <TripList trips={completedTrips} />
-                    </TabsContent>
-                    <TabsContent value="cancelled" className="mt-4">
-                        <TripList trips={cancelledTrips} />
-                    </TabsContent>
+                    {isLoading ? (
+                        <div className="mt-4">
+                             <TripListSkeleton />
+                        </div>
+                    ) : (
+                        <>
+                            <TabsContent value="completed" className="mt-4">
+                                <TripList trips={completedTrips} />
+                            </TabsContent>
+                            <TabsContent value="cancelled" className="mt-4">
+                                <TripList trips={cancelledTrips} />
+                            </TabsContent>
+                        </>
+                    )}
                 </Tabs>
             </main>
         </div>

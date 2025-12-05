@@ -1,10 +1,10 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
-import { useFirestore, useCollection, useUser } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { useFirestore, useCollection, useUser, updateDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { Trip } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CalendarX, ArrowRight, Calendar, Users, CircleDollarSign, CheckCircle, Clock, XCircle, MoreVertical, Pencil, Ban, Ship, List, AlertTriangle, UsersRound } from 'lucide-react';
+import { CalendarX, ArrowRight, Calendar, Users, CircleDollarSign, CheckCircle, Clock, XCircle, MoreVertical, Pencil, Ban, Ship, List, AlertTriangle, UsersRound, PlayCircle, StopCircle } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import {
@@ -18,6 +18,16 @@ import { Button } from '../ui/button';
 import { EditTripDialog } from './edit-trip-dialog';
 import { PassengersListDialog } from './passengers-list-dialog';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 
 // --- MOCK DATA FOR SIMULATION ---
@@ -98,16 +108,16 @@ const statusMap: Record<string, { text: string; icon: React.ElementType; classNa
   'Cancelled': { text: 'ملغاة', icon: XCircle, className: 'bg-red-100 text-red-800' },
 };
 
-function TripListItem({ trip, onEdit, onManagePassengers, onInitiateTransfer }: { trip: Trip, onEdit: (trip: Trip) => void, onManagePassengers: (trip: Trip) => void, onInitiateTransfer: (trip: Trip) => void }) {
+function TripListItem({ trip, onEdit, onManagePassengers, onInitiateTransfer, onUpdateStatus }: { trip: Trip, onEdit: (trip: Trip) => void, onManagePassengers: (trip: Trip) => void, onInitiateTransfer: (trip: Trip) => void, onUpdateStatus: (trip: Trip, newStatus: Trip['status']) => void }) {
     const statusInfo = statusMap[trip.status] || { text: trip.status, icon: CircleDollarSign, className: 'bg-gray-100 text-gray-800' };
     const [formattedDate, setFormattedDate] = useState('');
 
     useEffect(() => {
         setFormattedDate(safeDateFormat(trip.departureDate));
     }, [trip.departureDate]);
-
-    // A trip can be modified or its passengers transferred if it is 'Planned'.
-    const isActionable = trip.status === 'Planned';
+    
+    const isPlanned = trip.status === 'Planned';
+    const isInTransit = trip.status === 'In-Transit';
 
     return (
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full p-3 border-b md:border md:rounded-lg bg-card shadow-sm transition-shadow hover:shadow-md">
@@ -143,11 +153,20 @@ function TripListItem({ trip, onEdit, onManagePassengers, onInitiateTransfer }: 
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onEdit(trip)} disabled={!isActionable}>
+                         <DropdownMenuItem onClick={() => onUpdateStatus(trip, 'In-Transit')} disabled={!isPlanned}>
+                            <PlayCircle className="ml-2 h-4 w-4 text-green-500" />
+                            <span>بدء الرحلة</span>
+                        </DropdownMenuItem>
+                         <DropdownMenuItem onClick={() => onUpdateStatus(trip, 'Completed')} disabled={!isInTransit}>
+                            <StopCircle className="ml-2 h-4 w-4 text-blue-500" />
+                            <span>إنهاء الرحلة (نقل للأرشيف)</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => onEdit(trip)} disabled={!isPlanned}>
                             <Pencil className="ml-2 h-4 w-4" />
                             <span>تعديل تفاصيل الرحلة</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onManagePassengers(trip)} disabled={!isActionable}>
+                        <DropdownMenuItem onClick={() => onManagePassengers(trip)}>
                             <List className="ml-2 h-4 w-4" />
                             <span>إدارة قائمة الركاب</span>
                         </DropdownMenuItem>
@@ -155,10 +174,18 @@ function TripListItem({ trip, onEdit, onManagePassengers, onInitiateTransfer }: 
                         <DropdownMenuItem 
                             className="text-orange-500 focus:text-orange-600" 
                             onClick={() => onInitiateTransfer(trip)}
-                            disabled={!isActionable || !trip.bookingIds || trip.bookingIds.length === 0}
+                            disabled={!isPlanned || !trip.bookingIds || trip.bookingIds.length === 0}
                         >
                             <UsersRound className="ml-2 h-4 w-4" />
                             <span>طلب نقل الركاب لناقل آخر</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                            className="text-red-500 focus:text-red-600"
+                            onClick={() => onUpdateStatus(trip, 'Cancelled')}
+                            disabled={!isPlanned}
+                        >
+                            <Ban className="ml-2 h-4 w-4" />
+                            <span>إلغاء الرحلة (اضطراري)</span>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
@@ -168,11 +195,15 @@ function TripListItem({ trip, onEdit, onManagePassengers, onInitiateTransfer }: 
 }
 
 export function MyTripsList() {
+    const firestore = useFirestore();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isPassengersDialogOpen, setIsPassengersDialogOpen] = useState(false);
+    const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
-
+    const [tripToUpdate, setTripToUpdate] = useState<{trip: Trip, newStatus: Trip['status']} | null>(null);
     const { toast } = useToast();
+
+    // Use mock data for now
     const isLoading = false;
     const trips = mockActiveTrips;
 
@@ -198,6 +229,39 @@ export function MyTripsList() {
         setSelectedTrip(trip);
         setIsPassengersDialogOpen(true);
     }
+    
+    const handleUpdateStatus = (trip: Trip, newStatus: Trip['status']) => {
+        setTripToUpdate({ trip, newStatus });
+        if (newStatus === 'Cancelled') {
+            setIsCancelConfirmOpen(true);
+        } else {
+            confirmUpdateStatus();
+        }
+    };
+
+    const confirmUpdateStatus = () => {
+        const trip = tripToUpdate?.trip;
+        const newStatus = tripToUpdate?.newStatus;
+
+        if (!firestore || !trip || !newStatus) return;
+
+        const tripRef = doc(firestore, 'trips', trip.id);
+        
+        // SIMULATION
+        updateDocumentNonBlocking(tripRef, { status: newStatus });
+        
+        // In a real scenario, you'd also handle side-effects like notifying passengers.
+        let toastTitle = '';
+        if (newStatus === 'In-Transit') toastTitle = 'تم بدء الرحلة بنجاح!';
+        else if (newStatus === 'Completed') toastTitle = 'تم إنهاء الرحلة ونقلها للأرشيف.';
+        else if (newStatus === 'Cancelled') toastTitle = 'تم إلغاء الرحلة بنجاح.';
+
+        toast({ title: toastTitle });
+
+        // Reset state
+        setIsCancelConfirmOpen(false);
+        setTripToUpdate(null);
+    };
 
     if (isLoading) {
         return (
@@ -229,6 +293,7 @@ export function MyTripsList() {
                         onEdit={handleEditClick}
                         onInitiateTransfer={handleInitiateTransferClick}
                         onManagePassengers={handleManagePassengersClick}
+                        onUpdateStatus={handleUpdateStatus}
                     />
                 ))}
             </div>
@@ -242,6 +307,25 @@ export function MyTripsList() {
                 onOpenChange={setIsPassengersDialogOpen}
                 trip={selectedTrip}
             />
+             <AlertDialog open={isCancelConfirmOpen} onOpenChange={setIsCancelConfirmOpen}>
+                <AlertDialogContent dir="rtl">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                           <AlertTriangle className="h-6 w-6 text-destructive" />
+                           تأكيد الإلغاء الاضطراري
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                            إلغاء الرحلة سيؤدي لإلغاء جميع الحجوزات المرتبطة بها وإرسال إشعارات للمسافرين. هذا الإجراء نهائي ولا يمكن التراجع عنه. هل أنت متأكد؟
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter className="gap-2 sm:gap-0 pt-4">
+                        <AlertDialogCancel onClick={() => setTripToUpdate(null)}>تراجع</AlertDialogCancel>
+                        <AlertDialogAction onClick={confirmUpdateStatus} className="bg-destructive hover:bg-destructive/90">
+                           نعم، قم بالإلغاء
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }
