@@ -401,28 +401,7 @@ export default function DashboardPage() {
 
                   {searchMode === 'all-carriers' && (
                     <div className='grid gap-4'>
-                      <div className="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap">
-                        <Label className="font-semibold">نوع وسيلة النقل:</Label>
-                        <RadioGroup
-                          defaultValue="all"
-                          className="flex items-center gap-4"
-                          onValueChange={setSearchVehicleType}
-                          value={searchVehicleType}
-                        >
-                          <Label htmlFor="r-all" className="flex items-center space-x-2 rtl:space-x-reverse border-2 border-transparent rounded-full p-2 px-4 cursor-pointer transition-all has-[:checked]:border-accent has-[:checked]:bg-black has-[:checked]:text-white">
-                            <RadioGroupItem value="all" id="r-all" />
-                            <span>المتوفر</span>
-                          </Label>
-                          <Label htmlFor="r-small" className="flex items-center space-x-2 rtl:space-x-reverse border-2 border-transparent rounded-full p-2 px-4 cursor-pointer transition-all has-[:checked]:border-accent has-[:checked]:bg-black has-[:checked]:text-white">
-                            <RadioGroupItem value="small" id="r-small" />
-                            <span>مركبة صغيرة</span>
-                          </Label>
-                          <Label htmlFor="r-bus" className="flex items-center space-x-2 rtl:space-x-reverse border-2 border-transparent rounded-full p-2 px-4 cursor-pointer transition-all has-[:checked]:border-accent has-[:checked]:bg-black has-[:checked]:text-white">
-                            <RadioGroupItem value="bus" id="r-bus" />
-                            <span>حافلة</span>
-                          </Label>
-                        </RadioGroup>
-                      </div>
+                      
                        <div className="border-t border-blue-500/30 my-2"></div>
                     </div>
                   )}
