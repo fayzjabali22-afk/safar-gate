@@ -56,7 +56,7 @@ const mockConfirmed: { trip: Trip, booking: Booking } = {
         id: 'trip_confirmed_1', 
         userId: 'user1', 
         carrierId: 'carrier3', 
-        carrierName: 'راحة الطريق', 
+        carrierName: 'فوزي الناقل', 
         origin: 'cairo', 
         destination: 'jeddah', 
         departureDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), 
@@ -243,21 +243,6 @@ const HeroTicket = ({ trip, booking, onCancelBooking, onMessageCarrier, toast }:
 };
 
 
-const ArchivedCard = ({ trip, booking }: { trip: Trip, booking: Booking }) => (
-    <Card className="bg-card/50">
-        <CardHeader>
-            <div className="flex justify-between items-center">
-                <CardTitle className="text-sm">{getCityName(trip.origin)} - {getCityName(trip.destination)}</CardTitle>
-                <Badge variant={booking.status === 'Completed' ? 'default' : 'destructive'} className="bg-opacity-70">
-                    {booking.status === 'Completed' ? <CheckCircle className="ml-1 h-3 w-3" /> : <CalendarX className="ml-1 h-3 w-3" />}
-                    {booking.status === 'Completed' ? 'مكتملة' : 'ملغاة'}
-                </Badge>
-            </div>
-            <CardDescription className="text-xs">تاريخ الرحلة: {format(new Date(trip.departureDate), 'd MMM yyyy', { locale: arSA })}</CardDescription>
-        </CardHeader>
-    </Card>
-);
-
 // --- MAIN PAGE COMPONENT ---
 export default function HistoryPage() {
   const { toast } = useToast();
@@ -276,26 +261,24 @@ export default function HistoryPage() {
         { ...mockPendingConfirmation, status: mockPendingConfirmation.booking.status },
         { ...mockPendingPayment, status: mockPendingPayment.booking.status },
         { ...mockConfirmed, status: mockConfirmed.booking.status },
-        { ...mockArchivedCompleted, status: mockArchivedCompleted.booking.status },
     ];
   }, []);
 
-  const { processingItems, ticketItems, archiveItems } = useMemo(() => {
+  const { processingItems, ticketItems } = useMemo(() => {
       const processing: any[] = [];
       const tickets: any[] = [];
-      const archive: any[] = [];
 
       allTripsAndBookings.forEach(item => {
           const status = item.status;
           if (status === 'Completed' || status === 'Cancelled') {
-              archive.push(item);
+              // Archive items are no longer displayed on this page
           } else if (status === 'Confirmed') {
               tickets.push(item);
           } else {
               processing.push(item);
           }
       });
-      return { processingItems: processing, ticketItems: tickets, archiveItems: archive };
+      return { processingItems: processing, ticketItems: tickets };
   }, [allTripsAndBookings]);
 
 
