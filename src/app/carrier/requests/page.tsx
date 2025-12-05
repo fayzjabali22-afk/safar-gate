@@ -142,7 +142,7 @@ export default function CarrierRequestsPage() {
         q = query(q, where('passengers', '<=', userProfile.vehicleCapacity));
     }
     
-    return query(q, orderBy('createdAt', 'desc'));
+    return q;
 
   }, [firestore, user, filterBySpecialization, canFilter, userProfile]);
 
