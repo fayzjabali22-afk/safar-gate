@@ -9,7 +9,7 @@ import { AppLayout } from '@/components/app-layout';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { AddTripDialog } from '@/components/carrier/add-trip-dialog';
+import { AddTripDialog } from '@/app/carrier/add-trip-dialog';
 import { CarrierBottomNav } from '@/components/carrier/carrier-bottom-nav';
 
 
