@@ -13,7 +13,6 @@ export default function CarrierBookingsPage() {
 
     const pendingBookingsQuery = useMemo(() => {
         if (!firestore || !user) return null;
-        // The orderBy was removed from here to avoid needing a composite index.
         return query(
             collection(firestore, 'bookings'),
             where('carrierId', '==', user.uid),
@@ -23,7 +22,6 @@ export default function CarrierBookingsPage() {
     
     const historicalBookingsQuery = useMemo(() => {
         if (!firestore || !user) return null;
-        // The orderBy was removed from here to avoid needing a composite index.
         return query(
             collection(firestore, 'bookings'),
             where('carrierId', '==', user.uid),
@@ -37,12 +35,20 @@ export default function CarrierBookingsPage() {
     // Perform client-side sorting
     const pendingBookings = useMemo(() => {
         if (!pendingBookingsData) return [];
-        return [...pendingBookingsData].sort((a, b) => new Date((b.createdAt as any)?.seconds * 1000).getTime() - new Date((a.createdAt as any)?.seconds * 1000).getTime());
+        return [...pendingBookingsData].sort((a, b) => {
+             const dateA = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date(0);
+             const dateB = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date(0);
+             return dateB.getTime() - dateA.getTime();
+        });
     }, [pendingBookingsData]);
 
     const historicalBookings = useMemo(() => {
         if (!historicalBookingsData) return [];
-        return [...historicalBookingsData].sort((a, b) => new Date((b.createdAt as any)?.seconds * 1000).getTime() - new Date((a.createdAt as any)?.seconds * 1000).getTime());
+        return [...historicalBookingsData].sort((a, b) => {
+             const dateA = a.createdAt?.seconds ? new Date(a.createdAt.seconds * 1000) : new Date(0);
+             const dateB = b.createdAt?.seconds ? new Date(b.createdAt.seconds * 1000) : new Date(0);
+             return dateB.getTime() - dateA.getTime();
+        });
     }, [historicalBookingsData]);
 
 

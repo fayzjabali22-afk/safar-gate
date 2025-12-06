@@ -1,8 +1,8 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 import { useFirestore, useCollection, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, orderBy, doc, writeBatch } from 'firebase/firestore';
-import { Trip, Chat } from '@/lib/data';
+import { Trip, Chat, Booking } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarX, ArrowRight, Calendar, Users, CircleDollarSign, CheckCircle, Clock, XCircle, MoreVertical, Pencil, Ban, Ship, List, AlertTriangle, UsersRound, PlayCircle, StopCircle, MessageSquare } from 'lucide-react';
 import { Badge } from '../ui/badge';
@@ -29,6 +29,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import Link from 'next/link';
+import { BookingActionCard } from './booking-action-card';
+import { Separator } from '../ui/separator';
 
 
 const cities: { [key: string]: string } = {
@@ -55,7 +57,7 @@ const statusMap: Record<string, { text: string; icon: React.ElementType; classNa
   'Cancelled': { text: 'ملغاة', icon: XCircle, className: 'bg-red-100 text-red-800' },
 };
 
-function TripListItem({ trip, onEdit, onManagePassengers, onInitiateTransfer, onUpdateStatus, unreadCount }: { trip: Trip, onEdit: (trip: Trip) => void, onManagePassengers: (trip: Trip) => void, onInitiateTransfer: (trip: Trip) => void, onUpdateStatus: (trip: Trip, newStatus: Trip['status']) => void, unreadCount: number }) {
+function TripListItem({ trip, pendingBookings, onEdit, onManagePassengers, onInitiateTransfer, onUpdateStatus, unreadCount }: { trip: Trip, pendingBookings?: Booking[], onEdit: (trip: Trip) => void, onManagePassengers: (trip: Trip) => void, onInitiateTransfer: (trip: Trip) => void, onUpdateStatus: (trip: Trip, newStatus: Trip['status']) => void, unreadCount: number }) {
     const statusInfo = statusMap[trip.status] || { text: trip.status, icon: CircleDollarSign, className: 'bg-gray-100 text-gray-800' };
     const [formattedDate, setFormattedDate] = useState('');
 
@@ -67,91 +69,109 @@ function TripListItem({ trip, onEdit, onManagePassengers, onInitiateTransfer, on
     const isInTransit = trip.status === 'In-Transit';
 
     return (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full p-3 border-b md:border md:rounded-lg bg-card shadow-sm transition-shadow hover:shadow-md">
-            <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-4">
-                <div className="col-span-2 sm:col-span-1 flex flex-col">
-                    <span className="text-sm font-bold text-foreground flex items-center gap-1">
-                        {getCityName(trip.origin)} <ArrowRight className="h-4 w-4 text-muted-foreground" /> {getCityName(trip.destination)}
-                    </span>
-                    <span className="text-xs text-muted-foreground">{trip.vehicleType}</span>
+        <div className="w-full border md:rounded-lg bg-card shadow-sm transition-shadow hover:shadow-md">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3">
+                <div className="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-4">
+                    <div className="col-span-2 sm:col-span-1 flex flex-col">
+                        <span className="text-sm font-bold text-foreground flex items-center gap-1">
+                            {getCityName(trip.origin)} <ArrowRight className="h-4 w-4 text-muted-foreground" /> {getCityName(trip.destination)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">{trip.vehicleType}</span>
+                    </div>
+                     <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="h-4 w-4 text-primary" />
+                        <span>{formattedDate || <Skeleton className="h-4 w-24" />}</span>
+                    </div>
+                     <div className="flex items-center gap-2 text-sm">
+                        <Users className="h-4 w-4 text-primary" />
+                        <span>{trip.availableSeats} مقاعد</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm font-bold">
+                        <CircleDollarSign className="h-4 w-4 text-green-500" />
+                        <span>{trip.price} {trip.currency}</span>
+                    </div>
                 </div>
-                 <div className="flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    <span>{formattedDate || <Skeleton className="h-4 w-24" />}</span>
-                </div>
-                 <div className="flex items-center gap-2 text-sm">
-                    <Users className="h-4 w-4 text-primary" />
-                    <span>{trip.availableSeats} مقاعد</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm font-bold">
-                    <CircleDollarSign className="h-4 w-4 text-green-500" />
-                    <span>{trip.price} {trip.currency}</span>
+                <div className="flex items-center gap-2 mt-3 sm:mt-0 sm:ml-4 rtl:sm:mr-4">
+                    <Badge className={cn("py-1 px-3 text-xs", statusInfo.className)}>
+                        <statusInfo.icon className="ml-1 h-3 w-3" />
+                        {statusInfo.text}
+                    </Badge>
+                     <Button asChild variant="outline" size="icon" className="h-8 w-8 relative">
+                       <Link href={`/carrier/trips/${trip.id}`}>
+                            <MessageSquare className="h-4 w-4" />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                                    {unreadCount}
+                                </span>
+                            )}
+                       </Link>
+                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                 <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                             <DropdownMenuItem onClick={() => onUpdateStatus(trip, 'In-Transit')} disabled={!isPlanned}>
+                                <PlayCircle className="ml-2 h-4 w-4 text-green-500" />
+                                <span>بدء الرحلة</span>
+                            </DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => onUpdateStatus(trip, 'Completed')} disabled={!isInTransit}>
+                                <StopCircle className="ml-2 h-4 w-4 text-blue-500" />
+                                <span>إنهاء الرحلة (نقل للأرشيف)</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => onEdit(trip)} disabled={!isPlanned}>
+                                <Pencil className="ml-2 h-4 w-4" />
+                                <span>تعديل تفاصيل الرحلة</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onManagePassengers(trip)}>
+                                <List className="ml-2 h-4 w-4" />
+                                <span>إدارة قائمة الركاب</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                                className="text-orange-500 focus:text-orange-600" 
+                                onClick={() => onInitiateTransfer(trip)}
+                                disabled={!isPlanned || !trip.bookingIds || trip.bookingIds.length === 0}
+                            >
+                                <UsersRound className="ml-2 h-4 w-4" />
+                                <span>طلب نقل الركاب لناقل آخر</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                                className="text-red-500 focus:text-red-600"
+                                onClick={() => onUpdateStatus(trip, 'Cancelled')}
+                                disabled={!isPlanned}
+                            >
+                                <Ban className="ml-2 h-4 w-4" />
+                                <span>إلغاء الرحلة (اضطراري)</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             </div>
-             <div className="flex items-center gap-2 mt-3 sm:mt-0 sm:ml-4 rtl:sm:mr-4">
-                <Badge className={cn("py-1 px-3 text-xs", statusInfo.className)}>
-                    <statusInfo.icon className="ml-1 h-3 w-3" />
-                    {statusInfo.text}
-                </Badge>
-                 <Button asChild variant="outline" size="icon" className="h-8 w-8 relative">
-                   <Link href={`/carrier/trips/${trip.id}`}>
-                        <MessageSquare className="h-4 w-4" />
-                        {unreadCount > 0 && (
-                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                                {unreadCount}
-                            </span>
-                        )}
-                   </Link>
-                </Button>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                             <MoreVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                         <DropdownMenuItem onClick={() => onUpdateStatus(trip, 'In-Transit')} disabled={!isPlanned}>
-                            <PlayCircle className="ml-2 h-4 w-4 text-green-500" />
-                            <span>بدء الرحلة</span>
-                        </DropdownMenuItem>
-                         <DropdownMenuItem onClick={() => onUpdateStatus(trip, 'Completed')} disabled={!isInTransit}>
-                            <StopCircle className="ml-2 h-4 w-4 text-blue-500" />
-                            <span>إنهاء الرحلة (نقل للأرشيف)</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => onEdit(trip)} disabled={!isPlanned}>
-                            <Pencil className="ml-2 h-4 w-4" />
-                            <span>تعديل تفاصيل الرحلة</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onManagePassengers(trip)}>
-                            <List className="ml-2 h-4 w-4" />
-                            <span>إدارة قائمة الركاب</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem 
-                            className="text-orange-500 focus:text-orange-600" 
-                            onClick={() => onInitiateTransfer(trip)}
-                            disabled={!isPlanned || !trip.bookingIds || trip.bookingIds.length === 0}
-                        >
-                            <UsersRound className="ml-2 h-4 w-4" />
-                            <span>طلب نقل الركاب لناقل آخر</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem 
-                            className="text-red-500 focus:text-red-600"
-                            onClick={() => onUpdateStatus(trip, 'Cancelled')}
-                            disabled={!isPlanned}
-                        >
-                            <Ban className="ml-2 h-4 w-4" />
-                            <span>إلغاء الرحلة (اضطراري)</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
+
+            {pendingBookings && pendingBookings.length > 0 && (
+                <div className="p-3 bg-primary/5">
+                    <h4 className="text-sm font-bold mb-2 text-primary">طلبات حجز جديدة لهذه الرحلة ({pendingBookings.length})</h4>
+                    <div className="space-y-3">
+                        {pendingBookings.map(booking => (
+                            <BookingActionCard key={booking.id} booking={booking} />
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
-export function MyTripsList() {
+interface MyTripsListProps {
+    trips: Trip[];
+    pendingBookingsMap: Map<string, Booking[]>;
+}
+
+export function MyTripsList({ trips, pendingBookingsMap }: MyTripsListProps) {
     const firestore = useFirestore();
     const { user } = useUser();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -161,17 +181,6 @@ export function MyTripsList() {
     const [tripToUpdate, setTripToUpdate] = useState<{trip: Trip, newStatus: Trip['status']} | null>(null);
     const { toast } = useToast();
 
-    const tripsQuery = useMemo(() => {
-        if (!firestore || !user) return null;
-        return query(
-            collection(firestore, 'trips'),
-            where('carrierId', '==', user.uid),
-            where('status', 'in', ['Planned', 'In-Transit'])
-        );
-    }, [firestore, user]);
-
-    const { data: trips, isLoading } = useCollection<Trip>(tripsQuery);
-    
     const chatIds = useMemo(() => trips?.map(t => t.id) || [], [trips]);
     const chatsQuery = useMemo(() => {
         if (!firestore || chatIds.length === 0) return null;
@@ -191,11 +200,17 @@ export function MyTripsList() {
         return counts;
     }, [chats, user]);
     
-    // Perform client-side sorting here
     const sortedTrips = useMemo(() => {
         if (!trips) return [];
-        return [...trips].sort((a, b) => new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime());
-    }, [trips]);
+        // Sort trips to show those with pending bookings first, then by date.
+        return [...trips].sort((a, b) => {
+            const aHasPending = pendingBookingsMap.has(a.id);
+            const bHasPending = pendingBookingsMap.has(b.id);
+            if (aHasPending && !bHasPending) return -1;
+            if (!aHasPending && bHasPending) return 1;
+            return new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime();
+        });
+    }, [trips, pendingBookingsMap]);
     
     const handleEditClick = (trip: Trip) => {
         setSelectedTrip(trip);
@@ -235,7 +250,6 @@ export function MyTripsList() {
         try {
             await updateDocumentNonBlocking(tripRef, { status: newStatus });
         
-            // In a real scenario, you'd also handle side-effects like notifying passengers.
             let toastTitle = '';
             if (newStatus === 'In-Transit') toastTitle = 'تم بدء الرحلة بنجاح!';
             else if (newStatus === 'Completed') toastTitle = 'تم إنهاء الرحلة ونقلها للأرشيف.';
@@ -246,19 +260,9 @@ export function MyTripsList() {
             toast({ title: 'فشل تحديث الحالة', variant: 'destructive' });
         }
 
-
-        // Reset state
         setIsCancelConfirmOpen(false);
         setTripToUpdate(null);
     };
-
-    if (isLoading) {
-        return (
-          <div className="space-y-3 p-2 md:p-0">
-            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-lg" />)}
-          </div>
-        );
-    }
 
     if (!sortedTrips || sortedTrips.length === 0) {
         return (
@@ -274,11 +278,12 @@ export function MyTripsList() {
 
     return (
         <>
-            <div className="space-y-2 md:space-y-3">
+            <div className="space-y-3">
                 {sortedTrips.map((trip) => (
                     <TripListItem 
                         key={trip.id} 
                         trip={trip} 
+                        pendingBookings={pendingBookingsMap.get(trip.id)}
                         onEdit={handleEditClick}
                         onInitiateTransfer={handleInitiateTransferClick}
                         onManagePassengers={handleManagePassengersClick}
@@ -319,5 +324,3 @@ export function MyTripsList() {
         </>
     );
 }
-
-    
