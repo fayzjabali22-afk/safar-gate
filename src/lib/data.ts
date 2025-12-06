@@ -127,7 +127,7 @@ export type Notification = {
   userId: string;
   title: string;
   message: string;
-  type: 'new_offer' | 'booking_confirmed' | 'trip_update' | 'payment_reminder' | 'new_booking_request' | 'rating_request';
+  type: 'new_offer' | 'booking_confirmed' | 'trip_update' | 'payment_reminder' | 'new_booking_request' | 'rating_request' | 'group_chat_message';
   isRead: boolean;
   createdAt: string;
   link?: string;
@@ -152,18 +152,23 @@ export type Rating = {
 
 export type Chat = {
   id: string;
-  tripId: string;
+  tripId: string; // This might be redundant if id === tripId for group chats
+  isGroupChat: boolean;
   participants: string[];
-  lastMessage: string;
-  updatedAt: string;
+  lastMessage?: string;
+  lastMessageSenderId?: string;
+  lastMessageTimestamp?: any;
+  unreadCounts?: { [userId: string]: number };
+  isClosed?: boolean;
 };
+
 
 export type Message = {
   id: string;
-  chatId: string;
   senderId: string;
+  senderName: string;
   content: string;
-  timestamp: string;
+  timestamp: any;
 };
 
     

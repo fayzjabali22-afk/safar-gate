@@ -440,9 +440,10 @@
             "type": "object",
             "description": "An object where keys are user IDs and values are the number of unread messages for that user.",
             "additionalProperties": { "type": "number" }
-        }
+        },
+        "isClosed": { "type": "boolean", "description": "If true, no more messages can be sent." }
       },
-      "required": ["id", "participants"]
+      "required": ["id", "participants", "isGroupChat"]
     },
     "Message": {
       "title": "Message",
@@ -588,5 +589,3 @@
     ]
   }
 }
-
-    

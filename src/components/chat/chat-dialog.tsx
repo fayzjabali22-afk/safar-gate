@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -12,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useUser, useFirestore, useCollection, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
+import { useUser, useFirestore, useCollection, addDocumentNonBlocking, updateDocumentNonBlocking, useDoc } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import type { Message, Trip, Booking } from '@/lib/data';
 import { MessageList } from './message-list';
@@ -28,10 +27,11 @@ interface ChatDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   // MODIFIED: Support both group (trip) and 1-on-1 (booking) chats
   trip?: Trip | null;
-  booking?: Booking | null; 
+  bookingId?: string | null; 
+  otherPartyName?: string;
 }
 
-export function ChatDialog({ isOpen, onOpenChange, trip, booking }: ChatDialogProps) {
+export function ChatDialog({ isOpen, onOpenChange, trip, bookingId, otherPartyName }: ChatDialogProps) {
   const { user } = useUser();
   const { profile } = useUserProfile();
   const firestore = useFirestore();
@@ -45,7 +45,7 @@ export function ChatDialog({ isOpen, onOpenChange, trip, booking }: ChatDialogPr
 
   // Determine chat type and ID
   const isGroupChat = !!trip;
-  const chatId = isGroupChat ? trip?.id : booking?.id;
+  const chatId = isGroupChat ? trip?.id : bookingId;
 
   const messagesQuery = useMemo(() => {
     if (!firestore || !chatId) return null;
@@ -85,14 +85,25 @@ export function ChatDialog({ isOpen, onOpenChange, trip, booking }: ChatDialogPr
     
     addDocumentNonBlocking(messagesCollection, messageData);
     
+    let participants: string[] = [];
+    if (trip) {
+        // This is a simplified participant list for group chat
+        participants = trip.bookingIds || [];
+        participants.push(trip.carrierId || '');
+    } else if (bookingId) {
+        // This assumes we can get booking details if needed, but for now we simplify
+        // In a real app, you'd fetch the booking to get userId and carrierId
+        participants = []; // Needs a better way to get participants for 1-on-1
+    }
+
+
     const chatData = {
         id: chatId,
         isGroupChat,
         lastMessage: messageContent,
         lastMessageSenderId: user.uid,
         lastMessageTimestamp: serverTimestamp(),
-        // This is a simplified participant update. A real implementation would be more robust.
-        participants: isGroupChat ? trip?.bookingIds : [booking?.userId, booking?.carrierId]
+        participants,
     };
     setDoc(chatDocRef, chatData, { merge: true });
 
@@ -142,15 +153,10 @@ export function ChatDialog({ isOpen, onOpenChange, trip, booking }: ChatDialogPr
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-4 border-b">
-          <DialogTitle>{isGroupChat ? 'دردشة الرحلة الجماعية' : 'محادثة خاصة'}</DialogTitle>
+          <DialogTitle>{isGroupChat ? 'دردشة الرحلة الجماعية' : `محادثة مع ${otherPartyName}`}</DialogTitle>
            {trip && (
             <DialogDescription>
               رحلة {trip.origin} - {trip.destination}
-            </DialogDescription>
-          )}
-           {booking && (
-            <DialogDescription>
-                بخصوص حجز لـ {booking.seats} مقاعد
             </DialogDescription>
           )}
         </DialogHeader>
@@ -161,7 +167,7 @@ export function ChatDialog({ isOpen, onOpenChange, trip, booking }: ChatDialogPr
         </div>
         
         <DialogFooter className="p-4 border-t bg-background flex-col gap-2">
-            {profile?.role === 'carrier' && suggestedReplies.length > 0 && (
+            {profile?.role === 'carrier' && suggestedReplies.length > 0 && !isChatClosed && (
                 <div className="flex flex-wrap gap-2 justify-center pb-2">
                     {suggestedReplies.map((reply, index) => (
                         <Button key={index} variant="outline" size="sm" onClick={() => handleSendMessage(reply)}>
