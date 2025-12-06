@@ -238,7 +238,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             "sticky top-0 z-50 flex h-16 items-center justify-between px-4 md:px-6",
             "border-b border-white shadow-lg"
           )}
-          style={{ backgroundColor: '#FFF0FC', color: '#000000' }}
+          style={{ backgroundColor: '#FEFFC2', color: '#000000' }}
         >
 
           {/* Left-side icons on mobile */}
