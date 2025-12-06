@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import { useFirestore, useCollection, useUser, updateDocumentNonBlocking } from '@/firebase';
@@ -29,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ChatDialog } from '../chat/chat-dialog';
+import Link from 'next/link';
 
 
 const cities: { [key: string]: string } = {
@@ -56,7 +55,7 @@ const statusMap: Record<string, { text: string; icon: React.ElementType; classNa
   'Cancelled': { text: 'ملغاة', icon: XCircle, className: 'bg-red-100 text-red-800' },
 };
 
-function TripListItem({ trip, onEdit, onManagePassengers, onInitiateTransfer, onUpdateStatus, onOpenChat, unreadCount }: { trip: Trip, onEdit: (trip: Trip) => void, onManagePassengers: (trip: Trip) => void, onInitiateTransfer: (trip: Trip) => void, onUpdateStatus: (trip: Trip, newStatus: Trip['status']) => void, onOpenChat: (trip: Trip) => void, unreadCount: number }) {
+function TripListItem({ trip, onEdit, onManagePassengers, onInitiateTransfer, onUpdateStatus, unreadCount }: { trip: Trip, onEdit: (trip: Trip) => void, onManagePassengers: (trip: Trip) => void, onInitiateTransfer: (trip: Trip) => void, onUpdateStatus: (trip: Trip, newStatus: Trip['status']) => void, unreadCount: number }) {
     const statusInfo = statusMap[trip.status] || { text: trip.status, icon: CircleDollarSign, className: 'bg-gray-100 text-gray-800' };
     const [formattedDate, setFormattedDate] = useState('');
 
@@ -94,13 +93,15 @@ function TripListItem({ trip, onEdit, onManagePassengers, onInitiateTransfer, on
                     <statusInfo.icon className="ml-1 h-3 w-3" />
                     {statusInfo.text}
                 </Badge>
-                <Button variant="outline" size="icon" className="h-8 w-8 relative" onClick={() => onOpenChat(trip)}>
-                    <MessageSquare className="h-4 w-4" />
-                    {unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                            {unreadCount}
-                        </span>
-                    )}
+                 <Button asChild variant="outline" size="icon" className="h-8 w-8 relative">
+                   <Link href={`/carrier/trips/${trip.id}`}>
+                        <MessageSquare className="h-4 w-4" />
+                        {unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                                {unreadCount}
+                            </span>
+                        )}
+                   </Link>
                 </Button>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -156,7 +157,6 @@ export function MyTripsList() {
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isPassengersDialogOpen, setIsPassengersDialogOpen] = useState(false);
     const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
-    const [isChatOpen, setIsChatOpen] = useState(false);
     const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
     const [tripToUpdate, setTripToUpdate] = useState<{trip: Trip, newStatus: Trip['status']} | null>(null);
     const { toast } = useToast();
@@ -213,11 +213,6 @@ export function MyTripsList() {
     const handleManagePassengersClick = (trip: Trip) => {
         setSelectedTrip(trip);
         setIsPassengersDialogOpen(true);
-    }
-    
-    const handleOpenChatClick = (trip: Trip) => {
-        setSelectedTrip(trip);
-        setIsChatOpen(true);
     }
     
     const handleUpdateStatus = (trip: Trip, newStatus: Trip['status']) => {
@@ -288,7 +283,6 @@ export function MyTripsList() {
                         onInitiateTransfer={handleInitiateTransferClick}
                         onManagePassengers={handleManagePassengersClick}
                         onUpdateStatus={handleUpdateStatus}
-                        onOpenChat={handleOpenChatClick}
                         unreadCount={unreadCounts[trip.id] || 0}
                     />
                 ))}
@@ -301,11 +295,6 @@ export function MyTripsList() {
             <PassengersListDialog
                 isOpen={isPassengersDialogOpen}
                 onOpenChange={setIsPassengersDialogOpen}
-                trip={selectedTrip}
-            />
-            <ChatDialog 
-                isOpen={isChatOpen}
-                onOpenChange={setIsChatOpen}
                 trip={selectedTrip}
             />
              <AlertDialog open={isCancelConfirmOpen} onOpenChange={setIsCancelConfirmOpen}>

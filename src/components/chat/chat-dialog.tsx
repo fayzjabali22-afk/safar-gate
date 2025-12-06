@@ -14,9 +14,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUser, useFirestore, useCollection, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, orderBy, serverTimestamp, doc, setDoc } from 'firebase/firestore';
-import type { Message, Trip } from '@/lib/data';
+import type { Message, Trip, Booking } from '@/lib/data';
 import { MessageList } from './message-list';
-import { Loader2, Send, Sparkles, PowerOff, AlertTriangle } from 'lucide-react';
+import { Loader2, Send, Sparkles, PowerOff, AlertTriangle, X } from 'lucide-react';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { suggestChatReply, SuggestChatReplyInput } from '@/ai/flows/suggest-chat-reply-flow';
 import { useToast } from '@/hooks/use-toast';
@@ -26,10 +26,12 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 interface ChatDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  trip: Trip | null;
+  // MODIFIED: Support both group (trip) and 1-on-1 (booking) chats
+  trip?: Trip | null;
+  booking?: Booking | null; 
 }
 
-export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
+export function ChatDialog({ isOpen, onOpenChange, trip, booking }: ChatDialogProps) {
   const { user } = useUser();
   const { profile } = useUserProfile();
   const firestore = useFirestore();
@@ -41,8 +43,9 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
   const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
   const [isClosingChat, setIsClosingChat] = useState(false);
 
-  // The chat ID is now the trip ID for group chats.
-  const chatId = trip?.id;
+  // Determine chat type and ID
+  const isGroupChat = !!trip;
+  const chatId = isGroupChat ? trip?.id : booking?.id;
 
   const messagesQuery = useMemo(() => {
     if (!firestore || !chatId) return null;
@@ -53,6 +56,7 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
   }, [firestore, chatId]);
 
   const { data: messages, isLoading } = useCollection<Message>(messagesQuery);
+  const { data: chatDoc } = useDoc(firestore && chatId ? doc(firestore, 'chats', chatId) : null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -61,7 +65,7 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => scrollToBottom(), 100);
-      setSuggestedReplies([]); // Clear suggestions when opening
+      setSuggestedReplies([]);
     }
   }, [isOpen, messages]);
 
@@ -81,15 +85,14 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
     
     addDocumentNonBlocking(messagesCollection, messageData);
     
-    // Create or update the chat document metadata
     const chatData = {
         id: chatId,
-        tripId: trip?.id,
-        isGroupChat: true,
-        participants: trip?.bookingIds, // This needs to be populated with real passenger UIDs
+        isGroupChat,
         lastMessage: messageContent,
         lastMessageSenderId: user.uid,
         lastMessageTimestamp: serverTimestamp(),
+        // This is a simplified participant update. A real implementation would be more robust.
+        participants: isGroupChat ? trip?.bookingIds : [booking?.userId, booking?.carrierId]
     };
     setDoc(chatDocRef, chatData, { merge: true });
 
@@ -107,7 +110,7 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
           const conversationHistory = messages.map(m => `${m.senderName}: ${m.content}`).join('\n');
           const input: SuggestChatReplyInput = {
               conversationHistory,
-              userRole: 'carrier'
+              userRole: profile?.role || 'traveler'
           };
           const result = await suggestChatReply(input);
           setSuggestedReplies(result.suggestedReplies);
@@ -124,7 +127,7 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
     const chatDocRef = doc(firestore, 'chats', chatId);
     try {
       await updateDocumentNonBlocking(chatDocRef, { isClosed: true });
-      toast({ title: "تم إغلاق الدردشة", description: "لن يتمكن المسافرون من إرسال رسائل جديدة." });
+      toast({ title: "تم إغلاق الدردشة", description: "لن يتمكن المشاركون من إرسال رسائل جديدة." });
       onOpenChange(false);
     } catch (error) {
       toast({ variant: 'destructive', title: "فشل إغلاق الدردشة" });
@@ -133,14 +136,21 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
     }
   }
   
+  const isChatClosed = (chatDoc as any)?.isClosed;
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="p-4 border-b">
-          <DialogTitle>غرفة عمليات الرحلة (مجموعة)</DialogTitle>
+          <DialogTitle>{isGroupChat ? 'دردشة الرحلة الجماعية' : 'محادثة خاصة'}</DialogTitle>
            {trip && (
             <DialogDescription>
-              الدردشة الجماعية لرحلة {trip.origin} - {trip.destination}
+              رحلة {trip.origin} - {trip.destination}
+            </DialogDescription>
+          )}
+           {booking && (
+            <DialogDescription>
+                بخصوص حجز لـ {booking.seats} مقاعد
             </DialogDescription>
           )}
         </DialogHeader>
@@ -161,7 +171,7 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
                 </div>
             )}
             <div className="flex w-full items-center space-x-2 rtl:space-x-reverse">
-              {profile?.role === 'carrier' && (
+              {profile?.role === 'carrier' && !isChatClosed && (
                 <>
                   <Button variant="outline" size="icon" onClick={handleSuggestReply} disabled={isSuggesting || isLoading}>
                       {isSuggesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -189,20 +199,33 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
                   </AlertDialog>
                 </>
               )}
-                <Input
-                  id="message-input"
-                  placeholder="اكتب رسالتك هنا..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                  disabled={isLoading}
-                  className="flex-1"
-                />
-                <Button type="submit" size="icon" onClick={() => handleSendMessage()} disabled={!newMessage.trim()}>
-                  <Send className="h-4 w-4" />
-                  <span className="sr-only">إرسال</span>
-                </Button>
+              {isChatClosed ? (
+                    <div className="flex-1 text-center text-sm text-muted-foreground font-semibold">الدردشة مغلقة من قبل الناقل.</div>
+                ) : (
+                    <>
+                        <Input
+                            id="message-input"
+                            placeholder="اكتب رسالتك هنا..."
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                            disabled={isLoading}
+                            className="flex-1"
+                            />
+                        <Button type="submit" size="icon" onClick={() => handleSendMessage()} disabled={!newMessage.trim()}>
+                            <Send className="h-4 w-4" />
+                            <span className="sr-only">إرسال</span>
+                        </Button>
+                    </>
+                )}
+
             </div>
+             {profile?.role === 'carrier' && (
+                 <Button variant="ghost" className="w-fit self-end text-xs h-auto p-1" onClick={() => onOpenChange(false)}>
+                    <X className="ml-1 h-3 w-3"/>
+                    إغلاق
+                </Button>
+             )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
