@@ -2,41 +2,47 @@
 
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Route, Search, BarChart3 } from 'lucide-react';
+import { Route, Search, BarChart3, Briefcase } from 'lucide-react';
 import Link from 'next/link';
 
 export function QuickActions() {
   return (
     <div>
-        <div className="grid gap-4 md:grid-cols-1">
+        <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
             <Card className="flex flex-col justify-between hover:bg-card/80 transition-colors w-full">
                 <CardHeader>
-                    <CardTitle>سوق الطلبات المتاحة</CardTitle>
+                    <CardTitle>مركز الفرص</CardTitle>
                     <CardDescription>
-                        استعرض الطلبات المتاحة في السوق وقدم أفضل عروضك.
+                        استعرض كل الطلبات المتاحة (العامة والمباشرة) وقدم أفضل عروضك.
                     </CardDescription>
                 </CardHeader>
                 <div className="p-4 pt-0">
                     <Button asChild className="w-full">
-                        <Link href="/carrier/requests">
+                        <Link href="/carrier/opportunities">
                             <Search className="ml-2 h-4 w-4" />
-                            الذهاب إلى السوق
+                            الذهاب إلى مركز الفرص
                         </Link>
                     </Button>
                 </div>
             </Card>
             <Card className="flex flex-col justify-between hover:bg-card/80 transition-colors w-full">
                 <CardHeader>
-                    <CardTitle>إدارة رحلاتي المجدولة</CardTitle>
+                    <CardTitle>إدارة رحلاتي وحجوزاتي</CardTitle>
                     <CardDescription>
-                        أضف رحلات جديدة بمسار وأسعار محددة، وتابع رحلاتك الحالية.
+                       أدر رحلاتك النشطة، وقم بتأكيد أو رفض طلبات الحجز الجديدة.
                     </CardDescription>
                 </CardHeader>
-                 <div className="p-4 pt-0">
-                    <Button asChild className="w-full">
+                 <div className="p-4 pt-0 grid grid-cols-2 gap-2">
+                    <Button asChild variant="outline">
                         <Link href="/carrier/trips">
                             <Route className="ml-2 h-4 w-4" />
-                            إدارة الرحلات
+                            رحلاتي
+                        </Link>
+                    </Button>
+                     <Button asChild variant="outline">
+                        <Link href="/carrier/bookings">
+                            <Briefcase className="ml-2 h-4 w-4" />
+                            الحجوزات
                         </Link>
                     </Button>
                 </div>

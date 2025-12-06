@@ -2,16 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Archive, Search, Route, PlusCircle, Briefcase } from 'lucide-react';
+import { Archive, Search, Route, PlusCircle, Briefcase, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 // 5-column grid with a placeholder for the central FAB
 const navItems = [
-  { href: '/carrier/requests', label: 'الطلبات', icon: Search },
-  { href: '/carrier/trips', label: 'رحلاتي', icon: Route },
+  { href: '/carrier', label: 'الرئيسية', icon: LayoutDashboard, exact: true },
+  { href: '/carrier/opportunities', label: 'الفرص', icon: Search },
   null, // Placeholder for the central FAB
-  { href: '/carrier/archive', label: 'الأرشيف', icon: Archive },
+  { href: '/carrier/trips', label: 'رحلاتي', icon: Route },
   { href: '/carrier/bookings', label: 'الحجوزات', icon: Briefcase },
 ];
 
@@ -43,8 +43,8 @@ export function CarrierBottomNav({ onAddTripClick }: CarrierBottomNavProps) {
             if (!item) {
                 return <div key={`spacer-${index}`} aria-hidden="true" />;
             }
-
-            const isActive = pathname.startsWith(item.href);
+            
+            const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
             const Icon = item.icon;
 
             return (

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,11 +37,9 @@ const safeDateFormat = (dateInput: any): string => {
 interface RequestCardProps {
     tripRequest: Trip;
     onOffer: (trip: Trip) => void;
-    isMock?: boolean;
 }
 
-export function RequestCard({ tripRequest, onOffer, isMock = false }: RequestCardProps) {
-
+export function RequestCard({ tripRequest, onOffer }: RequestCardProps) {
     const isDirectRequest = tripRequest.requestType === 'Direct';
 
     return (
@@ -53,17 +50,12 @@ export function RequestCard({ tripRequest, onOffer, isMock = false }: RequestCar
         )}>
             <div className="flex-1 mb-4 sm:mb-0">
                 
-                <div className="flex items-center gap-2">
-                    {isDirectRequest && (
-                        <Badge variant="default" className="mb-2">
-                            <UserCheck className="ml-1 h-3 w-3" />
-                            موجه لك خصيصاً
-                        </Badge>
-                    )}
-                    {isMock && (
-                        <Badge variant="destructive" className="mb-2">محاكاة</Badge>
-                    )}
-                </div>
+                {isDirectRequest && (
+                    <Badge variant="default" className="mb-2">
+                        <UserCheck className="ml-1 h-3 w-3" />
+                        موجه لك خصيصاً
+                    </Badge>
+                )}
                 
                 {/* Destination */}
                 <div className="flex items-center gap-2 font-bold text-lg text-foreground">
@@ -100,7 +92,7 @@ export function RequestCard({ tripRequest, onOffer, isMock = false }: RequestCar
             <div className="flex-shrink-0">
                  <Button className="w-full sm:w-auto" onClick={() => onOffer(tripRequest)}>
                     <Handshake className="ml-2 h-4 w-4" />
-                    تقديم عرض
+                    {isDirectRequest ? 'موافقة وتحديد السعر' : 'تقديم عرض'}
                 </Button>
             </div>
         </div>
