@@ -13,27 +13,39 @@ export default function CarrierBookingsPage() {
 
     const pendingBookingsQuery = useMemo(() => {
         if (!firestore || !user) return null;
+        // The orderBy was removed from here to avoid needing a composite index.
         return query(
             collection(firestore, 'bookings'),
             where('carrierId', '==', user.uid),
-            where('status', '==', 'Pending-Carrier-Confirmation'),
-            orderBy('createdAt', 'desc')
+            where('status', '==', 'Pending-Carrier-Confirmation')
         );
     }, [firestore, user]);
     
     const historicalBookingsQuery = useMemo(() => {
         if (!firestore || !user) return null;
+        // The orderBy was removed from here to avoid needing a composite index.
         return query(
             collection(firestore, 'bookings'),
             where('carrierId', '==', user.uid),
-            where('status', 'in', ['Confirmed', 'Cancelled', 'Completed']),
-            orderBy('createdAt', 'desc')
+            where('status', 'in', ['Confirmed', 'Cancelled', 'Completed'])
         );
     }, [firestore, user]);
 
-    const { data: pendingBookings, isLoading: isLoadingPending } = useCollection<Booking>(pendingBookingsQuery);
-    const { data: historicalBookings, isLoading: isLoadingHistory } = useCollection<Booking>(historicalBookingsQuery);
+    const { data: pendingBookingsData, isLoading: isLoadingPending } = useCollection<Booking>(pendingBookingsQuery);
+    const { data: historicalBookingsData, isLoading: isLoadingHistory } = useCollection<Booking>(historicalBookingsQuery);
     
+    // Perform client-side sorting
+    const pendingBookings = useMemo(() => {
+        if (!pendingBookingsData) return [];
+        return [...pendingBookingsData].sort((a, b) => new Date((b.createdAt as any)?.seconds * 1000).getTime() - new Date((a.createdAt as any)?.seconds * 1000).getTime());
+    }, [pendingBookingsData]);
+
+    const historicalBookings = useMemo(() => {
+        if (!historicalBookingsData) return [];
+        return [...historicalBookingsData].sort((a, b) => new Date((b.createdAt as any)?.seconds * 1000).getTime() - new Date((a.createdAt as any)?.seconds * 1000).getTime());
+    }, [historicalBookingsData]);
+
+
     const isLoading = isLoadingPending || isLoadingHistory;
 
     if (isLoading) {
