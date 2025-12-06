@@ -58,12 +58,9 @@ export default function CarrierLayout({
           className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-black/10 px-4 text-black shadow-lg md:px-6"
           style={{ backgroundColor: '#FEFFC2' }}
         >
-            {/* Desktop Left side */}
-            <div className="hidden md:flex items-center gap-2">
-                 <Button className="bg-primary/20 text-primary-foreground border border-primary/50 hover:bg-primary/30" size="sm" onClick={() => setIsAddTripDialogOpen(true)}>
-                    <PlusCircle className="ml-2 h-4 w-4" />
-                    تأسيس رحلة
-                </Button>
+            {/* Desktop Left side Placeholder */}
+            <div className="hidden md:flex items-center gap-2 w-24">
+                 {/* This space is intentionally left blank */}
             </div>
 
              {/* Mobile Left side */}
@@ -88,15 +85,8 @@ export default function CarrierLayout({
             </div>
 
             {/* Right side Actions */}
-            <div className="flex items-center gap-2">
-                <div className="hidden md:flex items-center gap-2">
-                    <Logo />
-                </div>
-                 {/* Mobile Button */}
-                 <Button className="flex sm:hidden bg-primary/20 text-primary-foreground border border-primary/50 hover:bg-primary/30" size="sm" onClick={() => setIsAddTripDialogOpen(true)}>
-                    <PlusCircle className="ml-2 h-4 w-4" />
-                    تأسيس رحلة
-                </Button>
+            <div className="flex items-center gap-2 w-24 justify-end">
+                {/* This space is intentionally left blank */}
             </div>
         </header>
         
