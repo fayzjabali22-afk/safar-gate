@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { Logo } from '../logo';
 import { LayoutDashboard, Search, Briefcase, Archive, Settings, User } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { SheetTitle } from '../ui/sheet';
 
 const menuLinks = [
     { href: '/carrier', label: 'لوحة القيادة', icon: LayoutDashboard, exact: true },
@@ -23,6 +24,7 @@ export function CarrierMobileMenu({ onLinkClick }: CarrierMobileMenuProps) {
 
     return (
         <div className="flex flex-col h-full">
+            <SheetTitle className="sr-only">Carrier Navigation Menu</SheetTitle>
             <div className="p-4 border-b">
                 <Logo />
             </div>
