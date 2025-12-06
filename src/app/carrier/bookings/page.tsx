@@ -9,33 +9,6 @@ import { collection, query, where, orderBy, doc } from 'firebase/firestore';
 
 
 // --- SIMULATION DATA ---
-const mockAllPendingBookings: Booking[] = [
-    {
-        id: 'booking_pending_1',
-        tripId: 'trip_123_live',
-        userId: 'traveler_A',
-        carrierId: 'carrier_user_id',
-        seats: 2, // SCENARIO: This booking is acceptable
-        passengersDetails: [{ name: 'Ahmad Saleh', type: 'adult' }, { name: 'Fatima Saleh', type: 'adult' }],
-        status: 'Pending-Carrier-Confirmation',
-        totalPrice: 160,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'booking_pending_2',
-        tripId: 'trip_123_live',
-        userId: 'traveler_B',
-        carrierId: 'carrier_user_id',
-        seats: 3, // SCENARIO: This booking should be filtered out and not appear at all
-        passengersDetails: [{ name: 'Khalid Jama', type: 'adult' }, { name: 'Aisha Jama', type: 'adult' }, { name: 'Omar Jama', type: 'child' }],
-        status: 'Pending-Carrier-Confirmation',
-        totalPrice: 240,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    }
-];
-
 const mockHistoricalBookings: Booking[] = [
     {
         id: 'booking_hist_1',
@@ -79,11 +52,7 @@ export default function CarrierBookingsPage() {
         );
     }, [firestore, user]);
 
-    const { data: realPendingBookings, isLoading } = useCollection<Booking>(pendingBookingsQuery);
-
-    // HYBRID LOGIC: Use real data if available, otherwise use mock data as a fallback.
-    const isUsingMockData = !isLoading && (!realPendingBookings || realPendingBookings.length === 0);
-    const pendingBookings = isUsingMockData ? mockAllPendingBookings : realPendingBookings;
+    const { data: pendingBookings, isLoading } = useCollection<Booking>(pendingBookingsQuery);
     
     // We'll keep historical bookings as mock for now to keep focus on the main flow
     const historicalBookings = mockHistoricalBookings;
