@@ -33,6 +33,8 @@
           "enum": ["traveler", "carrier", "admin"],
           "description": "The user's role in the system."
         },
+        "averageRating": { "type": "number", "description": "The carrier's average rating, from 0 to 5.", "minimum": 0, "maximum": 5 },
+        "totalRatings": { "type": "number", "description": "The total number of ratings a carrier has received." },
         "vehicleType": { "type": "string", "description": "The primary vehicle type used by the carrier (e.g., GMC Yukon 2023)." },
         "vehicleModel": { "type": "string", "description": "The model of the carrier's vehicle (e.g., Suburban)." },
         "vehicleYear": { "type": "string", "description": "The manufacturing year of the vehicle." },
@@ -403,11 +405,23 @@
         "tripId": { "type": "string", "description": "ID of the rated trip." },
         "carrierId": { "type": "string", "description": "ID of the rated carrier." },
         "userId": { "type": "string", "description": "ID of the user who gave the rating." },
-        "ratingValue": { "type": "number", "description": "The rating value, from 1 to 5.", "minimum": 1, "maximum": 5 },
+        "ratingValue": { "type": "number", "description": "The final weighted average rating value, from 1 to 5.", "minimum": 1, "maximum": 5 },
+        "details": {
+          "type": "object",
+          "description": "The detailed breakdown of the ratings for each criterion.",
+          "properties": {
+            "drivingProfessionalism": { "type": "number", "minimum": 1, "maximum": 5 },
+            "specificationCredibility": { "type": "number", "minimum": 1, "maximum": 5 },
+            "driverCourtesy": { "type": "number", "minimum": 1, "maximum": 5 },
+            "vehicleQuality": { "type": "number", "minimum": 1, "maximum": 5 },
+            "vehicleCleanliness": { "type": "number", "minimum": 1, "maximum": 5 }
+          },
+          "required": ["drivingProfessionalism", "specificationCredibility", "driverCourtesy", "vehicleQuality", "vehicleCleanliness"]
+        },
         "comment": { "type": "string", "description": "Optional comment from the user." },
         "createdAt": { "type": "string", "format": "date-time", "description": "The timestamp when the rating was created." }
       },
-      "required": ["id", "tripId", "carrierId", "userId", "ratingValue", "createdAt"]
+      "required": ["id", "tripId", "carrierId", "userId", "ratingValue", "details", "createdAt"]
     },
     "Chat": {
       "title": "Chat",
@@ -566,5 +580,3 @@
     ]
   }
 }
-
-    

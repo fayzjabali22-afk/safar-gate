@@ -9,12 +9,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import type { Trip } from '@/lib/data';
+import type { Trip, UserProfile } from '@/lib/data';
 import { Loader2, Send, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
-import { useFirestore, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { useFirestore, addDocumentNonBlocking, updateDocumentNonBlocking, useUser } from '@/firebase';
+import { collection, doc, serverTimestamp, runTransaction } from 'firebase/firestore';
 
 
 interface RateTripDialogProps {
@@ -25,22 +25,31 @@ interface RateTripDialogProps {
 }
 
 const ratingSchema = z.object({
-  vehicleQuality: z.number().min(1, 'التقييم مطلوب').max(5),
-  vehicleCleanliness: z.number().min(1, 'التقييم مطلوب').max(5),
-  driverCourtesy: z.number().min(1, 'التقييم مطلوب').max(5),
   drivingProfessionalism: z.number().min(1, 'التقييم مطلوب').max(5),
   specificationCredibility: z.number().min(1, 'التقييم مطلوب').max(5),
+  driverCourtesy: z.number().min(1, 'التقييم مطلوب').max(5),
+  vehicleQuality: z.number().min(1, 'التقييم مطلوب').max(5),
+  vehicleCleanliness: z.number().min(1, 'التقييم مطلوب').max(5),
   comment: z.string().optional(),
 });
 
 type RatingFormValues = z.infer<typeof ratingSchema>;
 
-const ratingCriteria: { key: keyof RatingFormValues; label: string }[] = [
-    { key: 'vehicleQuality', label: 'جودة المركبة' },
-    { key: 'vehicleCleanliness', label: 'نظافة المركبة' },
-    { key: 'driverCourtesy', label: 'تهذيب ومساعدة السائق' },
-    { key: 'drivingProfessionalism', label: 'القيادة الآمنة والمهنية' },
-    { key: 'specificationCredibility', label: 'مصداقية مواصفات المركبة' },
+// THE WEIGHTS for the final average calculation
+const RATING_WEIGHTS = {
+    drivingProfessionalism: 0.30,   // 30%
+    specificationCredibility: 0.25, // 25%
+    driverCourtesy: 0.20,           // 20%
+    vehicleQuality: 0.15,           // 15%
+    vehicleCleanliness: 0.10,       // 10%
+};
+
+const ratingCriteria: { key: keyof RatingFormValues; label: string; weight: number }[] = [
+    { key: 'drivingProfessionalism', label: 'القيادة الآمنة والمهنية', weight: RATING_WEIGHTS.drivingProfessionalism },
+    { key: 'specificationCredibility', label: 'مصداقية مواصفات المركبة', weight: RATING_WEIGHTS.specificationCredibility },
+    { key: 'driverCourtesy', label: 'تهذيب ومساعدة السائق', weight: RATING_WEIGHTS.driverCourtesy },
+    { key: 'vehicleQuality', label: 'جودة المركبة', weight: RATING_WEIGHTS.vehicleQuality },
+    { key: 'vehicleCleanliness', label: 'نظافة المركبة', weight: RATING_WEIGHTS.vehicleCleanliness },
 ]
 
 // Star rating component to be used inside the form
@@ -67,16 +76,17 @@ const StarRating = ({ value, onChange }: { value: number; onChange: (value: numb
 export function RateTripDialog({ isOpen, onOpenChange, trip, onConfirm }: RateTripDialogProps) {
   const { toast } = useToast();
   const firestore = useFirestore();
+  const { user } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<RatingFormValues>({
     resolver: zodResolver(ratingSchema),
     defaultValues: {
-      vehicleQuality: 0,
-      vehicleCleanliness: 0,
-      driverCourtesy: 0,
       drivingProfessionalism: 0,
       specificationCredibility: 0,
+      driverCourtesy: 0,
+      vehicleQuality: 0,
+      vehicleCleanliness: 0,
       comment: '',
     },
   });
@@ -88,40 +98,77 @@ export function RateTripDialog({ isOpen, onOpenChange, trip, onConfirm }: RateTr
   }, [isOpen, form]);
 
   const onSubmit = async (data: RatingFormValues) => {
-    if (!firestore || !trip) return;
+    if (!firestore || !trip || !user) return;
     setIsSubmitting(true);
     
-    // SIMULATION of backend logic
-    setTimeout(() => {
-        const ratingsArray = [
-            data.vehicleQuality, 
-            data.vehicleCleanliness, 
-            data.driverCourtesy, 
-            data.drivingProfessionalism, 
-            data.specificationCredibility
-        ];
-        const averageRating = ratingsArray.reduce((acc, curr) => acc + curr, 0) / ratingsArray.length;
-        
-        console.log("SIMULATING RATING SUBMISSION", {
-            tripId: trip.id,
-            carrierId: trip.carrierId,
-            ratingValue: averageRating,
-            details: data,
-            comment: data.comment,
+    // Calculate the weighted average rating
+    const weightedAverage = 
+        (data.drivingProfessionalism * RATING_WEIGHTS.drivingProfessionalism) +
+        (data.specificationCredibility * RATING_WEIGHTS.specificationCredibility) +
+        (data.driverCourtesy * RATING_WEIGHTS.driverCourtesy) +
+        (data.vehicleQuality * RATING_WEIGHTS.vehicleQuality) +
+        (data.vehicleCleanliness * RATING_WEIGHTS.vehicleCleanliness);
+
+    try {
+        await runTransaction(firestore, async (transaction) => {
+            const ratingRef = doc(collection(firestore, 'ratings'));
+            const tripRef = doc(firestore, 'trips', trip.id);
+            const carrierRef = doc(firestore, 'users', trip.carrierId!);
+
+            // 1. Create the detailed rating document
+            const ratingData = {
+                id: ratingRef.id,
+                tripId: trip.id,
+                carrierId: trip.carrierId,
+                userId: user.uid,
+                ratingValue: weightedAverage, // Store the final weighted average
+                details: data, // Store the detailed criteria ratings
+                comment: data.comment,
+                createdAt: serverTimestamp(),
+            };
+            transaction.set(ratingRef, ratingData);
+
+            // 2. Update the trip status to 'Completed'
+            transaction.update(tripRef, { status: 'Completed' });
+
+            // 3. Update the carrier's average rating
+            const carrierDoc = await transaction.get(carrierRef);
+            if (!carrierDoc.exists()) {
+                // In a real scenario, you might want to create the carrier profile
+                // but here we just throw an error.
+                throw new Error("Carrier profile does not exist!");
+            }
+            const carrierData = carrierDoc.data() as UserProfile;
+            const oldAverage = carrierData.averageRating || 0;
+            const oldTotalRatings = carrierData.totalRatings || 0;
+            
+            // Incremental Average Formula: NewAvg = ((OldAvg * N) + NewRating) / (N + 1)
+            const newAverage = ((oldAverage * oldTotalRatings) + weightedAverage) / (oldTotalRatings + 1);
+
+            transaction.update(carrierRef, {
+                averageRating: newAverage,
+                totalRatings: (oldTotalRatings + 1)
+            });
         });
         
-        console.log("SIMULATING TRIP STATUS UPDATE to Completed for trip:", trip.id);
-
         toast({
-            title: 'محاكاة: تم إغلاق الرحلة بنجاح!',
+            title: 'تم إغلاق الرحلة بنجاح!',
             description: `شكراً لتقييمك. تم أرشفة الرحلة.`,
         });
-        
-        setIsSubmitting(false);
+
         onOpenChange(false);
         onConfirm();
 
-    }, 1500);
+    } catch (error) {
+        console.error("Rating and closure failed:", error);
+        toast({
+            variant: "destructive",
+            title: "فشل إرسال التقييم",
+            description: "حدث خطأ غير متوقع. الرجاء المحاولة مرة أخرى."
+        });
+    } finally {
+        setIsSubmitting(false);
+    }
   };
   
   return (
@@ -144,7 +191,9 @@ export function RateTripDialog({ isOpen, onOpenChange, trip, onConfirm }: RateTr
                         name={criterion.key as any}
                         render={({ field }) => (
                             <FormItem className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border p-3">
-                                <FormLabel className="text-sm font-semibold">{criterion.label}</FormLabel>
+                                <FormLabel className="text-sm font-semibold mb-2 sm:mb-0">
+                                    {criterion.label} <span className="text-muted-foreground text-xs">({criterion.weight * 100}%)</span>
+                                </FormLabel>
                                 <FormControl>
                                     <StarRating value={field.value as number} onChange={field.onChange} />
                                 </FormControl>

@@ -10,6 +10,8 @@ export type UserProfile = {
   role?: 'traveler' | 'carrier' | 'admin';
   // Carrier-specific fields are now part of the main user profile
   // for simplicity in a single-document model.
+  averageRating?: number; // The overall calculated average rating
+  totalRatings?: number; // The count of total ratings received
   vehicleType?: string;
   vehicleModel?: string;
   vehicleYear?: string;
@@ -136,13 +138,13 @@ export type Rating = {
     tripId: string;
     carrierId: string;
     userId: string;
-    ratingValue: number;
+    ratingValue: number; // The final weighted average
     details: {
-        vehicleQuality: number;
-        vehicleCleanliness: number;
-        driverCourtesy: number;
         drivingProfessionalism: number;
         specificationCredibility: number;
+        driverCourtesy: number;
+        vehicleQuality: number;
+        vehicleCleanliness: number;
     };
     comment?: string;
     createdAt: string;
