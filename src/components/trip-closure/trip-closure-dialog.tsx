@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -20,6 +21,10 @@ interface TripClosureDialogProps {
   trip: Trip | null;
 }
 
+// NOTE: This component is now DEPRECATED as of the new carrier-centric flow.
+// It will be removed in a future phase. For now, it remains to avoid breaking imports.
+// The new logic is handled by the carrier in `TripCompletionDialog`.
+
 export function TripClosureDialog({ isOpen, onOpenChange, onRate, onReport, trip }: TripClosureDialogProps) {
   if (!trip) return null;
 
@@ -29,46 +34,19 @@ export function TripClosureDialog({ isOpen, onOpenChange, onRate, onReport, trip
         <DialogHeader>
           <DialogTitle>إجراءات إنهاء الرحلة</DialogTitle>
           <DialogDescription>
-            لقد اكتملت رحلتك من {trip.origin} إلى {trip.destination}. ما هو الإجراء الذي تود اتخاذه؟
+            هذه النافذة قيد الإيقاف. سيتم إدارة إغلاق الرحلة من طرف الناقل قريباً.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-4 py-4">
-          <Button size="lg" onClick={onRate} className="h-auto py-3">
-            <div className="flex flex-col items-start w-full">
-              <div className="flex items-center gap-2">
-                <Star className="h-5 w-5" />
-                <span className="font-bold text-base">تقييم وإغلاق الرحلة</span>
-              </div>
-              <p className="text-xs text-right opacity-80 whitespace-normal">
-                شاركنا رأيك في التجربة وأغلق الرحلة نهائياً.
-              </p>
-            </div>
-          </Button>
-
-          <Button size="lg" variant="secondary" onClick={() => onOpenChange(false)} className="h-auto py-3">
-             <div className="flex flex-col items-start w-full">
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                <span className="font-bold text-base">ليس الآن</span>
-              </div>
-               <p className="text-xs text-right opacity-80 whitespace-normal">
-                سيقوم النظام بتذكيرك لاحقاً لإغلاق الرحلة.
-              </p>
-            </div>
-          </Button>
-
-           <Button size="lg" variant="outline" onClick={onReport} className="h-auto py-3">
-             <div className="flex flex-col items-start w-full">
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-destructive" />
-                <span className="font-bold text-base">الإبلاغ عن مشكلة</span>
-              </div>
-               <p className="text-xs text-right opacity-80 whitespace-normal">
-                واجهت مشكلة أثناء الرحلة؟ أبلغنا بذلك.
-              </p>
-            </div>
-          </Button>
+           <p className="text-center text-muted-foreground text-sm p-4 border border-dashed rounded-md">
+              المنطق الجديد يعطي الصلاحية للناقل لإنهاء الرحلة.
+           </p>
         </div>
+         <DialogFooter>
+            <Button variant="secondary" onClick={() => onOpenChange(false)}>
+                إغلاق
+            </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

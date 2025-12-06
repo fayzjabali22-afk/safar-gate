@@ -17,7 +17,6 @@ import { format, addHours, isPast, isFuture } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 import { doc, writeBatch, serverTimestamp, collection, query, where, runTransaction, limit, increment } from 'firebase/firestore';
 import { OfferDecisionRoom } from '@/components/offer-decision-room';
-import { TripClosureDialog } from '@/components/trip-closure/trip-closure-dialog';
 import { RateTripDialog } from '@/components/trip-closure/rate-trip-dialog';
 import { CancellationDialog } from '@/components/booking/cancellation-dialog';
 import { ChatDialog } from '@/components/chat/chat-dialog';
@@ -109,7 +108,6 @@ export default function HistoryPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   
   // State for closure/rating flow
-  const [isClosureDialogOpen, setIsClosureDialogOpen] = useState(false);
   const [isRatingDialogOpen, setIsRatingDialogOpen] = useState(false);
   const [selectedTripForClosure, setSelectedTripForClosure] = useState<Trip | null>(null);
 
@@ -209,20 +207,10 @@ export default function HistoryPage() {
     }
   };
   
-    const handleOpenClosureDialog = (trip: Trip) => {
+    const handleOpenRatingDialog = (trip: Trip) => {
         setSelectedTripForClosure(trip);
-        setIsClosureDialogOpen(true);
-    };
-
-    const handleOpenRatingDialog = () => {
-        setIsClosureDialogOpen(false);
         setIsRatingDialogOpen(true);
     };
-    
-    const handleReportProblem = () => {
-        toast({ title: "قيد التطوير", description: "سيتم تفعيل ميزة الإبلاغ عن المشاكل قريباً."});
-        setIsClosureDialogOpen(false);
-    }
 
     const handleOpenCancellationDialog = (trip: Trip, booking: Booking) => {
         setItemToCancel({ trip, booking });
@@ -336,7 +324,7 @@ export default function HistoryPage() {
   const renderContent = () => {
     // Priority 1: Show the confirmed ticket ("the masterpiece") exclusively if it exists.
     if (confirmedBooking && confirmedTrip) {
-        return <HeroTicket key={confirmedBooking.id} trip={confirmedTrip} booking={confirmedBooking} onClosureAction={handleOpenClosureDialog} onCancelBooking={handleOpenCancellationDialog} onMessageCarrier={handleOpenChatDialog} />;
+        return <HeroTicket key={confirmedBooking.id} trip={confirmedTrip} booking={confirmedBooking} onRateTrip={handleOpenRatingDialog} onCancelBooking={handleOpenCancellationDialog} onMessageCarrier={handleOpenChatDialog} />;
     }
     
     // Priority 2: Show the offer decision room if a request has been clicked.
@@ -401,13 +389,6 @@ export default function HistoryPage() {
         </Card>
         {isLoading ? renderLoading() : renderContent()}
       </div>
-       <TripClosureDialog
-            isOpen={isClosureDialogOpen}
-            onOpenChange={setIsClosureDialogOpen}
-            trip={selectedTripForClosure}
-            onRate={handleOpenRatingDialog}
-            onReport={handleReportProblem}
-        />
         <RateTripDialog
             isOpen={isRatingDialogOpen}
             onOpenChange={setIsRatingDialogOpen}
@@ -460,7 +441,7 @@ function PendingPaymentWrapper({ booking, onClick }: { booking: Booking, onClick
 }
 
 
-const HeroTicket = ({ trip, booking, onClosureAction, onCancelBooking, onMessageCarrier }: { trip: Trip, booking: Booking, onClosureAction: (trip: Trip) => void, onCancelBooking: (trip: Trip, booking: Booking) => void, onMessageCarrier: (trip: Trip) => void }) => {
+const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarrier }: { trip: Trip, booking: Booking, onRateTrip: (trip: Trip) => void, onCancelBooking: (trip: Trip, booking: Booking) => void, onMessageCarrier: (trip: Trip) => void }) => {
     const firestore = useFirestore();
     const carrierProfileRef = useMemo(() => {
         if (!firestore || !trip.carrierId) return null;
@@ -471,12 +452,8 @@ const HeroTicket = ({ trip, booking, onClosureAction, onCancelBooking, onMessage
     const depositAmount = (booking.totalPrice * ((trip.depositPercentage || 20) / 100));
     const remainingAmount = booking.totalPrice - depositAmount;
 
-    const isClosureReady = useMemo(() => {
-        if (!trip.departureDate || !trip.durationHours) return false;
-        const departure = new Date(trip.departureDate);
-        const closureTime = addHours(departure, trip.durationHours + 4);
-        return isPast(closureTime);
-    }, [trip.departureDate, trip.durationHours]);
+    // This logic is now managed by the carrier. The button will appear based on trip status.
+    const isTripCompleted = trip.status === 'Completed';
 
     const canCancel = useMemo(() => {
         if (!trip.departureDate) return false;
@@ -570,10 +547,10 @@ const HeroTicket = ({ trip, booking, onClosureAction, onCancelBooking, onMessage
                     دردشة الرحلة الجماعية
                 </Button>
 
-                {isClosureReady && onClosureAction && (
-                    <Button variant="default" onClick={() => onClosureAction(trip)} className="sm:col-span-2">
+                {isTripCompleted && onRateTrip && (
+                    <Button variant="default" onClick={() => onRateTrip(trip)} className="sm:col-span-2">
                         <Flag className="ml-2 h-4 w-4" />
-                        إجراءات إغلاق الرحلة
+                        تقييم وإغلاق الرحلة
                     </Button>
                 )}
                  {canCancel && onCancelBooking && (

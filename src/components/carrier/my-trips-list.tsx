@@ -1,10 +1,11 @@
+
 'use client';
 import { useState, useMemo, useEffect, Fragment } from 'react';
 import { useFirestore, useCollection, useUser, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, orderBy, doc, writeBatch } from 'firebase/firestore';
 import { Trip, Chat, Booking } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CalendarX, ArrowRight, Calendar, Users, CircleDollarSign, CheckCircle, Clock, XCircle, MoreVertical, Pencil, Ban, Ship, List, AlertTriangle, UsersRound, PlayCircle, StopCircle, MessageSquare } from 'lucide-react';
+import { CalendarX, ArrowRight, Calendar, Users, CircleDollarSign, CheckCircle, Clock, XCircle, MoreVertical, Pencil, Ban, Ship, List, AlertTriangle, UsersRound, PlayCircle, StopCircle, MessageSquare, Flag } from 'lucide-react';
 import { Badge } from '../ui/badge';
 import { cn } from '@/lib/utils';
 import {
@@ -31,6 +32,7 @@ import {
 import Link from 'next/link';
 import { BookingActionCard } from './booking-action-card';
 import { Separator } from '../ui/separator';
+import { TripCompletionDialog } from './trip-completion-dialog';
 
 
 const cities: { [key: string]: string } = {
@@ -57,7 +59,7 @@ const statusMap: Record<string, { text: string; icon: React.ElementType; classNa
   'Cancelled': { text: 'ملغاة', icon: XCircle, className: 'bg-red-100 text-red-800' },
 };
 
-function TripListItem({ trip, pendingBookings, onEdit, onManagePassengers, onInitiateTransfer, onUpdateStatus, unreadCount }: { trip: Trip, pendingBookings?: Booking[], onEdit: (trip: Trip) => void, onManagePassengers: (trip: Trip) => void, onInitiateTransfer: (trip: Trip) => void, onUpdateStatus: (trip: Trip, newStatus: Trip['status']) => void, unreadCount: number }) {
+function TripListItem({ trip, pendingBookings, onEdit, onManagePassengers, onInitiateTransfer, onUpdateStatus, unreadCount, onCompleteTrip }: { trip: Trip, pendingBookings?: Booking[], onEdit: (trip: Trip) => void, onManagePassengers: (trip: Trip) => void, onInitiateTransfer: (trip: Trip) => void, onUpdateStatus: (trip: Trip, newStatus: Trip['status']) => void, unreadCount: number, onCompleteTrip: (trip: Trip) => void }) {
     const statusInfo = statusMap[trip.status] || { text: trip.status, icon: CircleDollarSign, className: 'bg-gray-100 text-gray-800' };
     const [formattedDate, setFormattedDate] = useState('');
 
@@ -117,9 +119,9 @@ function TripListItem({ trip, pendingBookings, onEdit, onManagePassengers, onIni
                                 <PlayCircle className="ml-2 h-4 w-4 text-green-500" />
                                 <span>بدء الرحلة</span>
                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => onUpdateStatus(trip, 'Completed')} disabled={!isInTransit}>
-                                <StopCircle className="ml-2 h-4 w-4 text-blue-500" />
-                                <span>إنهاء الرحلة (نقل للأرشيف)</span>
+                            <DropdownMenuItem onClick={() => onCompleteTrip(trip)} disabled={!isInTransit} className="font-bold text-primary">
+                                <Flag className="ml-2 h-4 w-4" />
+                                <span>الوصول وإنهاء الرحلة</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => onEdit(trip)} disabled={!isPlanned}>
@@ -181,6 +183,9 @@ export function MyTripsList({ trips, pendingBookingsMap }: MyTripsListProps) {
     const [tripToUpdate, setTripToUpdate] = useState<{trip: Trip, newStatus: Trip['status']} | null>(null);
     const { toast } = useToast();
 
+    const [isCompletionDialogOpen, setIsCompletionDialogOpen] = useState(false);
+    const [selectedTripForCompletion, setSelectedTripForCompletion] = useState<Trip | null>(null);
+
     const chatIds = useMemo(() => trips?.map(t => t.id) || [], [trips]);
     const chatsQuery = useMemo(() => {
         if (!firestore || chatIds.length === 0) return null;
@@ -238,6 +243,11 @@ export function MyTripsList({ trips, pendingBookingsMap }: MyTripsListProps) {
             confirmUpdateStatus();
         }
     };
+    
+    const handleCompleteTrip = (trip: Trip) => {
+        setSelectedTripForCompletion(trip);
+        setIsCompletionDialogOpen(true);
+    };
 
     const confirmUpdateStatus = async () => {
         const trip = tripToUpdate?.trip;
@@ -289,6 +299,7 @@ export function MyTripsList({ trips, pendingBookingsMap }: MyTripsListProps) {
                         onManagePassengers={handleManagePassengersClick}
                         onUpdateStatus={handleUpdateStatus}
                         unreadCount={unreadCounts[trip.id] || 0}
+                        onCompleteTrip={handleCompleteTrip}
                     />
                 ))}
             </div>
@@ -301,6 +312,11 @@ export function MyTripsList({ trips, pendingBookingsMap }: MyTripsListProps) {
                 isOpen={isPassengersDialogOpen}
                 onOpenChange={setIsPassengersDialogOpen}
                 trip={selectedTrip}
+            />
+            <TripCompletionDialog
+                isOpen={isCompletionDialogOpen}
+                onOpenChange={setIsCompletionDialogOpen}
+                trip={selectedTripForCompletion}
             />
              <AlertDialog open={isCancelConfirmOpen} onOpenChange={setIsCancelConfirmOpen}>
                 <AlertDialogContent dir="rtl">
