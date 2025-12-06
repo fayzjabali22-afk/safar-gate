@@ -235,7 +235,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="flex min-h-screen w-full flex-col bg-background" dir="rtl">
         <header className={cn(
           "sticky top-0 z-50 flex h-16 items-center justify-between px-4 md:px-6",
-          "bg-primary text-primary-foreground border-b border-primary/50 shadow-md"
+          "bg-primary text-primary-foreground border-b border-foreground/80 shadow-lg"
         )}>
 
           {/* Left-side icons on mobile */}
