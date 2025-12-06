@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -244,13 +245,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
           {/* Left-side icons on mobile */}
           <div className="flex items-center gap-2 md:hidden">
-            {isMounted && (
-              <Button asChild variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-black/20 text-black">
-                <Link href="/profile" aria-label="الملف الشخصي">
-                  <User className="h-5 w-5" />
-                </Link>
-              </Button>
-            )}
+            {/* The profile icon was here. It has been removed. */}
           </div>
           
           {/* Hamburger Menu (Mobile, Traveler only) - FIXED HYDRATION ERROR */}
