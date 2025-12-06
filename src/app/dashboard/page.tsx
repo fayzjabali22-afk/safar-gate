@@ -333,7 +333,7 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-0 md:p-4 rounded-lg">
+      <div className="p-0 md:p-4">
         {isDevUser && (
           <Card className="mb-4 border-accent">
             <CardHeader>
@@ -349,7 +349,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         )}
-        <div className="flex flex-col lg:flex-row gap-8 p-2 lg:p-4">
+        <div className="flex flex-col lg:flex-row gap-8 p-0 md:p-2 lg:p-4">
 
           <div className="flex-1 min-w-0">
             <header className="mb-8 text-center lg:text-right">
@@ -587,5 +587,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
-    

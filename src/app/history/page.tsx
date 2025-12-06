@@ -306,7 +306,7 @@ export default function HistoryPage() {
 
   return (
     <AppLayout>
-      <div className="bg-background/80 p-2 md:p-8 rounded-lg space-y-8">
+      <div className="p-0 md:p-8 space-y-8">
         <Card className="bg-card">
            <CardHeader>
               <CardTitle>غرفة عمليات الحجز</CardTitle>
@@ -480,5 +480,3 @@ const HeroTicket = ({ trip, booking, onClosureAction, onCancelBooking, onMessage
         </Card>
     )
 };
-
-    

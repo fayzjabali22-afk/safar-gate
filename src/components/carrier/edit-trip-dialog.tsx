@@ -69,14 +69,8 @@ export function EditTripDialog({ isOpen, onOpenChange, trip }: EditTripDialogPro
   }, [trip, isOpen, form]);
 
   const onSubmit = async (data: EditTripFormValues) => {
-    setIsSubmitting(true);
-    // Simulate API call for mock data
-    setTimeout(() => {
-        toast({ title: 'محاكاة: تم تحديث الرحلة بنجاح!' });
-        console.log("Updated Trip Data (Simulated):", { tripId: trip?.id, ...data });
-        setIsSubmitting(false);
-        onOpenChange(false);
-    }, 1000);
+    // This is a placeholder for actual functionality
+    toast({ title: 'قيد التطوير', description: 'لم يتم ربط هذه الواجهة بعد.' });
   };
   
   return (

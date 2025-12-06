@@ -238,7 +238,7 @@ export default function ProfilePage() {
   return (
     <>
       <AppLayout>
-        <div className="max-w-4xl mx-auto space-y-8 p-4">
+        <div className="max-w-4xl mx-auto space-y-8 p-0 md:p-4">
 
           {user && !user.emailVerified && !isDevUser && (
             <Card className="border-yellow-500 shadow-lg">
@@ -376,5 +376,3 @@ export default function ProfilePage() {
     </>
   );
 }
-
-    

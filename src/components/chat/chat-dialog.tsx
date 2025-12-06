@@ -16,10 +16,12 @@ import { useUser, useFirestore, useCollection, addDocumentNonBlocking, updateDoc
 import { collection, query, orderBy, serverTimestamp, doc, setDoc } from 'firebase/firestore';
 import type { Message, Trip } from '@/lib/data';
 import { MessageList } from './message-list';
-import { Loader2, Send, Sparkles, Power } from 'lucide-react';
+import { Loader2, Send, Sparkles, PowerOff, AlertTriangle } from 'lucide-react';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { suggestChatReply, SuggestChatReplyInput } from '@/ai/flows/suggest-chat-reply-flow';
 import { useToast } from '@/hooks/use-toast';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+
 
 interface ChatDialogProps {
   isOpen: boolean;
@@ -37,6 +39,7 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
   
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [suggestedReplies, setSuggestedReplies] = useState<string[]>([]);
+  const [isClosingChat, setIsClosingChat] = useState(false);
 
   // The chat ID is now the trip ID for group chats.
   const chatId = trip?.id;
@@ -117,6 +120,7 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
 
   const handleCloseChat = async () => {
     if (!firestore || !chatId) return;
+    setIsClosingChat(true);
     const chatDocRef = doc(firestore, 'chats', chatId);
     try {
       await updateDocumentNonBlocking(chatDocRef, { isClosed: true });
@@ -124,6 +128,8 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
       onOpenChange(false);
     } catch (error) {
       toast({ variant: 'destructive', title: "فشل إغلاق الدردشة" });
+    } finally {
+      setIsClosingChat(false);
     }
   }
   
@@ -160,9 +166,27 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
                   <Button variant="outline" size="icon" onClick={handleSuggestReply} disabled={isSuggesting || isLoading}>
                       {isSuggesting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   </Button>
-                  <Button variant="destructive" size="icon" onClick={handleCloseChat}>
-                      <Power className="h-4 w-4" />
-                  </Button>
+                   <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="icon">
+                            <PowerOff className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="flex items-center gap-2"><AlertTriangle/>تأكيد إغلاق الدردشة</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            هل أنت متأكد من رغبتك في إغلاق هذه الدردشة بشكل نهائي؟ لن يتمكن أي من المشاركين من إرسال رسائل جديدة بعد هذا الإجراء.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>تراجع</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleCloseChat} disabled={isClosingChat}>
+                             {isClosingChat ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : 'نعم، قم بالإغلاق'}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                  </AlertDialog>
                 </>
               )}
                 <Input
@@ -184,5 +208,3 @@ export function ChatDialog({ isOpen, onOpenChange, trip }: ChatDialogProps) {
     </Dialog>
   );
 }
-
-    
