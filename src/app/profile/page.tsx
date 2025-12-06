@@ -255,7 +255,7 @@ export default function ProfilePage() {
           )}
           
           {isDevUser && (
-            <Card className="border-accent shadow-lg">
+             <Card className="border-accent shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-accent"><TestTube2 /> منطقة المطور (Dev Zone)</CardTitle>
                 <CardDescription>أنت تستخدم حساب المطور. يمكنك تبديل دورك لأغراض الاختبار. الدور الحالي: <span className="font-bold text-foreground">{profile?.role || '...'}</span></CardDescription>
