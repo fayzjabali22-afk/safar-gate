@@ -58,16 +58,36 @@ export default function CarrierLayout({
           className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-black/10 px-4 text-black shadow-lg md:px-6"
           style={{ backgroundColor: '#FEFFC2' }}
         >
-            {/* Desktop Left side Placeholder */}
-            <div className="hidden md:flex items-center gap-2 w-24">
-                 {/* This space is intentionally left blank */}
+            {/* Desktop Left side Placeholder - now contains profile icon */}
+            <div className="hidden md:flex items-center gap-2 w-24 justify-end">
+                <Button asChild variant="ghost" size="icon" className="hover:bg-black/10">
+                  <Link href="/profile">
+                    <User className="h-6 w-6" />
+                    <span className="sr-only">الملف الشخصي</span>
+                  </Link>
+                </Button>
             </div>
 
              {/* Mobile Left side */}
              <div className="flex items-center gap-2 md:hidden">
+                 <Button asChild variant="ghost" size="icon" className="hover:bg-black/10">
+                  <Link href="/profile">
+                    <User className="h-6 w-6" />
+                    <span className="sr-only">الملف الشخصي</span>
+                  </Link>
+                </Button>
+            </div>
+            
+            {/* Centered Logo */}
+             <div className="absolute left-1/2 -translate-x-1/2">
+               <Logo />
+            </div>
+
+            {/* Right side Actions */}
+            <div className="flex items-center gap-2 w-24 justify-start">
                  <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className="hover:bg-black/10">
+                        <Button variant="ghost" size="icon" className="hover:bg-black/10 md:hidden">
                             <Menu className="h-6 w-6" />
                             <span className="sr-only">فتح القائمة</span>
                         </Button>
@@ -77,16 +97,6 @@ export default function CarrierLayout({
                        <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} />
                     </SheetContent>
                 </Sheet>
-            </div>
-            
-            {/* Centered Logo */}
-             <div className="absolute left-1/2 -translate-x-1/2">
-               <Logo />
-            </div>
-
-            {/* Right side Actions */}
-            <div className="flex items-center gap-2 w-24 justify-end">
-                {/* This space is intentionally left blank */}
             </div>
         </header>
         
