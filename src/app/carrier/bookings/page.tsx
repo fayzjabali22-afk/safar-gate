@@ -7,37 +7,6 @@ import { BookingActionCard } from '@/components/carrier/booking-action-card';
 import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, where, orderBy, doc } from 'firebase/firestore';
 
-
-// --- SIMULATION DATA ---
-const mockHistoricalBookings: Booking[] = [
-    {
-        id: 'booking_hist_1',
-        tripId: 'trip_456_past',
-        userId: 'traveler_C',
-        carrierId: 'carrier_user_id',
-        seats: 1,
-        passengersDetails: [{ name: 'Sara Fouad', type: 'adult' }],
-        status: 'Confirmed',
-        totalPrice: 70,
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-        id: 'booking_hist_2',
-        tripId: 'trip_789_past',
-        userId: 'traveler_D',
-        carrierId: 'carrier_user_id',
-        seats: 2,
-        passengersDetails: [{ name: 'Mona Ali', type: 'adult' }, { name: 'Hassan Ali', type: 'adult' }],
-        status: 'Cancelled',
-        totalPrice: 180,
-        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
-    }
-];
-// --- END SIMULATION DATA ---
-
-
 export default function CarrierBookingsPage() {
     const { user } = useUser();
     const firestore = useFirestore();
@@ -51,11 +20,21 @@ export default function CarrierBookingsPage() {
             orderBy('createdAt', 'desc')
         );
     }, [firestore, user]);
-
-    const { data: pendingBookings, isLoading } = useCollection<Booking>(pendingBookingsQuery);
     
-    // We'll keep historical bookings as mock for now to keep focus on the main flow
-    const historicalBookings = mockHistoricalBookings;
+    const historicalBookingsQuery = useMemo(() => {
+        if (!firestore || !user) return null;
+        return query(
+            collection(firestore, 'bookings'),
+            where('carrierId', '==', user.uid),
+            where('status', 'in', ['Confirmed', 'Cancelled', 'Completed']),
+            orderBy('createdAt', 'desc')
+        );
+    }, [firestore, user]);
+
+    const { data: pendingBookings, isLoading: isLoadingPending } = useCollection<Booking>(pendingBookingsQuery);
+    const { data: historicalBookings, isLoading: isLoadingHistory } = useCollection<Booking>(historicalBookingsQuery);
+    
+    const isLoading = isLoadingPending || isLoadingHistory;
 
     if (isLoading) {
         return (
@@ -106,7 +85,7 @@ export default function CarrierBookingsPage() {
                     <History className="h-5 w-5 text-muted-foreground" />
                     سجل الحجوزات السابق
                 </h2>
-                {historicalBookings.length > 0 ? (
+                {historicalBookings && historicalBookings.length > 0 ? (
                      <div className="space-y-4">
                         {historicalBookings.map(booking => (
                             <BookingActionCard 

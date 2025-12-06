@@ -8,53 +8,6 @@ import { useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { DirectRequestActionCard } from '@/components/carrier/direct-request-action-card';
 
-// --- STRATEGIC FALLBACK DATA ---
-const mockDirectRequests: Trip[] = [
-    {
-        id: 'mock_req_3',
-        userId: 'traveler_mock_3',
-        origin: 'cairo',
-        destination: 'jeddah',
-        departureDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-        passengers: 4,
-        passengersDetails: [
-            { name: 'علي حسن', type: 'adult'},
-            { name: 'فاطمة علي', type: 'adult'},
-            { name: 'سارة علي', type: 'child'},
-            { name: 'يوسف علي', type: 'child'},
-        ],
-        status: 'Awaiting-Offers',
-        requestType: 'Direct',
-        targetCarrierId: 'carrier_user_id', // Assuming this is the current carrier's ID
-        isShared: false,
-        targetPrice: 400,
-        currency: 'SAR',
-        notes: 'عائلة ترغب برحلة خاصة ومريحة.',
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-        id: 'mock_req_4',
-        userId: 'traveler_mock_4',
-        origin: 'amman',
-        destination: 'riyadh',
-        departureDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
-        passengers: 2,
-        passengersDetails: [
-            { name: 'سعيد محمد', type: 'adult'},
-            { name: 'هالة سعيد', type: 'adult'},
-        ],
-        status: 'Pending-Carrier-Confirmation',
-        requestType: 'Direct', // This is a request that was accepted by traveler and awaits final confirmation
-        targetCarrierId: 'carrier_user_id', 
-        price: 180,
-        currency: 'JOD',
-        isShared: true,
-        notes: 'قبل المسافر عرضك، بانتظار موافقتك النهائية.',
-        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    },
-];
-// --- END STRATEGIC FALLBACK DATA ---
-
 function LoadingState() {
   return (
     <div className="space-y-3">
@@ -95,10 +48,7 @@ export default function CarrierDirectRequestsPage() {
     );
   }, [firestore, user]);
 
-  const { data: realRequests, isLoading } = useCollection<Trip>(requestsQuery);
-
-  const isUsingMockData = !isLoading && (!realRequests || realRequests.length === 0);
-  const requests = isUsingMockData ? mockDirectRequests : realRequests;
+  const { data: requests, isLoading } = useCollection<Trip>(requestsQuery);
 
   const handleApprove = async (trip: Trip, finalPrice: number, currency: string) => {
     if (!firestore || !user) return false;

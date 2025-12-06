@@ -8,26 +8,19 @@ import type { Trip, Booking, UserProfile } from '@/lib/data';
 import { User, ShieldCheck, Phone, Users as UsersIcon } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Avatar, AvatarFallback } from '../ui/avatar';
-
-
-// --- MOCK DATA ---
-const mockBookings: Booking[] = [
-    { id: 'booking_A1', tripId: 'mock_planned_1', userId: 'traveler_A', carrierId: 'carrier_user_id', seats: 2, passengersDetails: [{ name: 'أحمد صالح', type: 'adult' }, { name: 'فاطمة صالح', type: 'adult' }], status: 'Confirmed', totalPrice: 160, currency: 'JOD', createdAt: new Date().toISOString() },
-    { id: 'booking_A2', tripId: 'mock_planned_1', userId: 'traveler_B', carrierId: 'carrier_user_id', seats: 1, passengersDetails: [{ name: 'خالد جمعة', type: 'adult' }], status: 'Confirmed', totalPrice: 80, currency: 'JOD', createdAt: new Date().toISOString() },
-    { id: 'booking_B1', tripId: 'mock_in_transit_1', userId: 'traveler_C', carrierId: 'carrier_user_id', seats: 1, passengersDetails: [{ name: 'سارة فؤاد', type: 'adult' }], status: 'Confirmed', totalPrice: 120, currency: 'SAR', createdAt: new Date().toISOString() },
-];
-
-const mockUsers: { [key: string]: UserProfile } = {
-    'traveler_A': { id: 'traveler_A', firstName: 'أحمد', lastName: 'صالح', email: '', phoneNumber: '+962791111111' },
-    'traveler_B': { id: 'traveler_B', firstName: 'خالد', lastName: 'جمعة', email: '', phoneNumber: '+966502222222' },
-    'traveler_C': { id: 'traveler_C', firstName: 'سارة', lastName: 'فؤاد', email: '', phoneNumber: '+201003333333' },
-}
-// --- END MOCK DATA ---
+import { useCollection, useDoc, useFirestore } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
 
 
 function BookingGroup({ booking }: { booking: Booking }) {
-    const isLoading = false;
-    const user = mockUsers[booking.userId];
+    const firestore = useFirestore();
+
+    const userProfileRef = useMemo(() => {
+        if (!firestore) return null;
+        return doc(firestore, 'users', booking.userId);
+    }, [firestore, booking.userId]);
+
+    const { data: user, isLoading } = useDoc<UserProfile>(userProfileRef);
 
     if (isLoading || !user) {
         return <Skeleton className="h-24 w-full rounded-md" />;
@@ -69,13 +62,21 @@ interface PassengersListDialogProps {
 }
 
 export function PassengersListDialog({ isOpen, onOpenChange, trip }: PassengersListDialogProps) {
-    const isLoading = false;
-    const bookings = useMemo(() => {
-        if (!trip) return [];
-        return mockBookings.filter(b => b.tripId === trip.id && b.status === 'Confirmed');
-    }, [trip]);
+    const firestore = useFirestore();
+
+    const bookingsQuery = useMemo(() => {
+        if (!firestore || !trip?.id) return null;
+        return query(
+            collection(firestore, 'bookings'),
+            where('tripId', '==', trip.id),
+            where('status', '==', 'Confirmed')
+        );
+    }, [firestore, trip]);
+    
+    const { data: bookings, isLoading } = useCollection<Booking>(bookingsQuery);
 
     const totalPassengers = useMemo(() => {
+        if (!bookings) return 0;
         return bookings.reduce((acc, booking) => acc + booking.seats, 0);
     }, [bookings]);
 
@@ -98,7 +99,7 @@ export function PassengersListDialog({ isOpen, onOpenChange, trip }: PassengersL
                                 <div className="space-y-2">
                                     {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
                                 </div>
-                            ) : bookings.length > 0 ? (
+                            ) : bookings && bookings.length > 0 ? (
                                 bookings.map(booking => (
                                     <BookingGroup key={booking.id} booking={booking} />
                                 ))

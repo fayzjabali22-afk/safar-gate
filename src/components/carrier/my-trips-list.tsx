@@ -30,60 +30,6 @@ import {
 } from '@/components/ui/alert-dialog';
 
 
-// --- MOCK DATA FOR SIMULATION ---
-const mockActiveTrips: Trip[] = [
-    {
-        id: 'mock_planned_1',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'amman',
-        destination: 'riyadh',
-        departureDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Planned',
-        price: 80,
-        currency: 'JOD',
-        availableSeats: 2, // Note: availableSeats is now 2 because 2 seats are booked.
-        vehicleType: 'GMC Yukon 2023',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        bookingIds: ['booking_A1', 'booking_A2'],
-    },
-    {
-        id: 'mock_in_transit_1',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'jeddah',
-        destination: 'damascus',
-        departureDate: new Date().toISOString(),
-        status: 'In-Transit',
-        price: 120,
-        currency: 'SAR',
-        availableSeats: 0, // Note: availableSeats is 0 because 1 seat is booked for a 1-seater.
-        vehicleType: 'Toyota Coaster 2022',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        bookingIds: ['booking_B1'],
-    },
-     {
-        id: 'mock_planned_2',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'cairo',
-        destination: 'amman',
-        departureDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Planned',
-        price: 95,
-        currency: 'JOD',
-        availableSeats: 4,
-        vehicleType: 'Mercedes-Benz Sprinter',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        bookingIds: [],
-    }
-];
-// --- END MOCK DATA ---
-
-
 const cities: { [key: string]: string } = {
     damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص',
     amman: 'عمّان', irbid: 'إربد', zarqa: 'الزرقاء',
@@ -196,6 +142,7 @@ function TripListItem({ trip, onEdit, onManagePassengers, onInitiateTransfer, on
 
 export function MyTripsList() {
     const firestore = useFirestore();
+    const { user } = useUser();
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isPassengersDialogOpen, setIsPassengersDialogOpen] = useState(false);
     const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
@@ -203,10 +150,18 @@ export function MyTripsList() {
     const [tripToUpdate, setTripToUpdate] = useState<{trip: Trip, newStatus: Trip['status']} | null>(null);
     const { toast } = useToast();
 
-    // Use mock data for now
-    const isLoading = false;
-    const trips = mockActiveTrips;
+    const tripsQuery = useMemo(() => {
+        if (!firestore || !user) return null;
+        return query(
+            collection(firestore, 'trips'),
+            where('carrierId', '==', user.uid),
+            where('status', 'in', ['Planned', 'In-Transit']),
+            orderBy('departureDate', 'desc')
+        );
+    }, [firestore, user]);
 
+    const { data: trips, isLoading } = useCollection<Trip>(tripsQuery);
+    
     const sortedTrips = useMemo(() => {
         if (!trips) return [];
         return [...trips].sort((a, b) => new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime());
@@ -239,7 +194,7 @@ export function MyTripsList() {
         }
     };
 
-    const confirmUpdateStatus = () => {
+    const confirmUpdateStatus = async () => {
         const trip = tripToUpdate?.trip;
         const newStatus = tripToUpdate?.newStatus;
 
@@ -247,16 +202,20 @@ export function MyTripsList() {
 
         const tripRef = doc(firestore, 'trips', trip.id);
         
-        // SIMULATION
-        updateDocumentNonBlocking(tripRef, { status: newStatus });
+        try {
+            await updateDocumentNonBlocking(tripRef, { status: newStatus });
         
-        // In a real scenario, you'd also handle side-effects like notifying passengers.
-        let toastTitle = '';
-        if (newStatus === 'In-Transit') toastTitle = 'تم بدء الرحلة بنجاح!';
-        else if (newStatus === 'Completed') toastTitle = 'تم إنهاء الرحلة ونقلها للأرشيف.';
-        else if (newStatus === 'Cancelled') toastTitle = 'تم إلغاء الرحلة بنجاح.';
+            // In a real scenario, you'd also handle side-effects like notifying passengers.
+            let toastTitle = '';
+            if (newStatus === 'In-Transit') toastTitle = 'تم بدء الرحلة بنجاح!';
+            else if (newStatus === 'Completed') toastTitle = 'تم إنهاء الرحلة ونقلها للأرشيف.';
+            else if (newStatus === 'Cancelled') toastTitle = 'تم إلغاء الرحلة بنجاح.';
 
-        toast({ title: toastTitle });
+            toast({ title: toastTitle });
+        } catch (error) {
+            toast({ title: 'فشل تحديث الحالة', variant: 'destructive' });
+        }
+
 
         // Reset state
         setIsCancelConfirmOpen(false);

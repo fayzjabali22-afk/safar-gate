@@ -1,11 +1,11 @@
 
 'use client';
 import { RequestCard } from '@/components/carrier/request-card';
-import { useFirestore, useCollection, useUser } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { useFirestore, useCollection, useUser, addDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, orderBy, doc, setDoc } from 'firebase/firestore';
 import { PackageOpen, Settings, AlertTriangle, ListFilter, Armchair, Sparkles } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Trip } from '@/lib/data';
+import { Trip, Offer } from '@/lib/data';
 import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -16,40 +16,6 @@ import { suggestOfferPrice, type SuggestOfferPriceInput } from '@/ai/flows/sugge
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Badge } from '@/components/ui/badge';
-
-
-// --- STRATEGIC FALLBACK DATA ---
-const mockRequests: Trip[] = [
-    {
-        id: 'mock_req_1',
-        userId: 'traveler_mock_1',
-        origin: 'amman',
-        destination: 'riyadh',
-        departureDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-        passengers: 2,
-        status: 'Awaiting-Offers',
-        requestType: 'General',
-        targetPrice: 150,
-        currency: 'JOD',
-        notes: 'لدينا حقائب كثيرة، نفضل سيارة كبيرة.',
-        createdAt: new Date().toISOString(),
-    },
-    {
-        id: 'mock_req_2',
-        userId: 'traveler_mock_2',
-        origin: 'damascus',
-        destination: 'amman',
-        departureDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-        passengers: 1,
-        status: 'Awaiting-Offers',
-        requestType: 'General',
-        notes: 'رحلة عمل عاجلة، أفضل الانطلاق في الصباح الباكر.',
-        createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
-    },
-    // This direct request should NOT appear on this page anymore.
-    // It's moved to the new direct-requests page.
-];
-// --- END STRATEGIC FALLBACK DATA ---
 
 function LoadingState() {
   return (
@@ -113,17 +79,14 @@ export default function CarrierRequestsPage() {
     let q = query(
         collection(firestore, 'trips'), 
         where('status', '==', 'Awaiting-Offers'),
-        // IMPORTANT: Only show General requests here now.
         where('requestType', '==', 'General')
     );
 
-    // Smart Filter: Filter by carrier's specialization route if enabled and defined
     if (filterBySpecialization && canFilter) {
         q = query(q, where('origin', '==', userProfile.primaryRoute!.origin));
         q = query(q, where('destination', '==', userProfile.primaryRoute!.destination));
     }
     
-    // Filter out requests that exceed the carrier's vehicle capacity
     if (userProfile?.vehicleCapacity && userProfile.vehicleCapacity > 0) {
         q = query(q, where('passengers', '<=', userProfile.vehicleCapacity));
     }
@@ -132,16 +95,12 @@ export default function CarrierRequestsPage() {
 
   }, [firestore, filterBySpecialization, canFilter, userProfile]);
 
-  const { data: realRequests, isLoading: isLoadingRequests } = useCollection<Trip>(requestsQuery);
+  const { data: requests, isLoading: isLoadingRequests } = useCollection<Trip>(requestsQuery);
 
   const isLoading = isLoadingProfile || isLoadingRequests;
   
-  // HYBRID LOGIC: Use real data if available, otherwise fall back to mock data
-  const isUsingMockData = !isLoading && (!realRequests || realRequests.length === 0);
-  const requests = isUsingMockData ? mockRequests : realRequests;
-
   const handleOfferClick = (trip: Trip) => {
-    setSuggestion(null); // Clear previous suggestion
+    setSuggestion(null);
     setSelectedTrip(trip);
     setIsOfferDialogOpen(true);
   }
@@ -176,6 +135,39 @@ export default function CarrierRequestsPage() {
     }
   }
 
+    const handleSendOffer = async (offerData: Omit<Offer, 'id' | 'tripId' | 'carrierId' | 'status' | 'createdAt'>) => {
+        if (!firestore || !user || !selectedTrip) return false;
+        
+        try {
+            const offerCollectionRef = collection(firestore, 'trips', selectedTrip.id, 'offers');
+            const newOfferRef = doc(offerCollectionRef);
+            
+            const finalOfferData: Omit<Offer, 'id'> = {
+                ...offerData,
+                tripId: selectedTrip.id,
+                carrierId: user.uid,
+                status: 'Pending',
+                createdAt: new Date().toISOString()
+            };
+
+            await setDoc(newOfferRef, finalOfferData);
+            
+            toast({
+                title: 'تم إرسال العرض بنجاح!',
+                description: 'سيتم إعلام المسافر بعرضك.',
+            });
+            return true;
+        } catch (error) {
+            console.error("Failed to send offer:", error);
+            toast({
+                variant: 'destructive',
+                title: 'فشل إرسال العرض',
+            });
+            return false;
+        }
+    };
+
+
   if (isLoading) {
     return <LoadingState />;
   }
@@ -189,9 +181,6 @@ export default function CarrierRequestsPage() {
   return (
     <>
     <div className="space-y-4">
-        {isUsingMockData && (
-            <Badge variant="destructive" className="w-full justify-center py-2 text-sm">أنت تعرض بيانات محاكاة (لأغراض التطوير)</Badge>
-        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex items-center justify-center sm:justify-start space-x-2 rtl:space-x-reverse bg-card p-3 rounded-lg border">
                 <Label htmlFor="filter-switch" className="flex items-center gap-2 font-semibold">
@@ -215,7 +204,7 @@ export default function CarrierRequestsPage() {
         {requests && requests.length > 0 ? (
             <div className="space-y-3">
                 {requests.map(req => (
-                    <RequestCard key={req.id} tripRequest={req} onOffer={handleOfferClick} isMock={isUsingMockData} />
+                    <RequestCard key={req.id} tripRequest={req} onOffer={handleOfferClick} />
                 ))}
             </div>
         ) : (
@@ -230,6 +219,7 @@ export default function CarrierRequestsPage() {
             suggestion={suggestion}
             onSuggestPrice={handlePriceSuggestion}
             isSuggestingPrice={isGettingSuggestion}
+            onSendOffer={handleSendOffer}
         />
     )}
     </>

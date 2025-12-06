@@ -50,84 +50,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Form, FormControl, FormField } from '@/components/ui/form';
 
 
-// --- MOCK DATA ---
-const mockScheduledTrips: Trip[] = [
-    {
-        id: 'mock_scheduled_1',
-        userId: 'carrier_user_1',
-        carrierId: 'carrier_user_1',
-        carrierName: 'النقل السريع',
-        origin: 'amman',
-        destination: 'riyadh',
-        departureDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Planned',
-        price: 80,
-        currency: 'JOD',
-        availableSeats: 3,
-        depositPercentage: 15,
-        vehicleType: 'GMC Yukon 2023',
-        vehicleCategory: 'small',
-        vehicleImageUrls: ['https://i.postimg.cc/kXqJ80b4/gmc-yukon.jpg']
-    },
-    {
-        id: 'mock_scheduled_2',
-        userId: 'carrier_user_2',
-        carrierId: 'carrier_user_2',
-        carrierName: 'راحة الطريق',
-        origin: 'damascus',
-        destination: 'amman',
-        departureDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Planned',
-        price: 55,
-        currency: 'JOD',
-        availableSeats: 4,
-        depositPercentage: 10,
-        vehicleType: 'Hyundai Staria 2024',
-        vehicleCategory: 'small',
-        vehicleImageUrls: ['https://i.postimg.cc/tJ095xJc/hyundai-staria.jpg']
-    },
-    {
-        id: 'mock_scheduled_3',
-        userId: 'carrier_user_1', // Belongs to "النقل السريع"
-        carrierId: 'carrier_user_1',
-        carrierName: 'النقل السريع',
-        origin: 'amman',
-        destination: 'jeddah', // Different destination
-        departureDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Planned',
-        price: 120,
-        currency: 'JOD',
-        availableSeats: 2,
-        depositPercentage: 20,
-        vehicleType: 'GMC Yukon 2023',
-        vehicleCategory: 'small',
-        vehicleImageUrls: ['https://i.postimg.cc/kXqJ80b4/gmc-yukon.jpg']
-    },
-     {
-        id: 'mock_scheduled_4',
-        userId: 'carrier_user_3',
-        carrierId: 'carrier_user_3',
-        carrierName: 'ملوك الطريق',
-        origin: 'amman',
-        destination: 'riyadh',
-        departureDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Planned',
-        price: 120,
-        currency: 'JOD',
-        availableSeats: 1,
-        depositPercentage: 20,
-        vehicleType: 'باص مرسيدس 50 راكب',
-        vehicleCategory: 'bus',
-        vehicleImageUrls: ['https://i.postimg.cc/NMyT3T3R/mercedes-bus.jpg']
-    },
-];
-
-const mockCarriers: CarrierProfile[] = [
-    { id: "carrier_user_1", name: "النقل السريع", contactEmail: "a@b.c" },
-    { id: "carrier_user_2", name: "راحة الطريق", contactEmail: "d@e.f" },
-    { id: "carrier_user_3", name: "ملوك الطريق", contactEmail: "g@h.i" },
-];
-
 // Mock data for countries and cities
 const countries: { [key: string]: { name: string; cities: string[] } } = {
   syria: { name: 'سوريا', cities: ['damascus', 'aleppo', 'homs'] },
@@ -170,13 +92,16 @@ export default function DashboardPage() {
 
   const tripsQuery = useMemo(() => {
     if (!firestore) return null;
-    // FIX: Simplified query to avoid composite index requirement for now.
-    // We will filter by status on the client-side.
-    return query(collection(firestore, 'trips'), orderBy('departureDate', 'asc'));
+    return query(collection(firestore, 'trips'), where('status', '==', 'Planned'), orderBy('departureDate', 'asc'));
   }, [firestore]);
 
-  const { data: realTrips, isLoading } = useCollection<Trip>(tripsQuery);
-  const allTrips = (!isLoading && (!realTrips || realTrips.length === 0)) ? mockScheduledTrips : (realTrips || []).filter(t => t.status === 'Planned');
+  const { data: allTrips, isLoading } = useCollection<Trip>(tripsQuery);
+
+  const carriersQuery = useMemo(() => {
+      if (!firestore) return null;
+      return query(collection(firestore, 'users'), where('role', '==', 'carrier'));
+  }, [firestore]);
+  const { data: allCarriers, isLoading: isLoadingCarriers } = useCollection<CarrierProfile>(carriersQuery);
 
 
   const [searchOriginCountry, setSearchOriginCountry] = useState('');
@@ -446,15 +371,15 @@ export default function DashboardPage() {
                      <div className="grid gap-2">
                       <Label htmlFor="carrier-select">اختر ناقلاً لعرض جدول رحلاته</Label>
                        <Select onValueChange={(carrierId) => {
-                            const carrier = mockCarriers.find(c => c.id === carrierId);
+                            const carrier = allCarriers?.find(c => c.id === carrierId);
                             setSelectedCarrier(carrier || null);
                        }}>
                         <SelectTrigger id="carrier-select">
                             <SelectValue placeholder="اختر ناقلاً..." />
                         </SelectTrigger>
                         <SelectContent>
-                          {mockCarriers.map(carrier => (
-                            <SelectItem key={carrier.id} value={carrier.id}>{carrier.name}</SelectItem>
+                          {isLoadingCarriers ? <SelectItem value="loading" disabled>جاري التحميل...</SelectItem> : allCarriers?.map(carrier => (
+                            <SelectItem key={carrier.id} value={carrier.id}>{carrier.firstName} {carrier.lastName}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -580,7 +505,7 @@ export default function DashboardPage() {
             </Card>
             
             <div className="mt-12">
-               {isLoading ? (
+               {isLoading || isLoadingCarriers ? (
                     <div className="space-y-4">
                       {[...Array(3)].map((_,i) => <Skeleton key={i} className="h-48 w-full" />)}
                     </div>
@@ -596,7 +521,7 @@ export default function DashboardPage() {
                             className="bg-accent text-black hover:bg-accent/90 border border-white/50"
                         >
                             <Send className="ml-2 h-4 w-4" />
-                            {searchMode === 'all-carriers' ? 'إرسال الطلب إلى السوق العام' : `إرسال طلب مباشر إلى ${selectedCarrier?.name || 'الناقل'}`}
+                            {searchMode === 'all-carriers' ? 'إرسال الطلب إلى السوق العام' : `إرسال طلب مباشر إلى ${selectedCarrier?.firstName || 'الناقل'}`}
                         </Button>
                     </div>
                 ) : (
@@ -604,7 +529,7 @@ export default function DashboardPage() {
                       {tripDisplayResult.hasFilteredResults && (
                         <div>
                           <h2 className="text-2xl font-bold mb-4">
-                            {searchMode === 'specific-carrier' && selectedCarrier ? `جدول رحلات ${selectedCarrier.name}` : 'الرحلات المجدولة المتاحة'}
+                            {searchMode === 'specific-carrier' && selectedCarrier ? `جدول رحلات ${selectedCarrier.firstName}` : 'الرحلات المجدولة المتاحة'}
                           </h2>
                           {renderTripGroup(tripDisplayResult.filtered)}
                         </div>

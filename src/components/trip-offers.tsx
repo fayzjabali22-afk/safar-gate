@@ -1,21 +1,16 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Offer, Trip } from '@/lib/data';
+import type { Offer, Trip, CarrierProfile } from '@/lib/data';
 import { OfferCard } from '@/components/offer-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PackageOpen, X } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { useCollection, useFirestore } from '@/firebase';
+import { collection, query } from 'firebase/firestore';
 
-
-// --- MOCK DATA ---
-const mockCarriers: { [key: string]: { name: string } } = {
-    'carrier_A': { name: 'النقل السريع' },
-    'carrier_B': { name: 'راحة الطريق' },
-};
-// --- END MOCK DATA ---
 
 interface TripOffersProps {
   trip: Trip;
@@ -25,13 +20,22 @@ interface TripOffersProps {
 }
 
 export function TripOffers({ trip, offers, onAcceptOffer, isProcessing }: TripOffersProps) {
-  const isLoading = false; // Mock loading state
+  const firestore = useFirestore();
+  const { data: carriers, isLoading: isLoadingCarriers } = useCollection<CarrierProfile>(
+      firestore ? query(collection(firestore, 'users')) : null
+  );
 
   const handleAcceptClick = async (offer: Offer) => {
     await onAcceptOffer(trip, offer);
   };
+  
+  const getCarrierName = (carrierId: string) => {
+    const carrier = carriers?.find(c => c.id === carrierId);
+    return carrier?.firstName || 'ناقل غير معروف';
+  }
 
-  if (isLoading) {
+
+  if (isProcessing) {
     return (
       <div className="space-y-4">
         {[...Array(2)].map((_, i) => (
@@ -57,7 +61,7 @@ export function TripOffers({ trip, offers, onAcceptOffer, isProcessing }: TripOf
             <AccordionItem key={offer.id} value={offer.id} className='border rounded-lg bg-card/80'>
                 <AccordionTrigger className='p-4 hover:no-underline'>
                     <div className='flex justify-between items-center w-full'>
-                        <span className='font-bold text-sm'>عرض من: {mockCarriers[offer.carrierId]?.name || 'ناقل غير معروف'}</span>
+                        <span className='font-bold text-sm'>عرض من: {getCarrierName(offer.carrierId)}</span>
                         <Badge variant={'outline'} className='font-bold text-base'>{offer.price.toFixed(2)} {offer.currency}</Badge>
                     </div>
                 </AccordionTrigger>

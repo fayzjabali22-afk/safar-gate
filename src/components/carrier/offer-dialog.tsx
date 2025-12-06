@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import type { Trip } from '@/lib/data';
+import type { Trip, Offer } from '@/lib/data';
 import { Loader2, Send, Sparkles, ListChecks } from 'lucide-react';
 import React from 'react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select';
@@ -48,10 +48,10 @@ interface OfferDialogProps {
   suggestion: { price: number; justification: string } | null;
   isSuggestingPrice: boolean;
   onSuggestPrice: () => void;
+  onSendOffer: (offerData: Omit<Offer, 'id' | 'tripId' | 'carrierId' | 'status' | 'createdAt'>) => Promise<boolean>;
 }
 
-export function OfferDialog({ isOpen, onOpenChange, trip, suggestion, isSuggestingPrice, onSuggestPrice }: OfferDialogProps) {
-  const { toast } = useToast();
+export function OfferDialog({ isOpen, onOpenChange, trip, suggestion, isSuggestingPrice, onSuggestPrice, onSendOffer }: OfferDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { profile } = useUserProfile();
 
@@ -88,20 +88,23 @@ export function OfferDialog({ isOpen, onOpenChange, trip, suggestion, isSuggesti
     if (profile?.vehicleType) {
         form.setValue('vehicleType', profile.vehicleType);
     }
+     if (profile?.vehicleCategory && profile.vehicleCapacity) {
+        form.setValue('vehicleCategory', profile.vehicleCapacity > 7 ? 'bus' : 'small');
+        form.setValue('availableSeats', profile.vehicleCapacity);
+    }
+    if (profile?.vehicleYear) {
+        form.setValue('vehicleModelYear', Number(profile.vehicleYear));
+    }
   }, [profile, form, isOpen]);
 
-  const onSubmit = async (data: OfferFormValues) => {
+  const onSubmit = async (data: any) => {
     setIsSubmitting(true);
-    // SIMULATION
-    setTimeout(() => {
-        toast({
-            title: 'محاكاة: تم إرسال العرض بنجاح',
-            description: 'سيتم إعلام المسافر بعرضك.',
-        });
-        setIsSubmitting(false);
-        onOpenChange(false);
-        form.reset();
-    }, 1500);
+    const success = await onSendOffer(data);
+    if(success) {
+      onOpenChange(false);
+      form.reset();
+    }
+    setIsSubmitting(false);
   };
 
   return (
@@ -256,4 +259,3 @@ export function OfferDialog({ isOpen, onOpenChange, trip, suggestion, isSuggesti
     </Dialog>
   );
 }
-    

@@ -31,48 +31,6 @@ const statusMap: Record<string, { text: string; icon: React.ElementType; classNa
   'Cancelled': { text: 'ملغاة', icon: XCircle, className: 'bg-red-100 text-red-800 border-red-300' },
 };
 
-const mockArchivedTrips: Trip[] = [
-    {
-        id: 'mock_completed_1',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'riyadh',
-        destination: 'damascus',
-        departureDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Completed',
-        price: 60,
-        availableSeats: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'mock_cancelled_1',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'amman',
-        destination: 'jeddah',
-        departureDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Cancelled',
-        price: 75,
-        availableSeats: 4,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    },
-    {
-        id: 'mock_completed_2',
-        userId: 'carrier_user_id',
-        carrierId: 'carrier_user_id',
-        origin: 'cairo',
-        destination: 'amman',
-        departureDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-        status: 'Completed',
-        price: 90,
-        availableSeats: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-    }
-];
-
 function ArchivedTripItem({ trip }: { trip: Trip }) {
     const statusInfo = statusMap[trip.status];
 
@@ -142,12 +100,10 @@ export default function ArchivePage() {
         );
     }, [firestore, user]);
 
-    const { data: realTrips, isLoading } = useCollection<Trip>(archivedTripsQuery);
-
-    // Use mock data if real data is empty or still loading for demonstration
-    const trips = (!realTrips || realTrips.length === 0) ? mockArchivedTrips : realTrips;
+    const { data: trips, isLoading } = useCollection<Trip>(archivedTripsQuery);
 
     const { completedTrips, cancelledTrips } = useMemo(() => {
+        if (!trips) return { completedTrips: [], cancelledTrips: [] };
         const completed = trips.filter(t => t.status === 'Completed').sort((a,b) => new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime());
         const cancelled = trips.filter(t => t.status === 'Cancelled').sort((a,b) => new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime());
         return { completedTrips: completed, cancelledTrips: cancelled };

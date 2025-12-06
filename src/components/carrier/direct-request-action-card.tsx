@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { Trip, UserProfile } from '@/lib/data';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,18 +23,10 @@ const cities: { [key: string]: string } = {
 };
 const getCityName = (key: string) => cities[key] || key;
 
-const mockTravelers: { [key: string]: UserProfile } = {
-    'traveler_mock_3': { id: 'traveler_mock_3', firstName: 'علي', lastName: 'حسن', email: 'ali@email.com' },
-    'traveler_mock_4': { id: 'traveler_mock_4', firstName: 'سعيد', lastName: 'محمد', email: 'saeed@email.com' },
-};
-
 function UserInfo({ userId }: { userId: string }) {
     const firestore = useFirestore();
     const userProfileRef = firestore ? doc(firestore, 'users', userId) : null;
-    // const { data: userProfile, isLoading } = useDoc<UserProfile>(userProfileRef);
-    const userProfile = mockTravelers[userId];
-    const isLoading = false;
-
+    const { data: userProfile, isLoading } = useDoc<UserProfile>(userProfileRef);
 
     if (isLoading) return <Skeleton className="h-8 w-32" />;
 
