@@ -1,9 +1,9 @@
 'use client';
 
 import { useUserProfile } from '@/hooks/use-user-profile';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Ship, LayoutDashboard, Search, PlusCircle, Archive, Menu, Route, User } from 'lucide-react';
+import { Ship, LayoutDashboard, Search, PlusCircle, Archive, Menu, Route, User, ArrowRightLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,10 @@ import { CarrierBottomNav } from '@/components/carrier/carrier-bottom-nav';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { CarrierMobileMenu } from '@/components/carrier/carrier-mobile-menu';
 import { Logo } from '@/components/logo';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { updateDoc } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+
 
 function LoadingSpinner() {
     return (
@@ -39,17 +43,45 @@ export default function CarrierLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isAddTripDialogOpen, setIsAddTripDialogOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSwitchingRole, setIsSwitchingRole] = useState(false);
+  const { toast } = useToast();
+  const { user, profile, isLoading } = useUserProfile();
 
-  // DEV MODE: Bypassing role check
-  // const { user, profile, isLoading } = useUserProfile();
-  // if (isLoading) {
-  //   return <LoadingSpinner />;
-  // }
-  // if (!user || profile?.role !== 'carrier') {
-  //   return <AccessDenied />;
-  // }
+  const isDevUser = user?.email === 'dev@safar.com';
+
+  const handleSwitchRole = async () => {
+    if (!user || !profile) return;
+    setIsSwitchingRole(true);
+    const newRole = profile.role === 'carrier' ? 'traveler' : 'carrier';
+    try {
+        // This is a simplified way, ideally you'd have a user document reference
+        // from a context or a more robust hook.
+        const { getFirestore, doc } = await import('firebase/firestore');
+        const firestore = getFirestore();
+        const userDocRef = doc(firestore, 'users', user.uid);
+        await updateDoc(userDocRef, { role: newRole });
+
+        toast({
+            title: `تم التبديل إلى واجهة ${newRole === 'carrier' ? 'الناقل' : 'المسافر'}`,
+        });
+        if (newRole === 'carrier') {
+            router.push('/carrier');
+        } else {
+            router.push('/dashboard');
+        }
+    } catch (e) {
+         toast({
+            variant: "destructive",
+            title: "فشل تبديل الدور",
+        });
+    } finally {
+        setIsSwitchingRole(false);
+    }
+  }
+
 
   return (
     <>
@@ -58,19 +90,29 @@ export default function CarrierLayout({
           className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-black/10 px-4 text-black shadow-lg md:px-6"
           style={{ backgroundColor: '#FEFFC2' }}
         >
-            {/* Desktop Left side Placeholder - now contains profile icon */}
-            <div className="hidden md:flex items-center gap-2 w-24 justify-end">
+            {/* Left side: Profile Icon on all screens */}
+            <div className="flex items-center gap-2 w-auto">
+                 {isDevUser && (
+                     <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="rounded-full hover:bg-black/20 relative text-black"
+                                    onClick={handleSwitchRole}
+                                    disabled={isSwitchingRole || isLoading}
+                                >
+                                    {isSwitchingRole ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRightLeft className="h-5 w-5" />}
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>تبديل سريع بين واجهة المسافر والناقل</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
                 <Button asChild variant="ghost" size="icon" className="hover:bg-black/10">
-                  <Link href="/profile">
-                    <User className="h-6 w-6" />
-                    <span className="sr-only">الملف الشخصي</span>
-                  </Link>
-                </Button>
-            </div>
-
-             {/* Mobile Left side */}
-             <div className="flex items-center gap-2 md:hidden">
-                 <Button asChild variant="ghost" size="icon" className="hover:bg-black/10">
                   <Link href="/profile">
                     <User className="h-6 w-6" />
                     <span className="sr-only">الملف الشخصي</span>
@@ -84,7 +126,7 @@ export default function CarrierLayout({
             </div>
 
             {/* Right side Actions */}
-            <div className="flex items-center gap-2 w-24 justify-start">
+            <div className="flex items-center gap-2 w-auto">
                  <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                     <SheetTrigger asChild>
                         <Button variant="ghost" size="icon" className="hover:bg-black/10 md:hidden">
