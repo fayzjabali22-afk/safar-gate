@@ -152,16 +152,18 @@ export function MyTripsList() {
 
     const tripsQuery = useMemo(() => {
         if (!firestore || !user) return null;
+        // The orderBy was removed from here to avoid needing a composite index.
+        // Sorting will be handled client-side in the next useMemo.
         return query(
             collection(firestore, 'trips'),
             where('carrierId', '==', user.uid),
-            where('status', 'in', ['Planned', 'In-Transit']),
-            orderBy('departureDate', 'desc')
+            where('status', 'in', ['Planned', 'In-Transit'])
         );
     }, [firestore, user]);
 
     const { data: trips, isLoading } = useCollection<Trip>(tripsQuery);
     
+    // Perform client-side sorting here
     const sortedTrips = useMemo(() => {
         if (!trips) return [];
         return [...trips].sort((a, b) => new Date(b.departureDate).getTime() - new Date(a.departureDate).getTime());
