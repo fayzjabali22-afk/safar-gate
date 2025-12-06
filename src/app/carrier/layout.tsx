@@ -60,7 +60,10 @@ export default function CarrierLayout({
         >
             {/* Desktop Left side */}
             <div className="hidden md:flex items-center gap-2">
-                 <Logo />
+                 <Button className="bg-primary/20 text-primary-foreground border border-primary/50 hover:bg-primary/30" size="sm" onClick={() => setIsAddTripDialogOpen(true)}>
+                    <PlusCircle className="ml-2 h-4 w-4" />
+                    تأسيس رحلة
+                </Button>
             </div>
 
              {/* Mobile Left side */}
@@ -79,25 +82,17 @@ export default function CarrierLayout({
                 </Sheet>
             </div>
             
-            {/* Centered Logo on Desktop */}
-             <div className="hidden md:block absolute left-1/2 -translate-x-1/2">
+            {/* Centered Logo */}
+             <div className="absolute left-1/2 -translate-x-1/2">
                <Logo />
             </div>
-            
-            {/* Mobile: Centered Logo - Hidden to make space */}
-            <div className="md:hidden absolute left-1/2 -translate-x-1/2">
-               {/* Logo is now hidden on mobile header */}
-            </div>
-
 
             {/* Right side Actions */}
             <div className="flex items-center gap-2">
-                 {/* Desktop Button */}
-                <Button className="hidden sm:flex bg-primary/20 text-primary-foreground border border-primary/50 hover:bg-primary/30" size="sm" onClick={() => setIsAddTripDialogOpen(true)}>
-                    <PlusCircle className="ml-2 h-4 w-4" />
-                    تأسيس رحلة
-                </Button>
-                {/* Mobile Button */}
+                <div className="hidden md:flex items-center gap-2">
+                    <Logo />
+                </div>
+                 {/* Mobile Button */}
                  <Button className="flex sm:hidden bg-primary/20 text-primary-foreground border border-primary/50 hover:bg-primary/30" size="sm" onClick={() => setIsAddTripDialogOpen(true)}>
                     <PlusCircle className="ml-2 h-4 w-4" />
                     تأسيس رحلة
