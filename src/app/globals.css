@@ -4,13 +4,13 @@
 
 @layer base {
   :root {
-    --background: 350 20% 12%; /* Dark reddish-brown */
+    --background: 359 77% 21%; /* Deep Wine Red */
     --foreground: 210 40% 98%;
 
     --card: 0 0% 8%; /* Darker card background */
     --card-foreground: 210 40% 98%;
 
-    --popover: 350 20% 12%;
+    --popover: 359 77% 15%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 46 36% 61%; /* #beae77 */
@@ -42,13 +42,13 @@
   }
 
   .dark {
-    --background: 350 20% 12%; /* Dark reddish-brown */
+    --background: 359 77% 21%; /* Deep Wine Red */
     --foreground: 210 40% 98%;
 
     --card: 0 0% 8%; /* Darker card background */
     --card-foreground: 210 40% 98%;
 
-    --popover: 350 20% 12%;
+    --popover: 359 77% 15%;
     --popover-foreground: 210 40% 98%;
 
     --primary: 46 36% 61%; /* #beae77 */
