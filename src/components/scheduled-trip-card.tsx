@@ -75,14 +75,13 @@ const CarrierInfo = ({ carrierId, carrierName }: { carrierId?: string; carrierNa
   const firestore = useFirestore();
   const carrierRef = useMemo(() => {
     if (!firestore || !carrierId) return null;
-    return doc(firestore, 'users', carrierId); // carriers are now in 'users'
+    return doc(firestore, 'users', carrierId);
   }, [firestore, carrierId]);
 
   const { data: carrier, isLoading } = useDoc<CarrierProfile>(carrierRef);
   
   const placeholderImage = PlaceHolderImages.find((img) => img.id === 'user-avatar');
-  // @ts-ignore
-  const displayImage = carrier?.photoURL || placeholderImage?.imageUrl;
+  const displayImage = (carrier as UserProfile)?.vehicleImageUrls?.[0] || placeholderImage?.imageUrl;
 
   if (isLoading) {
     return (
@@ -96,7 +95,7 @@ const CarrierInfo = ({ carrierId, carrierName }: { carrierId?: string; carrierNa
     );
   }
   
-  const name = carrier?.name || carrierName || "ناقل غير معروف";
+  const name = carrier?.firstName || carrierName || "ناقل غير معروف";
 
   return (
     <div className="flex items-center gap-3">

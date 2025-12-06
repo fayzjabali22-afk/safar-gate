@@ -3,15 +3,12 @@
 import type { Offer, CarrierProfile, Trip } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
-import { HandCoins, Star, Car, Loader2, MessageSquarePlus, Send, ListChecks } from 'lucide-react';
+import { HandCoins, Star, Car, Loader2, ListChecks, Send } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Skeleton } from './ui/skeleton';
-import { useDoc, useFirestore, useUser } from '@/firebase';
+import { useDoc, useFirestore } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
 import React, { useMemo } from 'react';
 
 interface OfferCardProps {
@@ -21,78 +18,38 @@ interface OfferCardProps {
   isAccepting: boolean;
 }
 
-const formatCurrency = (value: number | undefined) => {
+const formatCurrency = (value: number | undefined, currency: string = 'JOD') => {
     if (typeof value !== 'number' || isNaN(value)) return 'N/A';
     return new Intl.NumberFormat('ar-JO', {
         style: 'currency',
-        currency: 'JOD',
+        currency: currency,
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(value);
 };
 
-const CarrierInfo = React.memo(({ carrierId }: { carrierId: string }) => {
-  const firestore = useFirestore();
-  const carrierRef = useMemo(() => {
-    if (!firestore) return null;
-    return doc(firestore, 'users', carrierId); // carriers are now in 'users'
-  }, [firestore, carrierId]);
-
-  const { data: carrier, isLoading } = useDoc<CarrierProfile>(carrierRef);
-  const carrierImage = PlaceHolderImages.find((img) => img.id === 'user-avatar');
-  
-  const rating = carrier?.averageRating ? carrier.averageRating.toFixed(1) : 'جديد';
-  
-  if (isLoading) {
-    return (
-      <div className="flex items-center gap-3">
-        <Skeleton className="h-12 w-12 rounded-full" />
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-[150px]" />
-          <Skeleton className="h-4 w-[100px]" />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-3">
-      <Avatar className="h-12 w-12 border-2 border-accent">
-        {carrierImage && (
-          <AvatarImage
-            src={carrierImage.imageUrl}
-            alt={carrier?.name || 'Carrier Avatar'}
-            unoptimized
-          />
-        )}
-        <AvatarFallback>{carrier?.name?.charAt(0) || 'C'}</AvatarFallback>
-      </Avatar>
-      <div>
-        <p className="font-bold text-md text-foreground">
-          {carrier?.name || 'ناقل غير معروف'}
-        </p>
-        <div className="flex items-center text-xs text-muted-foreground gap-1">
-          <Star className="h-3 w-3 text-yellow-400 fill-yellow-400" aria-hidden="true" />
-          <span>{rating}</span>
-        </div>
-      </div>
-    </div>
-  );
-});
-CarrierInfo.displayName = 'CarrierInfo';
-
 
 export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps) {
   const depositAmount = Math.max(0, (offer.price || 0) * ((offer.depositPercentage || 20) / 100));
-  const vehicleImage = PlaceHolderImages.find((img) => img.id === 'car-placeholder');
+  const defaultVehicleImage = PlaceHolderImages.find((img) => img.id === 'car-placeholder');
+  const firestore = useFirestore();
+  
+  const carrierRef = useMemo(() => {
+    if (!firestore || !offer.carrierId) return null;
+    return doc(firestore, 'users', offer.carrierId);
+  }, [firestore, offer.carrierId]);
+  
+  const { data: carrier, isLoading: isLoadingCarrier } = useDoc<CarrierProfile>(carrierRef);
+  const vehicleImage = (carrier?.vehicleImageUrls && carrier.vehicleImageUrls[0]) || defaultVehicleImage?.imageUrl;
+
 
   return (
     <div dir="rtl" className="w-full overflow-hidden transition-all flex flex-col justify-between bg-card">
       <div className="space-y-4">
-        {vehicleImage && (
+        {isLoadingCarrier ? <Skeleton className="w-full aspect-video rounded-md"/> : vehicleImage && (
           <div className="relative aspect-video w-full overflow-hidden rounded-md">
             <Image
-              src={vehicleImage.imageUrl}
+              src={vehicleImage}
               alt="Vehicle Image"
               fill
               className="object-cover"
@@ -110,18 +67,6 @@ export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps
               <dt className="font-semibold">النوع:</dt>
               <dd>{offer.vehicleType ?? 'غير محدد'}</dd>
             </div>
-            <div>
-              <dt className="font-semibold">سنة الموديل:</dt>
-              <dd>{offer.vehicleModelYear ?? 'غير محدد'}</dd>
-            </div>
-            <div>
-              <dt className="font-semibold">الفئة:</dt>
-              <dd>{offer.vehicleCategory ?? 'غير محدد'}</dd>
-            </div>
-            <div>
-              <dt className="font-semibold">المقاعد:</dt>
-              <dd>{offer.availableSeats ?? 'غير محدد'}</dd>
-            </div>
           </dl>
         </div>
 
@@ -132,11 +77,11 @@ export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps
             <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs ps-6">
                 <div>
                     <dt className="font-semibold">السعر الكلي:</dt>
-                    <dd>{formatCurrency(offer.price)}</dd>
+                    <dd>{formatCurrency(offer.price, offer.currency)}</dd>
                 </div>
                  <div>
                     <dt className="font-semibold">العربون ({offer.depositPercentage ?? 20}%):</dt>
-                    <dd>{formatCurrency(depositAmount)}</dd>
+                    <dd>{formatCurrency(depositAmount, offer.currency)}</dd>
                 </div>
             </dl>
         </div>

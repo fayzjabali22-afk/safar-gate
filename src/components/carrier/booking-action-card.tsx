@@ -32,14 +32,6 @@ const statusMap: Record<string, { text: string; className: string }> = {
     'Completed': { text: 'مكتمل', className: 'bg-blue-100 text-blue-800 border-blue-300' },
 };
 
-
-const mockTravelers: { [key: string]: UserProfile } = {
-    'traveler_A': { id: 'traveler_A', firstName: 'أحمد', lastName: 'صالح', email: 'ahmad@email.com' },
-    'traveler_B': { id: 'traveler_B', firstName: 'خالد', lastName: 'جمعة', email: 'khalid@email.com' },
-    'traveler_C': { id: 'traveler_C', firstName: 'سارة', lastName: 'فؤاد', email: 'sara@email.com' },
-    'traveler_D': { id: 'traveler_D', firstName: 'منى', lastName: 'علي', email: 'mona@email.com' },
-};
-
 function UserInfo({ userId }: { userId: string }) {
     const firestore = useFirestore();
     const userProfileRef = firestore ? doc(firestore, 'users', userId) : null;
@@ -47,11 +39,9 @@ function UserInfo({ userId }: { userId: string }) {
 
     if (isLoading) return <Skeleton className="h-8 w-32" />;
     
-    const fallbackName = mockTravelers[userId];
-
-    if (!userProfile && !fallbackName) return <span className="font-bold">{userId}</span>;
+    if (!userProfile) return <span className="font-bold">{userId}</span>;
     
-    const profile = userProfile || fallbackName;
+    const profile = userProfile;
 
     return (
         <div className="flex items-center gap-2">
