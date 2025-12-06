@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -59,32 +58,47 @@ export default function CarrierLayout({
           className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-black/10 px-4 text-black shadow-lg md:px-6"
           style={{ backgroundColor: '#FEFFC2' }}
         >
-            <div className="flex items-center gap-2">
-                <div className="md:hidden">
-                    <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-                        <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon" className="hover:bg-black/10">
-                                <Menu className="h-6 w-6" />
-                                <span className="sr-only">فتح القائمة</span>
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent side="right" className="w-full max-w-xs p-0 bg-card text-card-foreground">
-                           <SheetTitle className="sr-only">Carrier Navigation Menu</SheetTitle>
-                           <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} />
-                        </SheetContent>
-                    </Sheet>
-                </div>
-                 <div className="hidden md:block">
-                    <Logo />
-                </div>
-            </div>
-            
-            <div className="md:hidden absolute left-1/2 -translate-x-1/2">
-               <Logo />
+            {/* Desktop Left side */}
+            <div className="hidden md:flex items-center gap-2">
+                 <Logo />
             </div>
 
+             {/* Mobile Left side */}
+             <div className="flex items-center gap-2 md:hidden">
+                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                    <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon" className="hover:bg-black/10">
+                            <Menu className="h-6 w-6" />
+                            <span className="sr-only">فتح القائمة</span>
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-full max-w-xs p-0 bg-card text-card-foreground">
+                       <SheetTitle className="sr-only">Carrier Navigation Menu</SheetTitle>
+                       <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} />
+                    </SheetContent>
+                </Sheet>
+            </div>
+            
+            {/* Centered Logo on Desktop */}
+             <div className="hidden md:block absolute left-1/2 -translate-x-1/2">
+               <Logo />
+            </div>
+            
+            {/* Mobile: Centered Logo - Hidden to make space */}
+            <div className="md:hidden absolute left-1/2 -translate-x-1/2">
+               {/* Logo is now hidden on mobile header */}
+            </div>
+
+
+            {/* Right side Actions */}
             <div className="flex items-center gap-2">
+                 {/* Desktop Button */}
                 <Button className="hidden sm:flex bg-primary/20 text-primary-foreground border border-primary/50 hover:bg-primary/30" size="sm" onClick={() => setIsAddTripDialogOpen(true)}>
+                    <PlusCircle className="ml-2 h-4 w-4" />
+                    تأسيس رحلة
+                </Button>
+                {/* Mobile Button */}
+                 <Button className="flex sm:hidden bg-primary/20 text-primary-foreground border border-primary/50 hover:bg-primary/30" size="sm" onClick={() => setIsAddTripDialogOpen(true)}>
                     <PlusCircle className="ml-2 h-4 w-4" />
                     تأسيس رحلة
                 </Button>
