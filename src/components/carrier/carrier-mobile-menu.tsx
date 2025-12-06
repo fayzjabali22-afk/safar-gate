@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Logo } from '../logo';
-import { LayoutDashboard, Search, Route, Archive, User } from 'lucide-react';
+import { LayoutDashboard, Search, Route, Archive, User, ListChecks } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 const menuLinks = [
@@ -10,6 +10,7 @@ const menuLinks = [
     { href: '/carrier/opportunities', label: 'مركز الفرص', icon: Search, exact: false },
     { href: '/carrier/trips', label: 'رحلاتي وحجوزاتي', icon: Route, exact: false },
     { href: '/carrier/archive', label: 'الأرشيف', icon: Archive, exact: false },
+    { href: '/carrier/conditions', label: 'الشروط الدائمة', icon: ListChecks, exact: false },
     { href: '/profile', label: 'الملف الشخصي', icon: User, exact: true },
 ];
 
