@@ -16,7 +16,7 @@ import { format, addHours, isFuture } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { doc, writeBatch, serverTimestamp, collection, query, where, orderBy } from 'firebase/firestore';
+import { doc, writeBatch, serverTimestamp, collection, query, where, orderBy, runTransaction } from 'firebase/firestore';
 import { OfferDecisionRoom } from '@/components/offer-decision-room';
 
 
@@ -131,8 +131,28 @@ export default function HistoryPage() {
 
   const { data: realOffers, isLoading: isLoadingOffers } = useCollection<Offer>(offersQuery);
 
+  const pendingConfirmationQuery = useMemo(() => {
+      if (!firestore || !user) return null;
+      return query(collection(firestore, 'bookings'), where('userId', '==', user.uid), where('status', '==', 'Pending-Carrier-Confirmation'));
+  }, [firestore, user]);
+
+  const { data: realPendingConfirmations, isLoading: isLoadingPending } = useCollection<Booking>(pendingConfirmationQuery);
+  const { data: tripForPending } = useDoc<Trip>(
+    (firestore && realPendingConfirmations && realPendingConfirmations.length > 0) 
+      ? doc(firestore, 'trips', realPendingConfirmations[0].tripId) 
+      : null
+  );
+
   // --- HYBRID DATA LOGIC ---
-  const awaitingOffersTrips = (!isLoadingAwaiting && realAwaitingOffers?.length === 0) ? [mockAwaitingOffers] : realAwaitingOffers || [];
+  const isLoading = isLoadingAwaiting || isLoadingPending;
+  const isUsingAwaitingMock = !isLoadingAwaiting && (!realAwaitingOffers || realAwaitingOffers.length === 0);
+  const awaitingOffersTrips = isUsingAwaitingMock ? [mockAwaitingOffers] : realAwaitingOffers || [];
+  
+  const isUsingPendingMock = !isLoadingPending && (!realPendingConfirmations || realPendingConfirmations.length === 0);
+  const pendingBookings = isUsingPendingMock ? [mockPendingConfirmationBooking.booking] : realPendingConfirmations || [];
+  const pendingTrip = isUsingPendingMock ? mockPendingConfirmationBooking.trip : tripForPending;
+
+
   const offersForActiveTrip = (activeTripRequest?.id === mockAwaitingOffers.id) ? mockOffers : realOffers || [];
 
   const handleAcceptOffer = async (trip: Trip, offer: Offer) => {
@@ -140,30 +160,44 @@ export default function HistoryPage() {
     setIsProcessing(true);
     
     try {
-        const batch = writeBatch(firestore);
+        await runTransaction(firestore, async (transaction) => {
+            const tripRef = doc(firestore, 'trips', trip.id);
+            const offerRef = doc(firestore, 'trips', trip.id, 'offers', offer.id);
+            const bookingRef = doc(collection(firestore, 'bookings'));
 
-        const tripRef = doc(firestore, 'trips', trip.id);
-        batch.update(tripRef, { 
-            status: 'Pending-Carrier-Confirmation',
-            price: offer.price,
-            currency: offer.currency,
-            carrierId: offer.carrierId,
-            vehicleType: offer.vehicleType,
-            depositPercentage: offer.depositPercentage,
-            acceptedOfferId: offer.id
+            // 1. Create the new Booking document. This is the key change.
+            const newBooking: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'> = {
+                tripId: trip.id,
+                userId: user.uid,
+                carrierId: offer.carrierId,
+                seats: trip.passengers || 1,
+                passengersDetails: trip.passengersDetails || [],
+                status: 'Pending-Carrier-Confirmation',
+                totalPrice: offer.price,
+                currency: offer.currency as Booking['currency'],
+            };
+            transaction.set(bookingRef, { ...newBooking, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+            
+            // 2. Update the original Trip (request) to show it's being processed.
+            transaction.update(tripRef, { 
+                status: 'Pending-Carrier-Confirmation', // This status indicates the request is now a pending booking
+                acceptedOfferId: offer.id,
+                bookingIds: [bookingRef.id] // Link the new booking
+            });
+            
+            // 3. Update the offer status.
+            transaction.update(offerRef, { status: 'Accepted' });
+
+            // 4. (Future) In a real system, you'd reject other offers here.
         });
         
-        const offerRef = doc(firestore, 'trips', trip.id, 'offers', offer.id);
-        batch.update(offerRef, { status: 'Accepted' });
-
-        await batch.commit();
-
+        // This is now a real action, no longer a simulation
         toast({
             title: "تم قبول العرض بنجاح!",
             description: "تم إرسال طلب التأكيد النهائي للناقل. تابع من هنا."
         });
         
-        setActiveTripRequest(null);
+        setActiveTripRequest(null); // Close the decision room
 
     } catch (error) {
         console.error("Error accepting offer:", error);
@@ -186,6 +220,15 @@ export default function HistoryPage() {
       )
     }
 
+    if (isLoading) {
+       return (
+         <div className="space-y-4">
+           <Skeleton className="h-32 w-full" />
+           <Skeleton className="h-32 w-full" />
+         </div>
+       );
+    }
+
     return (
          <Tabs defaultValue="processing" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
@@ -195,32 +238,49 @@ export default function HistoryPage() {
 
             <TabsContent value="processing" className="mt-6 space-y-6">
                 
-                {isLoadingAwaiting ? <Skeleton className="h-24 w-full" /> : (
-                  awaitingOffersTrips.length > 0 ? (
+                {/* Pending Confirmation Section */}
+                {pendingBookings.length > 0 && pendingTrip && (
+                     <div className="space-y-4">
+                        <h3 className="font-bold text-lg">طلبات بانتظار الموافقة</h3>
+                        {pendingBookings.map(booking => (
+                            <PendingConfirmationCard key={booking.id} booking={booking} trip={pendingTrip} />
+                        ))}
+                    </div>
+                )}
+                
+                {/* Awaiting Offers Section */}
+                {awaitingOffersTrips.length > 0 && (
                      <div className="space-y-4">
                         <h3 className="font-bold text-lg">طلبات بانتظار العروض</h3>
                         {awaitingOffersTrips.map(trip => (
                             <AwaitingOffersCard 
                                 key={trip.id} 
                                 trip={trip} 
-                                offerCount={trip.id === mockAwaitingOffers.id ? mockOffers.length : (realOffers?.length || 0)}
+                                offerCount={isUsingAwaitingMock ? mockOffers.length : (realOffers?.length || 0)}
                                 onClick={() => setActiveTripRequest(trip)}
                             />
                         ))}
                     </div>
-                  ) : (
+                )}
+                
+                 {/* Empty State */}
+                {pendingBookings.length === 0 && awaitingOffersTrips.length === 0 && (
                     <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
                         <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4"/>
                         <p className="font-bold">لا توجد لديك أي حجوزات أو طلبات قيد المعالجة.</p>
                         <p className="text-sm mt-1">ابدأ بحجز رحلتك الأولى من لوحة التحكم.</p>
                     </div>
-                  )
                 )}
 
             </TabsContent>
 
             <TabsContent value="tickets" className="mt-6 space-y-4">
-                <div className="text-center py-16 text-muted-foreground">لا توجد لديك تذاكر نشطة.</div>
+                {/* This uses mock data for now, which is fine */}
+                <HeroTicket 
+                    key={mockConfirmed.booking.id} 
+                    trip={mockConfirmed.trip} 
+                    booking={mockConfirmed.booking}
+                />
             </TabsContent>
             
         </Tabs>

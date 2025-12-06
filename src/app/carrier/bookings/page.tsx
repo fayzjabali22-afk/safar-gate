@@ -9,21 +9,6 @@ import { collection, query, where, orderBy, doc } from 'firebase/firestore';
 
 
 // --- SIMULATION DATA ---
-const mockTrip: Trip = {
-    id: 'trip_123_live',
-    userId: 'user_live_1',
-    carrierId: 'carrier_user_id',
-    origin: 'amman',
-    destination: 'riyadh',
-    departureDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'Planned',
-    price: 80,
-    availableSeats: 2, // SCENARIO: Trip has only 2 seats left
-    depositPercentage: 25,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-};
-
 const mockAllPendingBookings: Booking[] = [
     {
         id: 'booking_pending_1',
@@ -77,12 +62,6 @@ const mockHistoricalBookings: Booking[] = [
         updatedAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
     }
 ];
-
-const mockTrips: { [key: string]: Trip } = {
-    ...mockHistoricalBookings.reduce((acc, booking) => ({ ...acc, [booking.tripId]: { id: booking.tripId, origin: 'mock', destination: 'mock', departureDate: new Date().toISOString(), status: 'Completed' } }), {}),
-    'trip_123_live': mockTrip
-};
-
 // --- END SIMULATION DATA ---
 
 
@@ -102,7 +81,9 @@ export default function CarrierBookingsPage() {
 
     const { data: realPendingBookings, isLoading } = useCollection<Booking>(pendingBookingsQuery);
 
-    const pendingBookings = (!isLoading && (!realPendingBookings || realPendingBookings.length === 0)) ? mockAllPendingBookings : realPendingBookings;
+    // HYBRID LOGIC: Use real data if available, otherwise use mock data as a fallback.
+    const isUsingMockData = !isLoading && (!realPendingBookings || realPendingBookings.length === 0);
+    const pendingBookings = isUsingMockData ? mockAllPendingBookings : realPendingBookings;
     
     // We'll keep historical bookings as mock for now to keep focus on the main flow
     const historicalBookings = mockHistoricalBookings;
