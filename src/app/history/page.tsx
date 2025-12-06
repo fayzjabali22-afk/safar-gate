@@ -4,7 +4,7 @@ import { AppLayout } from '@/components/app-layout';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { useUser, useFirestore, useCollection, addDocumentNonBlocking, useDoc } from '@/firebase';
+import { useUser, useFirestore, useCollection, addDocumentNonBlocking, useDoc, updateDocumentNonBlocking } from '@/firebase';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,30 +22,34 @@ import { CancellationDialog } from '@/components/booking/cancellation-dialog';
 import { ChatDialog } from '@/components/chat/chat-dialog';
 import { SmartResubmissionDialog } from '@/components/booking/smart-resubmission-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { doc } from 'firebase/firestore';
+import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 
 
 // --- STRATEGIC MOCK DATA FOR THE FULL LIFECYCLE ---
-// 1. Awaiting Offers (General Request) -> Will show Radar - REMOVED FOR NOW
 
-// 2. Awaiting Offers (Direct Request) -> Will show Hourglass - REMOVED FOR NOW
-
-// 3. Pending Carrier Confirmation -> Will be handled by state now
-// const mockPendingConfirmation: { trip: Trip, booking: Booking } = {
-//     trip: { id: 'trip_pending_1', userId: 'user1', carrierId: 'carrier2', carrierName: 'الناقل السريع', origin: 'damascus', destination: 'amman', departureDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), status: 'Pending-Carrier-Confirmation' },
-//     booking: { id: 'booking_pending_1', tripId: 'trip_pending_1', userId: 'user1', carrierId: 'carrier2', seats: 1, passengersDetails: [{ name: 'Fayez Al-Harbi', type: 'adult' }], status: 'Pending-Carrier-Confirmation', totalPrice: 40, currency: 'JOD', createdAt: new Date().toISOString() }
-// };
-
-// 4. Pending Payment -> Will show Invoice
-const mockPendingPayment: { trip: Trip, booking: Booking } = {
-    trip: { id: 'trip_payment_1', userId: 'carrier_payment', carrierId: 'carrier_payment', carrierName: 'النقل الذهبي', origin: 'jeddah', destination: 'cairo', departureDate: new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString(), status: 'Pending-Payment', price: 150, currency: 'SAR', depositPercentage: 25 },
-    booking: { id: 'booking_payment_1', tripId: 'trip_payment_1', userId: 'user1', carrierId: 'carrier_payment', seats: 2, passengersDetails: [{ name: 'Jasser Mohamed', type: 'adult' }, { name: 'Reem Mohamed', type: 'adult' }], status: 'Pending-Payment', totalPrice: 300, currency: 'SAR', createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString() }
+// SCENARIO 1: A trip request awaiting offers. This is the primary state for the "offers" path.
+const mockAwaitingOffers: Trip = {
+    id: 'trip_req_1',
+    userId: 'current_user_mock',
+    origin: 'amman',
+    destination: 'riyadh',
+    departureDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'Awaiting-Offers',
+    requestType: 'General',
+    passengers: 2,
+    createdAt: new Date().toISOString(),
 };
 
-// 5. Confirmed Ticket -> Will show Golden Ticket
+// SCENARIO 2: A booking awaiting carrier confirmation. This is the primary state for the "direct booking" path.
+const mockPendingConfirmation: { trip: Trip, booking: Booking } = {
+    trip: { id: 'trip_pending_1', userId: 'user1', carrierId: 'carrier2', carrierName: 'الناقل السريع', origin: 'damascus', destination: 'amman', departureDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), status: 'Pending-Carrier-Confirmation' },
+    booking: { id: 'booking_pending_1', tripId: 'trip_pending_1', userId: 'user1', carrierId: 'carrier2', seats: 1, passengersDetails: [{ name: 'Fayez Al-Harbi', type: 'adult' }], status: 'Pending-Carrier-Confirmation', totalPrice: 40, currency: 'JOD', createdAt: new Date().toISOString() }
+};
+
+// SCENARIO 3: A confirmed trip, ready for the "tickets" tab.
 const mockConfirmed: { trip: Trip, booking: Booking } = {
     trip: { 
         id: 'trip_confirmed_1', 
@@ -65,40 +69,6 @@ const mockConfirmed: { trip: Trip, booking: Booking } = {
     booking: { id: 'booking_confirmed_1', tripId: 'trip_confirmed_1', userId: 'user1', carrierId: 'carrier3', seats: 2, passengersDetails: [{ name: 'حسن علي', type: 'adult' }, { name: 'علي حسن', type: 'child' }], status: 'Confirmed', totalPrice: 180, currency: 'USD', createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString() }
 };
 
-const mockTripBaghdad: Trip = {
-    id: 'trip_baghdad_mock',
-    carrierId: 'carrier_mock_1',
-    carrierName: 'أسود الرافدين',
-    origin: 'amman',
-    destination: 'baghdad',
-    departureDate: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'Planned',
-    price: 25,
-    currency: 'دينار',
-    availableSeats: 2,
-    depositPercentage: 15,
-    vehicleType: 'Hyundai Tucson 2023',
-    userId: 'carrier_mock_1'
-};
-const mockTripRiyadh: Trip = {
-    id: 'trip_riyadh_mock',
-    carrierId: 'carrier_mock_2',
-    carrierName: 'صقور الجزيرة',
-    origin: 'amman',
-    destination: 'riyadh',
-    departureDate: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'Planned',
-    price: 40,
-    currency: 'دينار',
-    availableSeats: 4,
-    depositPercentage: 25,
-    vehicleType: 'Toyota Hiace 2024',
-     userId: 'carrier_mock_2'
-};
-
-const processingTrips = [mockTripBaghdad, mockTripRiyadh];
-
-
 // Helper data
 const cities: { [key: string]: string } = {
     damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص', amman: 'عمّان', irbid: 'إربد', zarqa: 'الزرقاء',
@@ -106,45 +76,7 @@ const cities: { [key: string]: string } = {
 };
 const getCityName = (key: string) => cities[key] || key;
 
-// --- MORPHING CARD COMPONENTS ---
-
-const BookingPassengersScreen = ({ trip, seatCount, onCancel, onConfirm }: { trip: Trip, seatCount: number, onCancel: () => void, onConfirm: (passengers: any[]) => void }) => {
-    // This is a placeholder component.
-    const [passengers, setPassengers] = useState(() => Array.from({ length: seatCount }, () => ({ name: '', type: 'adult' })));
-    const [isProcessing, setIsProcessing] = useState(false);
-
-    useEffect(() => {
-        setPassengers(Array.from({ length: seatCount }, () => ({ name: '', type: 'adult' })));
-    }, [seatCount]);
-
-
-    const handleConfirm = () => {
-        setIsProcessing(true);
-        setTimeout(() => {
-            onConfirm(passengers);
-            setIsProcessing(false);
-        }, 1500);
-    }
-    
-    return (
-        <div className="p-4 space-y-4 bg-background rounded-b-lg">
-            <h3 className="font-bold text-lg">إدخال بيانات الركاب ({seatCount})</h3>
-            {passengers.map((p, index) => (
-                 <div key={index} className="space-y-2">
-                    <Label htmlFor={`passenger-${index}`}>اسم الراكب {index + 1}</Label>
-                    <Input id={`passenger-${index}`} placeholder="الاسم الكامل كما في الهوية" />
-                </div>
-            ))}
-            <div className="flex justify-end gap-2 pt-4">
-                <Button variant="ghost" onClick={onCancel} disabled={isProcessing}>إلغاء</Button>
-                <Button onClick={handleConfirm} disabled={isProcessing}>
-                    {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4" />}
-                    تأكيد الحجز
-                </Button>
-            </div>
-        </div>
-    )
-};
+// --- CARD COMPONENTS FOR DIFFERENT STATES ---
 
 const PendingConfirmationCard = ({ booking, trip }: { booking: Booking, trip: Trip }) => {
     return (
@@ -171,105 +103,68 @@ const PendingConfirmationCard = ({ booking, trip }: { booking: Booking, trip: Tr
     );
 };
 
+const AwaitingOffersCard = ({ trip, offerCount, onClick }: { trip: Trip, offerCount: number, onClick: () => void }) => {
+  return (
+    <Card className="border-primary border-2 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors" onClick={onClick}>
+      <CardHeader>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle className="text-lg">{getCityName(trip.origin)} - {getCityName(trip.destination)}</CardTitle>
+            <CardDescription>طلبك منشور في السوق الآن</CardDescription>
+          </div>
+          <Badge variant="outline" className="flex items-center gap-2 bg-blue-100 text-blue-800 border-blue-300">
+            <Radar className="h-4 w-4 animate-pulse" />
+            بانتظار العروض
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <p className="font-bold text-center text-primary">
+          {offerCount > 0 ? `تم استلام ${offerCount} عرض. اضغط للاستعراض.` : "سيتم إعلامك فور وصول عروض جديدة."}
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
+
 
 // --- MAIN PAGE COMPONENT ---
 export default function HistoryPage() {
   const { toast } = useToast();
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const firestore = useFirestore();
+  const { user } = useUser();
 
-  // Dialog states
-  const [isBookingPaymentOpen, setIsBookingPaymentOpen] = useState(false);
-  const [selectedBookingForPayment, setSelectedBookingForPayment] = useState<{ trip: Trip, booking: Booking } | null>(null);
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [selectedChatInfo, setSelectedChatInfo] = useState<{bookingId: string, otherPartyName: string} | null>(null);
+  // --- DIALOG STATES ---
+  const [isOffersDialogOpen, setIsOffersDialogOpen] = useState(false);
   
-  // State for dynamic view switching inside accordion
-  const [bookingState, setBookingState] = useState<{ tripId: string | null, view: 'details' | 'booking' }>({ tripId: null, view: 'details' });
-  const [seatCount, setSeatCount] = useState(1);
-  
-  // --- STATE FOR MOCK BOOKING LIFECYCLE ---
-  const [pendingConfirmationBookings, setPendingConfirmationBookings] = useState<{booking: Booking, trip: Trip}[]>([]);
-
-
-  useEffect(() => {
-    const seats = searchParams.get('seats');
-    setSeatCount(seats ? parseInt(seats, 10) : 1);
-  }, [searchParams]);
-
   // --- MOCK DATA SIMULATION ---
-  const allTripsAndBookings = useMemo(() => {
-    return [
-        { ...mockConfirmed, status: mockConfirmed.booking.status },
-    ];
-  }, []);
+  // This state determines which path the user is on.
+  // In a real app, this would be derived from Firestore data.
+  const [userPath, setUserPath] = useState<'booking' | 'offers'>('offers'); 
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const { ticketItems } = useMemo(() => {
-      const tickets: any[] = [];
-      allTripsAndBookings.forEach(item => {
-          const status = item.status;
-          if (status === 'Confirmed') {
-              tickets.push(item);
-          }
-      });
-      return { ticketItems: tickets };
-  }, [allTripsAndBookings]);
+  // Filter mock data based on the selected path
+  const pendingConfirmationBookings = userPath === 'booking' ? [mockPendingConfirmation] : [];
+  const awaitingOffersTrips = userPath === 'offers' ? [mockAwaitingOffers] : [];
+  const ticketItems = [mockConfirmed]; // Confirmed tickets always show up
 
+  const handleAcceptOffer = (trip: Trip, offer: Offer) => {
+    if (!firestore || !user) return;
+    setIsProcessing(true);
+    
+    // SIMULATION
+    toast({
+        title: "محاكاة: تم قبول العرض!",
+        description: "جاري إرسال طلب التأكيد النهائي للناقل. سيظهر الحجز في قائمة الانتظار قريباً."
+    });
 
-  const handlePayNow = (trip: Trip, booking: Booking) => {
-    setSelectedBookingForPayment({ trip, booking });
-    setIsBookingPaymentOpen(true);
-  }
-
-  const handleMessageCarrier = (booking: Booking, trip: Trip) => {
-      setSelectedChatInfo({
-          bookingId: booking.id,
-          otherPartyName: trip.carrierName || "الناقل"
-      });
-      setIsChatOpen(true);
+    setTimeout(() => {
+        // Switch the path to show the booking confirmation view
+        setUserPath('booking');
+        setIsProcessing(false);
+        setIsOffersDialogOpen(false);
+    }, 2000);
   };
-  
-  const handleConfirmBookingPayment = () => {
-    toast({ title: 'محاكاة: تم تأكيد الدفع بنجاح!', description: 'تم نقل حجزك إلى تذاكري النشطة.' });
-    setIsBookingPaymentOpen(false);
-  }
-  
-  const handleBookNow = (trip: Trip) => {
-    setBookingState({ tripId: trip.id, view: 'booking' });
-  }
-  
-  const handleCancelBookingFlow = () => {
-    setBookingState({ tripId: null, view: 'details' });
-  }
-
-  const handleConfirmBookingFlow = (passengers: any[]) => {
-      // ** LIVE SIMULATION LOGIC **
-      const currentTrip = processingTrips.find(t => t.id === bookingState.tripId);
-      if (!currentTrip) return;
-
-      const newBooking: Booking = {
-        id: `booking_mock_${Date.now()}`,
-        tripId: currentTrip.id,
-        userId: 'current_user_mock',
-        carrierId: currentTrip.carrierId!,
-        seats: seatCount,
-        passengersDetails: passengers,
-        status: 'Pending-Carrier-Confirmation',
-        totalPrice: (currentTrip.price || 0) * seatCount,
-        currency: 'JOD',
-        createdAt: new Date().toISOString(),
-      };
-      
-      setPendingConfirmationBookings(prev => [...prev, { booking: newBooking, trip: currentTrip }]);
-      
-      toast({
-        title: "محاكاة: تم إرسال طلب الحجز للناقل",
-        description: "سيظهر طلبك في الأعلى بانتظار موافقة الناقل.",
-      });
-      
-      setBookingState({ tripId: null, view: 'details' });
-  }
-
 
   return (
     <AppLayout>
@@ -288,8 +183,10 @@ export default function HistoryPage() {
             </TabsList>
 
             <TabsContent value="processing" className="mt-6 space-y-6">
-                {/* Section for bookings awaiting carrier confirmation */}
-                {pendingConfirmationBookings.length > 0 && (
+                {/* --- SMART UI RENDERING --- */}
+
+                {/* SCENARIO 1: User is on the direct booking path */}
+                {userPath === 'booking' && pendingConfirmationBookings.length > 0 && (
                     <div className="space-y-4">
                         <h3 className="font-bold text-lg">طلبات بانتظار الموافقة</h3>
                         {pendingConfirmationBookings.map(item => (
@@ -297,36 +194,31 @@ export default function HistoryPage() {
                         ))}
                     </div>
                 )}
-
-
-                {/* Section for browsing and booking available trips */}
-                <div className="space-y-4">
-                     <h3 className="font-bold text-lg">رحلات مجدولة متاحة للحجز</h3>
-                     <Accordion type="single" collapsible className="w-full space-y-4">
-                        {processingTrips.map(trip => (
-                           <AccordionItem key={trip.id} value={trip.id} className="border-none">
-                               <Card className="border-accent">
-                                 <AccordionTrigger className="p-4 text-md hover:no-underline font-bold flex justify-between w-full">
-                                    <span className="text-right">{getCityName(trip.origin)} <ArrowRight className="inline h-4 w-4"/> {getCityName(trip.destination)}</span>
-                                    <span className="text-base text-muted-foreground font-semibold text-left">السعر المعروض: {trip.price} {trip.currency}</span>
-                                 </AccordionTrigger>
-                                 <AccordionContent className="p-0">
-                                    {bookingState.tripId === trip.id && bookingState.view === 'booking' ? (
-                                        <BookingPassengersScreen 
-                                            trip={trip}
-                                            seatCount={seatCount}
-                                            onCancel={handleCancelBookingFlow}
-                                            onConfirm={handleConfirmBookingFlow}
-                                        />
-                                    ) : (
-                                        <ScheduledTripCard trip={trip} onBookNow={() => handleBookNow(trip)} context="dashboard" />
-                                    )}
-                                 </AccordionContent>
-                               </Card>
-                            </AccordionItem>
+                
+                {/* SCENARIO 2: User is on the marketplace offers path */}
+                {userPath === 'offers' && awaitingOffersTrips.length > 0 && (
+                     <div className="space-y-4">
+                        <h3 className="font-bold text-lg">طلبات بانتظار العروض</h3>
+                        {awaitingOffersTrips.map(trip => (
+                            <AwaitingOffersCard 
+                                key={trip.id} 
+                                trip={trip} 
+                                offerCount={2} /* Mock offer count */
+                                onClick={() => setIsOffersDialogOpen(true)}
+                            />
                         ))}
-                    </Accordion>
-                </div>
+                    </div>
+                )}
+                
+                 {/* SCENARIO 3: User has no pending items */}
+                {pendingConfirmationBookings.length === 0 && awaitingOffersTrips.length === 0 && (
+                    <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
+                        <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4"/>
+                        <p className="font-bold">لا توجد لديك أي حجوزات أو طلبات قيد المعالجة.</p>
+                        <p className="text-sm mt-1">ابدأ بحجز رحلتك الأولى من لوحة التحكم.</p>
+                    </div>
+                )}
+
             </TabsContent>
 
             <TabsContent value="tickets" className="mt-6 space-y-4">
@@ -343,30 +235,29 @@ export default function HistoryPage() {
       </div>
 
        {/* --- Dialogs --- */}
-      {selectedBookingForPayment && (
-          <BookingPaymentDialog
-            isOpen={isBookingPaymentOpen}
-            onOpenChange={setIsBookingPaymentOpen}
-            trip={selectedBookingForPayment.trip}
-            booking={selectedBookingForPayment.booking}
-            onConfirm={handleConfirmBookingPayment}
-            isProcessing={false}
-          />
+      {awaitingOffersTrips.length > 0 && (
+        <Dialog open={isOffersDialogOpen} onOpenChange={setIsOffersDialogOpen}>
+            <DialogContent className="max-w-4xl">
+                 <DialogHeader>
+                    <DialogTitle>العروض المستلمة لطلبك</DialogTitle>
+                    <DialogDescription>
+                       استعرض العروض المقدمة من الناقلين واختر الأنسب لك.
+                    </DialogDescription>
+                </DialogHeader>
+                <TripOffers 
+                    trip={awaitingOffersTrips[0]}
+                    onAcceptOffer={handleAcceptOffer}
+                    isProcessing={isProcessing}
+                />
+            </DialogContent>
+        </Dialog>
       )}
-      {selectedChatInfo && (
-          <ChatDialog
-              isOpen={isChatOpen}
-              onOpenChange={setIsChatOpen}
-              bookingId={selectedChatInfo.bookingId}
-              otherPartyName={selectedChatInfo.otherPartyName}
-          />
-      )}
+
     </AppLayout>
   );
 }
 
 const HeroTicket = ({ trip, booking }: { trip: Trip, booking: Booking}) => {
-    // MOCK CARRIER DATA
     const carrierProfile: UserProfile = {
         id: 'carrier3',
         firstName: 'فوزي',
@@ -386,7 +277,6 @@ const HeroTicket = ({ trip, booking }: { trip: Trip, booking: Booking}) => {
                         <Badge variant="default" className="w-fit bg-accent text-accent-foreground mb-2">تذكرة مؤكدة</Badge>
                         <CardTitle className="pt-1">{getCityName(trip.origin)} - {getCityName(trip.destination)}</CardTitle>
                     </div>
-                    {/* Placeholder for future message button */}
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
@@ -455,7 +345,6 @@ const HeroTicket = ({ trip, booking }: { trip: Trip, booking: Booking}) => {
                     </div>
                  )}
             </CardContent>
-            {/* Footer can be added later if needed */}
         </Card>
     )
 };
