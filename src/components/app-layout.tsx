@@ -233,15 +233,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <TooltipProvider>
       <div className="flex min-h-screen w-full flex-col bg-background" dir="rtl">
-        <header className={cn(
-          "sticky top-0 z-50 flex h-16 items-center justify-between px-4 md:px-6",
-          "bg-primary text-primary-foreground border-b border-foreground/80 shadow-lg"
-        )}>
+        <header 
+          className={cn(
+            "sticky top-0 z-50 flex h-16 items-center justify-between px-4 md:px-6",
+            "border-b border-white shadow-lg"
+          )}
+          style={{ backgroundColor: '#FFF0FC', color: '#000000' }}
+        >
 
           {/* Left-side icons on mobile */}
           <div className="flex items-center gap-2 md:hidden">
             {isMounted && (
-              <Button asChild variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-black/20 text-primary-foreground">
+              <Button asChild variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-black/20 text-black">
                 <Link href="/profile" aria-label="الملف الشخصي">
                   <User className="h-5 w-5" />
                 </Link>
@@ -254,7 +257,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {isMounted && !isCarrierPath && (
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-black/20 text-primary-foreground">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 hover:bg-black/20 text-black">
                     <Menu className="h-5 w-5" />
                     <span className="sr-only">القائمة الرئيسية</span>
                   </Button>
@@ -310,7 +313,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="rounded-full hover:bg-black/20 relative text-primary-foreground"
+                            className="rounded-full hover:bg-black/20 relative text-black"
                             onClick={handleSwitchRole}
                             disabled={isSwitchingRole || isProfileLoading}
                         >
@@ -326,7 +329,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             {user && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/20 relative text-primary-foreground">
+                        <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/20 relative text-black">
                             <Bell className="h-5 w-5" />
                             {unreadCount > 0 && (
                                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
@@ -370,14 +373,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/20">
-                    <Avatar className="h-9 w-9 border-2 border-primary-foreground/50">
+                    <Avatar className="h-9 w-9 border-2 border-black/50">
                       {user?.photoURL && (
                         <AvatarImage
                           src={user.photoURL}
                           alt={profile?.firstName || ''}
                         />
                       )}
-                      <AvatarFallback className={cn("bg-primary-foreground/20 text-primary-foreground")}>
+                      <AvatarFallback className={cn("bg-black/20 text-black")}>
                         {profile?.firstName
                           ? profile.firstName.charAt(0)
                           : user?.email?.charAt(0).toUpperCase()}
