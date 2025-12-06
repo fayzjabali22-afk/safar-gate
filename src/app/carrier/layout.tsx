@@ -55,18 +55,20 @@ export default function CarrierLayout({
   return (
     <>
       <div className="flex min-h-screen w-full flex-col bg-background" dir="rtl">
-        <header 
-          className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 md:px-6 shadow-sm">
+        <header
+          className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-black/10 px-4 text-black shadow-lg md:px-6"
+          style={{ backgroundColor: '#FEFFC2' }}
+        >
             <div className="flex items-center gap-2">
                 <div className="md:hidden">
                     <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                         <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon">
+                            <Button variant="ghost" size="icon" className="hover:bg-black/10">
                                 <Menu className="h-6 w-6" />
                                 <span className="sr-only">فتح القائمة</span>
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="right" className="w-full max-w-xs p-0">
+                        <SheetContent side="right" className="w-full max-w-xs p-0 bg-card text-card-foreground">
                            <SheetTitle className="sr-only">Carrier Navigation Menu</SheetTitle>
                            <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} />
                         </SheetContent>
@@ -82,7 +84,7 @@ export default function CarrierLayout({
             </div>
 
             <div className="flex items-center gap-2">
-                <Button className="hidden sm:flex" size="sm" onClick={() => setIsAddTripDialogOpen(true)}>
+                <Button className="hidden sm:flex bg-primary/20 text-primary-foreground border border-primary/50 hover:bg-primary/30" size="sm" onClick={() => setIsAddTripDialogOpen(true)}>
                     <PlusCircle className="ml-2 h-4 w-4" />
                     تأسيس رحلة
                 </Button>
@@ -91,8 +93,8 @@ export default function CarrierLayout({
         
         <div className="grid h-full flex-1 grid-cols-1 md:grid-cols-[240px_1fr]">
             {/* --- Sidebar for Desktop --- */}
-            <aside className="hidden md:block h-full bg-card border-e p-4 overflow-y-auto">
-                <Button className="w-full mb-4" onClick={() => setIsAddTripDialogOpen(true)}>
+            <aside className="hidden h-full border-e bg-card p-4 overflow-y-auto md:block">
+                <Button className="mb-4 w-full" onClick={() => setIsAddTripDialogOpen(true)}>
                     <PlusCircle className="ml-2 h-4 w-4" />
                     تأسيس رحلة جديدة
                 </Button>
