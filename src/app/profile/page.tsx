@@ -33,16 +33,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { actionCodeSettings } from '@/firebase/config';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Separator } from '@/components/ui/separator';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
-
-const countries: { [key: string]: { name: string; cities?: string[] } } = {
-  syria: { name: 'سوريا' },
-  jordan: { name: 'الأردن' },
-  ksa: { name: 'السعودية' },
-  egypt: { name: 'مصر' },
-};
 
 
 const profileFormSchema = z.object({
@@ -56,12 +46,6 @@ const profileFormSchema = z.object({
   vehicleYear: z.string().optional(),
   vehiclePlateNumber: z.string().optional(),
   vehicleCapacity: z.coerce.number().int().optional(),
-  vehicleImageUrls: z.array(z.string().url('الرجاء إدخال رابط صورة صالح').or(z.literal(''))).max(2).optional(),
-  primaryRoute: z.object({
-      origin: z.string().optional(),
-      destination: z.string().optional(),
-  }).optional(),
-  paymentInformation: z.string().max(300, 'يجب ألا تتجاوز التعليمات 300 حرف').optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -97,13 +81,8 @@ export default function ProfilePage() {
       vehicleYear: '',
       vehiclePlateNumber: '',
       vehicleCapacity: 0,
-      vehicleImageUrls: ['', ''],
-      primaryRoute: { origin: '', destination: '' },
-      paymentInformation: '',
     },
   });
-
-  const paymentInfoValue = form.watch('paymentInformation');
 
   useEffect(() => {
     if (profile) {
@@ -117,9 +96,6 @@ export default function ProfilePage() {
         vehicleYear: profile.vehicleYear || '',
         vehiclePlateNumber: profile.vehiclePlateNumber || '',
         vehicleCapacity: profile.vehicleCapacity || 0,
-        vehicleImageUrls: profile.vehicleImageUrls && profile.vehicleImageUrls.length > 0 ? (profile.vehicleImageUrls.length > 1 ? profile.vehicleImageUrls : [profile.vehicleImageUrls[0], '']) : ['', ''],
-        primaryRoute: profile.primaryRoute || { origin: '', destination: '' },
-        paymentInformation: profile.paymentInformation || '',
       });
     } else if (user) {
       form.reset({
@@ -143,14 +119,7 @@ export default function ProfilePage() {
     if (isNaN(dataToSave.vehicleCapacity!)) {
       delete dataToSave.vehicleCapacity;
     }
-
-    // Filter out empty image URLs
-    if (dataToSave.vehicleImageUrls) {
-      dataToSave.vehicleImageUrls = dataToSave.vehicleImageUrls.filter(
-        (url) => url && url.trim() !== ''
-      );
-    }
-
+    
     if (!isCarrier) {
       // Don't save carrier fields if user is not a carrier
       delete dataToSave.vehicleType;
@@ -158,9 +127,6 @@ export default function ProfilePage() {
       delete dataToSave.vehicleYear;
       delete dataToSave.vehiclePlateNumber;
       delete dataToSave.vehicleCapacity;
-      delete dataToSave.vehicleImageUrls;
-      delete dataToSave.primaryRoute;
-      delete dataToSave.paymentInformation;
     }
 
     updateDoc(userProfileRef, dataToSave);
@@ -241,35 +207,6 @@ export default function ProfilePage() {
     <>
       <AppLayout>
         <div className="max-w-4xl mx-auto space-y-8 p-0 md:p-4">
-
-          {isDevUser && (
-            <Card className="border-accent shadow-lg">
-              <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-accent"><TestTube2 /> منطقة المطور</CardTitle>
-                  <CardDescription>أدوات تبديل الأدوار لأغراض التطوير والاختبار.</CardDescription>
-              </CardHeader>
-              <CardContent className="flex items-center gap-4">
-                  <span className="font-semibold">دورك الحالي:</span>
-                  {roleIsLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <span className="font-bold text-primary">{profile?.role}</span>}
-                  <Button variant="outline" size="sm" onClick={() => handleRoleChange(isCarrier ? 'traveler' : 'carrier')} disabled={roleIsLoading}>
-                      <ArrowRightLeft className="ml-2 h-4 w-4" />
-                      التبديل إلى {isCarrier ? 'مسافر' : 'ناقل'}
-                  </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {user && !user.emailVerified && !isDevUser && (
-            <Card className="border-yellow-500 shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-yellow-500"><ShieldAlert /> تفعيل الحساب</CardTitle>
-                <CardDescription>حسابك غير مُفعّل. الرجاء التحقق من بريدك الإلكتروني أو طلب رابط تفعيل جديد.</CardDescription>
-              </CardHeader>
-              <CardFooter>
-                <Button variant="outline" onClick={handleResendVerification}><MailCheck className="ml-2 h-4 w-4" /> إعادة إرسال بريد التفعيل</Button>
-              </CardFooter>
-            </Card>
-          )}
           
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onUserSubmit)} className="space-y-8">
@@ -296,8 +233,8 @@ export default function ProfilePage() {
               {isCarrier && (
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Briefcase /> بيانات الناقل</CardTitle>
-                    <CardDescription>إدارة بيانات مركبتك ومعلومات استقبال الدفعات.</CardDescription>
+                    <CardTitle className="flex items-center gap-2"><Briefcase /> بيانات المركبة الأساسية</CardTitle>
+                    <CardDescription>إدارة بيانات مركبتك التي تظهر للمسافرين.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -307,42 +244,6 @@ export default function ProfilePage() {
                       <FormField control={form.control} name="vehiclePlateNumber" render={({ field }) => (<FormItem><FormLabel>رقم لوحة المركبة</FormLabel><FormControl><Input placeholder="e.g., 1-12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       <FormField control={form.control} name="vehicleCapacity" render={({ field }) => (<FormItem><FormLabel>سعة الركاب</FormLabel><FormControl><Input type="number" placeholder="e.g., 4" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
-                    <Separator />
-                    <div className="space-y-4">
-                      <FormLabel className="flex items-center gap-2 font-semibold"><Car className="h-4 w-4" />روابط صور المركبة</FormLabel>
-                      <FormField control={form.control} name="vehicleImageUrls.0" render={({ field }) => (<FormItem><FormLabel className="text-xs">الصورة الأساسية</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/main-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={form.control} name="vehicleImageUrls.1" render={({ field }) => (<FormItem><FormLabel className="text-xs">صورة إضافية</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/extra-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                    </div>
-                    <Separator />
-                    <div className="space-y-2">
-                      <FormLabel className="font-semibold">خط السير المفضل (للفلترة الذكية)</FormLabel>
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField control={form.control} name="primaryRoute.origin" render={({ field }) => (<FormItem><FormLabel>من</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر دولة" /></SelectTrigger></FormControl><SelectContent>{Object.entries(countries).map(([key, { name }]) => (<SelectItem key={key} value={key}>{name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="primaryRoute.destination" render={({ field }) => (<FormItem><FormLabel>إلى</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="اختر دولة" /></SelectTrigger></FormControl><SelectContent>{Object.entries(countries).filter(([key]) => key !== form.watch('primaryRoute.origin')).map(([key, { name }]) => (<SelectItem key={key} value={key}>{name}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      </div>
-                    </div>
-                    <Separator />
-                    <FormField
-                      control={form.control}
-                      name="paymentInformation"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>تعليمات استلام الدفعات (Payment Instructions)</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="اكتب هنا تفاصيل الدفع (مثل: محفظة زين كاش 079...، كليك Alias...، أو الدفع نقداً عند الالتقاء)."
-                              className="min-h-[100px]"
-                              maxLength={300}
-                              {...field}
-                            />
-                          </FormControl>
-                          <div className="text-xs text-muted-foreground text-end">
-                            {paymentInfoValue?.length || 0}/300
-                          </div>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                   </CardContent>
                 </Card>
               )}
