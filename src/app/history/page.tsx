@@ -340,13 +340,12 @@ function PendingBookingWrapper({ booking }: { booking: Booking }) {
 
 
 const HeroTicket = ({ trip, booking, onClosureAction, onCancelBooking }: { trip: Trip, booking: Booking, onClosureAction: (trip: Trip) => void, onCancelBooking: (trip: Trip, booking: Booking) => void }) => {
-    const carrierProfile: UserProfile = {
-        id: 'carrier3',
-        firstName: 'فوزي',
-        lastName: 'الناقل',
-        email: 'carrier@safar.com',
-        phoneNumber: '+962791234567'
-    };
+    const firestore = useFirestore();
+    const carrierProfileRef = useMemo(() => {
+        if (!firestore || !trip.carrierId) return null;
+        return doc(firestore, 'users', trip.carrierId);
+    }, [firestore, trip.carrierId]);
+    const { data: carrierProfile, isLoading } = useDoc<UserProfile>(carrierProfileRef);
     
     const depositAmount = (booking.totalPrice * ((trip.depositPercentage || 20) / 100));
     const remainingAmount = booking.totalPrice - depositAmount;
@@ -377,16 +376,20 @@ const HeroTicket = ({ trip, booking, onClosureAction, onCancelBooking }: { trip:
             <CardContent className="space-y-4 text-sm">
                  <div className="p-3 bg-background rounded-lg border space-y-2">
                     <p className="font-bold text-xs flex items-center gap-1"><UserCheck className="h-4 w-4 text-primary"/> بيانات الناقل</p>
-                    <div className="flex justify-between items-center text-xs">
-                        <span>اسم الناقل:</span>
-                        <span className="font-bold">{carrierProfile?.firstName || trip.carrierName}</span>
-                    </div>
-                     <div className="flex justify-between items-center text-xs">
-                        <span>رقم الهاتف:</span>
-                        {carrierProfile?.phoneNumber ? (
-                           <a href={`tel:${carrierProfile.phoneNumber}`} className="font-bold hover:underline">{carrierProfile.phoneNumber}</a>
-                        ) : <span className="font-bold">غير متوفر</span>}
-                    </div>
+                    {isLoading ? <Skeleton className="h-8 w-full" /> : (
+                        <>
+                        <div className="flex justify-between items-center text-xs">
+                            <span>اسم الناقل:</span>
+                            <span className="font-bold">{carrierProfile?.firstName || trip.carrierName}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                            <span>رقم الهاتف:</span>
+                            {carrierProfile?.phoneNumber ? (
+                            <a href={`tel:${carrierProfile.phoneNumber}`} className="font-bold hover:underline">{carrierProfile.phoneNumber}</a>
+                            ) : <span className="font-bold">غير متوفر</span>}
+                        </div>
+                        </>
+                    )}
                 </div>
 
                  <div className="p-3 bg-background rounded-lg border space-y-2">
@@ -412,7 +415,7 @@ const HeroTicket = ({ trip, booking, onClosureAction, onCancelBooking }: { trip:
                     </div>
                     <div className="flex justify-between items-center text-xs">
                         <span>رقم اللوحة:</span>
-                        <span className="font-bold">{trip.vehiclePlateNumber || 'غير محدد'}</span>
+                        <span className="font-bold">{carrierProfile?.vehiclePlateNumber || 'غير محدد'}</span>
                     </div>
                 </div>
                 
@@ -426,7 +429,7 @@ const HeroTicket = ({ trip, booking, onClosureAction, onCancelBooking }: { trip:
                  <div className="p-3 bg-background rounded-lg border space-y-2">
                     <p className="font-bold text-xs flex items-center gap-1"><CreditCard className="h-4 w-4 text-primary"/> التفاصيل المالية</p>
                     <div className="space-y-1 text-xs">
-                        <div className="flex justify-between"><span>تاريخ الدفع:</span> <span className="font-bold">{booking.updatedAt ? format(new Date(booking.updatedAt as any), 'd MMM yyyy', { locale: arSA }) : 'N/A'}</span></div>
+                        <div className="flex justify-between"><span>تاريخ الدفع:</span> <span className="font-bold">{booking.updatedAt ? format(new Date((booking.updatedAt as any).seconds * 1000), 'd MMM yyyy', { locale: arSA }) : 'N/A'}</span></div>
                         <div className="flex justify-between"><span>السعر الإجمالي:</span> <span className="font-bold">{booking.totalPrice.toFixed(2)} {booking.currency}</span></div>
                         <div className="flex justify-between"><span>العربون المدفوع:</span> <span className="font-bold text-green-500">{depositAmount.toFixed(2)} {booking.currency}</span></div>
                         <div className="flex justify-between"><span>المبلغ المتبقي:</span> <span className="font-bold">{remainingAmount.toFixed(2)} {booking.currency}</span></div>

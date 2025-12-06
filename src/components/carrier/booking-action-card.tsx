@@ -37,9 +37,14 @@ function UserInfo({ userId }: { userId: string }) {
     const userProfileRef = firestore ? doc(firestore, 'users', userId) : null;
     const { data: userProfile, isLoading } = useDoc<UserProfile>(userProfileRef);
 
-    if (isLoading) return <Skeleton className="h-8 w-32" />;
+    if (isLoading) return (
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-5 w-32" />
+      </div>
+    );
     
-    if (!userProfile) return <span className="font-bold">{userId}</span>;
+    if (!userProfile) return <span className="font-bold text-sm">مسافر غير معروف</span>;
     
     const profile = userProfile;
 
@@ -180,7 +185,7 @@ export function BookingActionCard({ booking }: { booking: Booking }) {
                     </div>
                     <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
                         <Calendar className="h-4 w-4 text-primary" />
-                        <strong>تاريخ الطلب:</strong> {new Date(booking.createdAt).toLocaleDateString('ar-SA')}
+                        <strong>تاريخ الطلب:</strong> {booking.createdAt ? new Date((booking.createdAt as any).seconds * 1000).toLocaleDateString('ar-SA') : '...'}
                     </div>
                 </div>
                 {booking.passengersDetails?.length > 0 && (
@@ -196,16 +201,16 @@ export function BookingActionCard({ booking }: { booking: Booking }) {
                      <div className="space-y-1 text-xs">
                         <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">السعر الإجمالي للحجز:</span>
-                            <span className="font-bold">{booking.totalPrice.toFixed(2)} د.أ</span>
+                            <span className="font-bold">{booking.totalPrice.toFixed(2)} {booking.currency}</span>
                         </div>
                         <Separator/>
                         <div className="flex justify-between items-center text-green-600">
-                            <span className="flex items-center gap-1"><CircleDollarSign className="h-4 w-4"/> العربون المدفوع (مُحصّل):</span>
-                            <span className="font-bold text-base">{isLoadingTrip ? '...' : depositAmount.toFixed(2)} د.أ</span>
+                            <span className="flex items-center gap-1"><CircleDollarSign className="h-4 w-4"/> العربون المتوقع (عند التأكيد):</span>
+                            <span className="font-bold text-base">{isLoadingTrip ? '...' : depositAmount.toFixed(2)} {booking.currency}</span>
                         </div>
                         <div className="flex justify-between items-center text-muted-foreground">
                             <span className="flex items-center gap-1"><Banknote className="h-4 w-4"/> المبلغ المتبقي للتحصيل:</span>
-                            <span className="font-bold">{isLoadingTrip ? '...' : remainingAmount.toFixed(2)} د.أ</span>
+                            <span className="font-bold">{isLoadingTrip ? '...' : remainingAmount.toFixed(2)} {booking.currency}</span>
                         </div>
                     </div>
                 </div>

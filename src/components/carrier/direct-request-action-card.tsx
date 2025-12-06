@@ -28,9 +28,14 @@ function UserInfo({ userId }: { userId: string }) {
     const userProfileRef = firestore ? doc(firestore, 'users', userId) : null;
     const { data: userProfile, isLoading } = useDoc<UserProfile>(userProfileRef);
 
-    if (isLoading) return <Skeleton className="h-8 w-32" />;
+    if (isLoading) return (
+         <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-8 rounded-full" />
+            <Skeleton className="h-5 w-32" />
+        </div>
+    );
 
-    if (!userProfile) return <span className="font-bold">{userId}</span>;
+    if (!userProfile) return <span className="font-bold text-sm">مسافر غير معروف</span>;
     
     return (
         <div className="flex items-center gap-2">

@@ -1,6 +1,6 @@
 'use client';
 
-import type { CarrierProfile, Trip, Booking } from '@/lib/data';
+import type { CarrierProfile, Trip, Booking, UserProfile } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -78,10 +78,10 @@ const CarrierInfo = ({ carrierId, carrierName }: { carrierId?: string; carrierNa
     return doc(firestore, 'users', carrierId);
   }, [firestore, carrierId]);
 
-  const { data: carrier, isLoading } = useDoc<CarrierProfile>(carrierRef);
+  const { data: carrier, isLoading } = useDoc<UserProfile>(carrierRef);
   
   const placeholderImage = PlaceHolderImages.find((img) => img.id === 'user-avatar');
-  const displayImage = (carrier as UserProfile)?.vehicleImageUrls?.[0] || placeholderImage?.imageUrl;
+  const displayImage = carrier?.vehicleImageUrls?.[0] || placeholderImage?.imageUrl;
 
   if (isLoading) {
     return (

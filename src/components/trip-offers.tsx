@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import type { Offer, Trip, CarrierProfile } from '@/lib/data';
+import type { Offer, Trip, CarrierProfile, UserProfile } from '@/lib/data';
 import { OfferCard } from '@/components/offer-card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PackageOpen, X } from 'lucide-react';
@@ -21,8 +21,8 @@ interface TripOffersProps {
 
 export function TripOffers({ trip, offers, onAcceptOffer, isProcessing }: TripOffersProps) {
   const firestore = useFirestore();
-  const { data: carriers, isLoading: isLoadingCarriers } = useCollection<CarrierProfile>(
-      firestore ? query(collection(firestore, 'users')) : null
+  const { data: carriers, isLoading: isLoadingCarriers } = useCollection<UserProfile>(
+      firestore ? query(collection(firestore, 'users'), where('role', '==', 'carrier')) : null
   );
 
   const handleAcceptClick = async (offer: Offer) => {
@@ -30,6 +30,7 @@ export function TripOffers({ trip, offers, onAcceptOffer, isProcessing }: TripOf
   };
   
   const getCarrierName = (carrierId: string) => {
+    if (isLoadingCarriers) return '...';
     const carrier = carriers?.find(c => c.id === carrierId);
     return carrier?.firstName || 'ناقل غير معروف';
   }

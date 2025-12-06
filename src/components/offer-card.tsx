@@ -1,6 +1,6 @@
 'use client';
 
-import type { Offer, CarrierProfile, Trip } from '@/lib/data';
+import type { Offer, CarrierProfile, Trip, UserProfile } from '@/lib/data';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { HandCoins, Star, Car, Loader2, ListChecks, Send } from 'lucide-react';
@@ -28,6 +28,46 @@ const formatCurrency = (value: number | undefined, currency: string = 'JOD') => 
     }).format(value);
 };
 
+// CarrierInfo component integrated directly to simplify logic
+function CarrierInfo({ carrierId }: { carrierId: string }) {
+    const firestore = useFirestore();
+    const carrierRef = useMemo(() => {
+        if (!firestore || !carrierId) return null;
+        return doc(firestore, 'users', carrierId);
+    }, [firestore, carrierId]);
+
+    const { data: carrier, isLoading } = useDoc<UserProfile>(carrierRef);
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center gap-3">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="space-y-2">
+                    <Skeleton className="h-4 w-[120px]" />
+                    <Skeleton className="h-3 w-[80px]" />
+                </div>
+            </div>
+        );
+    }
+    
+    if (!carrier) return <p>ناقل غير معروف</p>;
+
+    return (
+        <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10 border">
+                    <AvatarImage src={(carrier as any).photoURL} alt={carrier.firstName} />
+                    <AvatarFallback>{carrier.firstName?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <p className="font-bold text-sm text-foreground">{carrier.firstName}</p>
+            </div>
+            <div className="flex items-center text-xs text-muted-foreground gap-1">
+                <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                <span className="font-bold">{carrier.averageRating ? carrier.averageRating.toFixed(1) : 'جديد'}</span>
+            </div>
+        </div>
+    );
+}
 
 export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps) {
   const depositAmount = Math.max(0, (offer.price || 0) * ((offer.depositPercentage || 20) / 100));
@@ -39,14 +79,14 @@ export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps
     return doc(firestore, 'users', offer.carrierId);
   }, [firestore, offer.carrierId]);
   
-  const { data: carrier, isLoading: isLoadingCarrier } = useDoc<CarrierProfile>(carrierRef);
+  const { data: carrier } = useDoc<UserProfile>(carrierRef);
   const vehicleImage = (carrier?.vehicleImageUrls && carrier.vehicleImageUrls[0]) || defaultVehicleImage?.imageUrl;
 
 
   return (
     <div dir="rtl" className="w-full overflow-hidden transition-all flex flex-col justify-between bg-card">
       <div className="space-y-4">
-        {isLoadingCarrier ? <Skeleton className="w-full aspect-video rounded-md"/> : vehicleImage && (
+        {vehicleImage && (
           <div className="relative aspect-video w-full overflow-hidden rounded-md">
             <Image
               src={vehicleImage}
@@ -57,6 +97,10 @@ export function OfferCard({ offer, trip, onAccept, isAccepting }: OfferCardProps
             />
           </div>
         )}
+        
+        <div className="p-3">
+            <CarrierInfo carrierId={offer.carrierId} />
+        </div>
 
         <div className="text-sm text-foreground p-3 bg-background/50 rounded-md border border-dashed border-border space-y-2">
           <p className="flex items-center gap-2 font-bold">
