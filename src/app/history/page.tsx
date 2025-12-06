@@ -10,101 +10,48 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Trip, Offer, Booking, UserProfile } from '@/lib/data';
 import { CheckCircle, PackageOpen, AlertCircle, PlusCircle, CalendarX, Hourglass, Radar, MessageSquare, Flag, CreditCard, UserCheck, Ticket, ListFilter, Users, MapPin, Phone, Car, Link as LinkIcon, Edit, XCircle, Send, Loader2, ArrowRight } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format, addHours, isFuture } from 'date-fns';
 import { arSA } from 'date-fns/locale';
-import { BookingPaymentDialog } from '@/components/booking/booking-payment-dialog';
 import { ScheduledTripCard } from '@/components/scheduled-trip-card';
-import { RateTripDialog } from '@/components/trip-closure/rate-trip-dialog';
-import { CancellationDialog } from '@/components/booking/cancellation-dialog';
-import { ChatDialog } from '@/components/chat/chat-dialog';
-import { SmartResubmissionDialog } from '@/components/booking/smart-resubmission-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { OfferDecisionRoom } from '@/components/offer-decision-room';
 
 
 // --- STRATEGIC MOCK DATA FOR THE FULL LIFECYCLE ---
-
-// SCENARIO 1: A trip request awaiting offers. This is the primary state for the "offers" path.
 const mockAwaitingOffers: Trip = {
-    id: 'trip_req_1',
-    userId: 'current_user_mock',
-    origin: 'amman',
-    destination: 'riyadh',
+    id: 'trip_req_1', userId: 'current_user_mock', origin: 'amman', destination: 'riyadh',
     departureDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    status: 'Awaiting-Offers',
-    requestType: 'General',
-    passengers: 2,
-    createdAt: new Date().toISOString(),
+    status: 'Awaiting-Offers', requestType: 'General', passengers: 2, createdAt: new Date().toISOString(),
 };
-
-// SCENARIO 2: A booking awaiting carrier confirmation. This is the primary state for the "direct booking" path.
-const mockPendingConfirmation: { trip: Trip, booking: Booking } = {
+const mockPendingConfirmationBooking: { trip: Trip, booking: Booking } = {
     trip: { id: 'trip_pending_1', userId: 'user1', carrierId: 'carrier2', carrierName: 'الناقل السريع', origin: 'damascus', destination: 'amman', departureDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(), status: 'Pending-Carrier-Confirmation' },
     booking: { id: 'booking_pending_1', tripId: 'trip_pending_1', userId: 'user1', carrierId: 'carrier2', seats: 1, passengersDetails: [{ name: 'Fayez Al-Harbi', type: 'adult' }], status: 'Pending-Carrier-Confirmation', totalPrice: 40, currency: 'JOD', createdAt: new Date().toISOString() }
 };
-
-// SCENARIO 3: A confirmed trip, ready for the "tickets" tab.
 const mockConfirmed: { trip: Trip, booking: Booking } = {
     trip: { 
-        id: 'trip_confirmed_1', 
-        userId: 'user1', 
-        carrierId: 'carrier3', 
-        carrierName: 'فوزي الناقل', 
-        origin: 'cairo', 
-        destination: 'jeddah', 
-        departureDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), 
-        status: 'Planned', 
-        meetingPoint: "مطار القاهرة الدولي - صالة 3",
-        meetingPointLink: "https://maps.app.goo.gl/12345",
-        conditions: "حقيبة واحدة لكل راكب. ممنوع التدخين.",
-        vehicleType: "GMC Yukon 2024",
-        vehiclePlateNumber: "123-ABC"
+        id: 'trip_confirmed_1', userId: 'user1', carrierId: 'carrier3', carrierName: 'فوزي الناقل', 
+        origin: 'cairo', destination: 'jeddah', departureDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), 
+        status: 'Planned', meetingPoint: "مطار القاهرة الدولي - صالة 3", meetingPointLink: "https://maps.app.goo.gl/12345",
+        conditions: "حقيبة واحدة لكل راكب. ممنوع التدخين.", vehicleType: "GMC Yukon 2024", vehiclePlateNumber: "123-ABC"
     },
     booking: { id: 'booking_confirmed_1', tripId: 'trip_confirmed_1', userId: 'user1', carrierId: 'carrier3', seats: 2, passengersDetails: [{ name: 'حسن علي', type: 'adult' }, { name: 'علي حسن', type: 'child' }], status: 'Confirmed', totalPrice: 180, currency: 'USD', createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), updatedAt: new Date(Date.now() - 23 * 60 * 60 * 1000).toISOString() }
 };
-
 const mockOffers: Offer[] = [
     {
-        id: 'offer1',
-        tripId: 'trip_req_1',
-        carrierId: 'carrier_A',
-        price: 90,
-        currency: 'JOD',
-        notes: 'توقف للاستراحة في الطريق، واي فاي متوفر.',
-        status: 'Pending',
-        createdAt: new Date().toISOString(),
-        vehicleType: 'GMC Yukon 2023',
-        vehicleCategory: 'small',
-        vehicleModelYear: 2023,
-        availableSeats: 4,
-        depositPercentage: 20,
-        conditions: 'حقيبة واحدة فقط لكل راكب.'
+        id: 'offer1', tripId: 'trip_req_1', carrierId: 'carrier_A', price: 90, currency: 'JOD',
+        notes: 'توقف للاستراحة في الطريق، واي فاي متوفر.', status: 'Pending', createdAt: new Date().toISOString(),
+        vehicleType: 'GMC Yukon 2023', vehicleCategory: 'small', vehicleModelYear: 2023, availableSeats: 4, depositPercentage: 20,
     },
     {
-        id: 'offer2',
-        tripId: 'trip_req_1',
-        carrierId: 'carrier_B',
-        price: 85,
-        currency: 'JOD',
-        notes: 'رحلة مباشرة بدون توقف.',
-        status: 'Pending',
-        createdAt: new Date().toISOString(),
-        vehicleType: 'Hyundai Staria 2024',
-        vehicleCategory: 'small',
-        vehicleModelYear: 2024,
-        availableSeats: 6,
-        depositPercentage: 15,
+        id: 'offer2', tripId: 'trip_req_1', carrierId: 'carrier_B', price: 85, currency: 'JOD',
+        notes: 'رحلة مباشرة بدون توقف.', status: 'Pending', createdAt: new Date().toISOString(),
+        vehicleType: 'Hyundai Staria 2024', vehicleCategory: 'small', vehicleModelYear: 2024, availableSeats: 6, depositPercentage: 15,
     }
 ];
 
-// Helper data
 const cities: { [key: string]: string } = {
     damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص', amman: 'عمّان', irbid: 'إربد', zarqa: 'الزرقاء',
     riyadh: 'الرياض', jeddah: 'جدة', dammam: 'الدمام', cairo: 'القاهرة', alexandria: 'الاسكندرية', giza: 'الجيزة', baghdad: 'بغداد'
@@ -113,33 +60,30 @@ const getCityName = (key: string) => cities[key] || key;
 
 // --- CARD COMPONENTS FOR DIFFERENT STATES ---
 
-const PendingConfirmationCard = ({ booking, trip }: { booking: Booking, trip: Trip }) => {
-    return (
-        <Card className="border-yellow-500 border-2 bg-yellow-500/5">
-            <CardHeader>
-                <div className="flex justify-between items-start">
-                    <div>
-                        <CardTitle className="text-lg">{getCityName(trip.origin)} - {getCityName(trip.destination)}</CardTitle>
-                        <CardDescription>مع الناقل: {trip.carrierName}</CardDescription>
-                    </div>
-                     <Badge variant="outline" className="flex items-center gap-2 bg-yellow-100 text-yellow-800 border-yellow-300">
-                        <Hourglass className="h-4 w-4 animate-spin" />
-                        بانتظار موافقة الناقل
-                    </Badge>
+const PendingConfirmationCard = ({ booking, trip }: { booking: Booking, trip: Trip }) => (
+    <Card className="border-yellow-500 border-2 bg-yellow-500/5">
+        <CardHeader>
+            <div className="flex justify-between items-start">
+                <div>
+                    <CardTitle className="text-lg">{getCityName(trip.origin)} - {getCityName(trip.destination)}</CardTitle>
+                    <CardDescription>مع الناقل: {trip.carrierName}</CardDescription>
                 </div>
-            </CardHeader>
-            <CardContent>
-                <div className="text-sm space-y-1">
-                    <p><strong>عدد المقاعد:</strong> {booking.seats}</p>
-                    <p><strong>السعر الإجمالي:</strong> {booking.totalPrice.toFixed(2)} {booking.currency}</p>
-                </div>
-            </CardContent>
-        </Card>
-    );
-};
+                 <Badge variant="outline" className="flex items-center gap-2 bg-yellow-100 text-yellow-800 border-yellow-300">
+                    <Hourglass className="h-4 w-4 animate-spin" />
+                    بانتظار موافقة الناقل
+                </Badge>
+            </div>
+        </CardHeader>
+        <CardContent>
+            <div className="text-sm space-y-1">
+                <p><strong>عدد المقاعد:</strong> {booking.seats}</p>
+                <p><strong>السعر الإجمالي:</strong> {booking.totalPrice.toFixed(2)} {booking.currency}</p>
+            </div>
+        </CardContent>
+    </Card>
+);
 
-const AwaitingOffersCard = ({ trip, offerCount, onClick }: { trip: Trip, offerCount: number, onClick: () => void }) => {
-  return (
+const AwaitingOffersCard = ({ trip, offerCount, onClick }: { trip: Trip, offerCount: number, onClick: () => void }) => (
     <Card className="border-primary border-2 bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors" onClick={onClick}>
       <CardHeader>
         <div className="flex justify-between items-start">
@@ -159,44 +103,37 @@ const AwaitingOffersCard = ({ trip, offerCount, onClick }: { trip: Trip, offerCo
         </p>
       </CardContent>
     </Card>
-  );
-};
+);
 
 
 // --- MAIN PAGE COMPONENT ---
 export default function HistoryPage() {
   const { toast } = useToast();
-  const firestore = useFirestore();
-  const { user } = useUser();
-  
+  const searchParams = useSearchParams();
   const [activeTripRequest, setActiveTripRequest] = useState<Trip | null>(null);
-
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // This state determines which path the user is on.
+  // This state determines which path the user is on, controlled by query params for simulation
+  const forcedPath = searchParams.get('path');
   const userPath: 'booking' | 'offers' | 'none' = useMemo(() => {
-    if (mockPendingConfirmation) return 'booking';
-    if (mockAwaitingOffers) return 'offers';
-    return 'none';
-  }, []);
+    if (forcedPath === 'booking') return 'booking';
+    if (forcedPath === 'offers') return 'offers';
+    // Default or in real app, derived from user's data
+    return 'booking'; 
+  }, [forcedPath]);
 
-  const pendingConfirmationBookings = userPath === 'booking' ? [mockPendingConfirmation] : [];
+  const pendingConfirmationBookings = userPath === 'booking' ? [mockPendingConfirmationBooking] : [];
   const awaitingOffersTrips = userPath === 'offers' ? [mockAwaitingOffers] : [];
   const ticketItems = [mockConfirmed]; // Confirmed tickets always show up
 
   const handleAcceptOffer = (trip: Trip, offer: Offer) => {
-    if (!firestore || !user) return;
+    if (!user) return;
     setIsProcessing(true);
-    
-    // SIMULATION
     toast({
         title: "محاكاة: تم قبول العرض!",
         description: "جاري إرسال طلب التأكيد النهائي للناقل. سيتم تحويلك إلى شاشة الانتظار."
     });
-
     setTimeout(() => {
-        // In a real app, we would wait for a state change from Firestore.
-        // Here, we just go back to the main history view.
         setActiveTripRequest(null); 
         setIsProcessing(false);
     }, 2000);
@@ -223,6 +160,7 @@ export default function HistoryPage() {
             </TabsList>
 
             <TabsContent value="processing" className="mt-6 space-y-6">
+                 {/* SMART UI RENDERING: Show only one path at a time */}
                 {userPath === 'booking' && (
                     <div className="space-y-4">
                         <h3 className="font-bold text-lg">طلبات بانتظار الموافقة</h3>

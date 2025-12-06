@@ -275,12 +275,8 @@ export default function DashboardPage() {
             setIsAuthRedirectOpen(true);
             return;
         }
-        
-        // Pass the seat count to the history page via query params
-        router.push(`/history?seats=${searchSeats}`);
-
-        // Note: The actual booking dialog is now handled inside the history page
-        // to simplify state management. This just navigates.
+        setSelectedTripForBooking(trip);
+        setIsBookingDialogOpen(true);
     };
 
     const handleConfirmBooking = (passengers: PassengerDetails[]) => {
@@ -293,7 +289,8 @@ export default function DashboardPage() {
         
         setIsBookingDialogOpen(false);
         setSelectedTripForBooking(null);
-        router.push('/history');
+        // Simulate a state change and redirect
+        router.push('/history?path=booking');
     };
     
     const handleRequestAction = () => {
@@ -309,7 +306,7 @@ export default function DashboardPage() {
             title: "تم إرسال طلبك بنجاح!",
             description: "سيتم توجيهك الآن لصفحة حجوزاتك لمتابعة العروض.",
         });
-        router.push('/history');
+        router.push('/history?path=offers');
     }
 
   const isDevUser = user?.email === 'dev@safar.com';
