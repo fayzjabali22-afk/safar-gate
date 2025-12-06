@@ -37,7 +37,7 @@ export default function CarrierTripsPage() {
         return query(
             collection(firestore, 'bookings'),
             where('carrierId', '==', user.uid),
-            where('status', '==', 'Pending-Carrier-Confirmation')
+            where('status', 'in', ['Pending-Carrier-Confirmation', 'Pending-Payment'])
         );
     }, [firestore, user]);
     
@@ -46,13 +46,19 @@ export default function CarrierTripsPage() {
     
     const bookingsByTripId = useMemo(() => {
         if (!pendingBookingsData) return new Map<string, Booking[]>();
-        return pendingBookingsData.reduce((acc, booking) => {
+        // Only include bookings that need carrier action
+        return pendingBookingsData.filter(b => b.status === 'Pending-Carrier-Confirmation').reduce((acc, booking) => {
             if (!acc.has(booking.tripId)) {
                 acc.set(booking.tripId, []);
             }
             acc.get(booking.tripId)!.push(booking);
             return acc;
         }, new Map<string, Booking[]>());
+    }, [pendingBookingsData]);
+
+    const bookingsAwaitingPayment = useMemo(() => {
+        if (!pendingBookingsData) return [];
+        return pendingBookingsData.filter(b => b.status === 'Pending-Payment');
     }, [pendingBookingsData]);
 
     const isLoading = isLoadingTrips || isLoadingPending;
@@ -70,8 +76,22 @@ export default function CarrierTripsPage() {
                 </p>
             </header>
             
-            <main className="space-y-8">
-                <div className="px-2 md:px-0">
+            <main className="space-y-8 px-2 md:px-0">
+                {bookingsAwaitingPayment.length > 0 && (
+                    <div>
+                        <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-orange-500">
+                            <Hourglass className="h-5 w-5" />
+                            حجوزات بانتظار دفع العربون
+                        </h2>
+                        <div className="space-y-4">
+                            {bookingsAwaitingPayment.map(booking => (
+                                <BookingActionCard key={booking.id} booking={booking} />
+                            ))}
+                        </div>
+                    </div>
+                )}
+                
+                <div>
                      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
                         <Route className="h-5 w-5 text-muted-foreground" />
                         رحلاتي النشطة وطلباتها

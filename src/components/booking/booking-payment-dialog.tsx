@@ -58,8 +58,8 @@ export function BookingPaymentDialog({
     const { data: carrierProfile } = useDoc<UserProfile>(carrierProfileRef);
 
     const { totalAmount, depositAmount, remainingAmount, currency, depositPercentage } = useMemo(() => {
-        const pricePerSeat = offer?.price || trip.price || 0;
-        const seatCount = booking?.seats || trip.passengers || 1;
+        const pricePerSeat = booking?.totalPrice && booking?.seats ? booking.totalPrice / booking.seats : (trip.price || 0);
+        const seatCount = booking?.seats || 1;
         const total = pricePerSeat * seatCount;
         const depositPerc = offer?.depositPercentage || trip.depositPercentage || 20;
         const deposit = total * (depositPerc / 100);
@@ -68,7 +68,7 @@ export function BookingPaymentDialog({
             totalAmount: total, 
             depositAmount: deposit, 
             remainingAmount: remaining,
-            currency: offer?.currency || trip.currency || 'USD',
+            currency: booking?.currency || trip.currency || 'USD',
             depositPercentage: depositPerc,
         };
     }, [offer, trip, booking]);

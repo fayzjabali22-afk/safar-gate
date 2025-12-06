@@ -27,6 +27,7 @@ const getCityName = (key: string) => cities[key] || key;
 
 const statusMap: Record<string, { text: string; className: string }> = {
     'Pending-Carrier-Confirmation': { text: 'بانتظار التأكيد', className: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
+    'Pending-Payment': { text: 'بانتظار دفع العربون', className: 'bg-orange-100 text-orange-800 border-orange-300' },
     'Confirmed': { text: 'مؤكد', className: 'bg-green-100 text-green-800 border-green-300' },
     'Cancelled': { text: 'ملغي', className: 'bg-red-100 text-red-800 border-red-300' },
     'Completed': { text: 'مكتمل', className: 'bg-blue-100 text-blue-800 border-blue-300' },
@@ -110,43 +111,29 @@ export function BookingActionCard({ booking }: { booking: Booking }) {
         setIsProcessing(true);
 
         try {
-            await runTransaction(firestore, async (transaction) => {
-                const tripDocRef = doc(firestore, 'trips', trip.id);
-                const bookingDocRef = doc(firestore, 'bookings', booking.id);
-                
-                const freshTripDoc = await transaction.get(tripDocRef);
-                if (!freshTripDoc.exists()) {
-                    throw "Trip does not exist!";
-                }
-
-                if (action === 'confirm') {
-                    const currentSeats = freshTripDoc.data().availableSeats || 0;
-                    if (currentSeats < booking.seats) {
-                        throw "Not enough available seats.";
-                    }
-                    
-                    transaction.update(tripDocRef, { availableSeats: increment(-booking.seats) });
-                    transaction.update(bookingDocRef, { status: 'Confirmed' });
-                } else { // reject
-                    transaction.update(bookingDocRef, { status: 'Cancelled', cancelledBy: 'carrier', cancellationReason: 'تم رفض الطلب من قبل الناقل' });
-                }
-            });
+            const bookingDocRef = doc(firestore, 'bookings', booking.id);
+            if (action === 'confirm') {
+                // Change status to Pending-Payment, DO NOT decrement seats yet.
+                await updateDocumentNonBlocking(bookingDocRef, { status: 'Pending-Payment' });
+            } else { // reject
+                await updateDocumentNonBlocking(bookingDocRef, { status: 'Cancelled', cancelledBy: 'carrier', cancellationReason: 'تم رفض الطلب من قبل الناقل' });
+            }
 
             // Send notification outside of transaction
             const notificationPayload = {
                 userId: booking.userId,
-                type: 'booking_confirmed' as 'booking_confirmed',
+                type: action === 'confirm' ? 'payment_reminder' as const : 'booking_confirmed' as const,
                 isRead: false,
                 createdAt: serverTimestamp(),
-                title: action === 'confirm' ? 'تم تأكيد حجزك! 🎉' : 'عذراً، تم رفض طلب الحجز',
+                title: action === 'confirm' ? 'تمت الموافقة على طلبك! 🎉' : 'عذراً، تم رفض طلب الحجز',
                 message: action === 'confirm'
-                    ? `لقد قام الناقل بتأكيد حجزك لرحلة ${getCityName(trip.origin)} إلى ${getCityName(trip.destination)}. نتمنى لك رحلة سعيدة!`
+                    ? `وافق الناقل على طلب حجزك لرحلة ${getCityName(trip.origin)}. الخطوة التالية هي دفع العربون لتأكيد الحجز نهائياً.`
                     : `نعتذر، لم يتمكن الناقل من تأكيد حجزك لرحلة ${getCityName(trip.origin)} إلى ${getCityName(trip.destination)}.`,
                 link: '/history',
             };
             await addDocumentNonBlocking(collection(firestore, 'notifications'), notificationPayload);
 
-            toast({ title: `تم ${action === 'confirm' ? 'تأكيد' : 'رفض'} الحجز بنجاح!` });
+            toast({ title: `تم ${action === 'confirm' ? 'إرسال طلب الدفع' : 'رفض الحجز'} بنجاح!` });
             if (action === 'confirm') logEvent('BOOKING_CONFIRMED', { carrierId: booking.carrierId, bookingId: booking.id });
         } catch (error: any) {
             console.error("Booking action failed:", error);
@@ -224,7 +211,7 @@ export function BookingActionCard({ booking }: { booking: Booking }) {
                             disabled={isProcessing || isLoadingTrip || !hasSufficientSeats}
                         >
                             {isProcessing ? <Loader2 className="ml-2 h-4 w-4 animate-spin" /> : <Check className="ml-2 h-4 w-4" />}
-                            تأكيد الحجز
+                            الموافقة وإرسال طلب الدفع
                         </Button>
                         <Button 
                             variant="destructive" 

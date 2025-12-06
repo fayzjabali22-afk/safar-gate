@@ -15,18 +15,41 @@ import { TripOffers } from '@/components/trip-offers';
 import { useToast } from '@/hooks/use-toast';
 import { format, addHours, isPast, isFuture } from 'date-fns';
 import { arSA } from 'date-fns/locale';
-import { doc, writeBatch, serverTimestamp, collection, query, where, runTransaction, limit } from 'firebase/firestore';
+import { doc, writeBatch, serverTimestamp, collection, query, where, runTransaction, limit, increment } from 'firebase/firestore';
 import { OfferDecisionRoom } from '@/components/offer-decision-room';
 import { TripClosureDialog } from '@/components/trip-closure/trip-closure-dialog';
 import { RateTripDialog } from '@/components/trip-closure/rate-trip-dialog';
 import { CancellationDialog } from '@/components/booking/cancellation-dialog';
 import { ChatDialog } from '@/components/chat/chat-dialog';
+import { BookingPaymentDialog } from '@/components/booking/booking-payment-dialog';
 
 const cities: { [key: string]: string } = {
     damascus: 'دمشق', aleppo: 'حلب', homs: 'حمص', amman: 'عمّان', irbid: 'إربد', zarqa: 'الزرقاء',
     riyadh: 'الرياض', jeddah: 'جدة', dammam: 'الدمام', cairo: 'القاهرة', alexandria: 'الاسكندرية', giza: 'الجيزة', baghdad: 'بغداد'
 };
 const getCityName = (key: string) => cities[key] || key;
+
+const PendingPaymentCard = ({ booking, trip, onClick }: { booking: Booking, trip?: Trip | null, onClick: () => void }) => (
+    <Card className="border-orange-500 border-2 bg-orange-500/5 cursor-pointer hover:bg-orange-500/10" onClick={onClick}>
+        <CardHeader>
+            <div className="flex justify-between items-start">
+                <div>
+                    <CardTitle className="text-lg">{trip ? `${getCityName(trip.origin)} - ${getCityName(trip.destination)}` : '...'}</CardTitle>
+                    <CardDescription>مع الناقل: {trip?.carrierName || '...'}</CardDescription>
+                </div>
+                 <Badge variant="outline" className="flex items-center gap-2 bg-orange-100 text-orange-800 border-orange-300">
+                    <CreditCard className="h-4 w-4 animate-pulse" />
+                    بانتظار دفع العربون
+                </Badge>
+            </div>
+        </CardHeader>
+        <CardContent>
+            <p className="font-bold text-center text-orange-600">
+                وافق الناقل على طلبك. اضغط هنا لإتمام عملية الدفع وتأكيد حجزك.
+            </p>
+        </CardContent>
+    </Card>
+);
 
 // --- CARD COMPONENTS FOR DIFFERENT STATES ---
 const PendingConfirmationCard = ({ booking, trip }: { booking: Booking, trip?: Trip | null }) => (
@@ -99,6 +122,14 @@ export default function HistoryPage() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [selectedTripForChat, setSelectedTripForChat] = useState<Trip | null>(null);
 
+  // State for payment flow
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [isConfirmingPayment, setIsConfirmingPayment] = useState(false);
+  const [selectedBookingForPayment, setSelectedBookingForPayment] = useState<Booking | null>(null);
+  const { data: tripForPayment } = useDoc<Trip>(
+    (firestore && selectedBookingForPayment) ? doc(firestore, 'trips', selectedBookingForPayment.tripId) : null
+  );
+
   // --- QUERIES FOR ALL ACTIVE STATES ---
   const confirmedQuery = useMemo(() => {
     if (!firestore || !user) return null;
@@ -114,11 +145,18 @@ export default function HistoryPage() {
       if (!firestore || !user) return null;
       return query(collection(firestore, 'bookings'), where('userId', '==', user.uid), where('status', '==', 'Pending-Carrier-Confirmation'));
   }, [firestore, user]);
+
+  const pendingPaymentQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'bookings'), where('userId', '==', user.uid), where('status', '==', 'Pending-Payment'));
+  }, [firestore, user]);
   
   // --- DATA FETCHING ---
   const { data: confirmedBookings, isLoading: isLoadingConfirmed } = useCollection<Booking>(confirmedQuery);
   const { data: awaitingOffersTrips, isLoading: isLoadingAwaiting } = useCollection<Trip>(awaitingOffersQuery);
   const { data: pendingBookings, isLoading: isLoadingPending } = useCollection<Booking>(pendingConfirmationQuery);
+  const { data: pendingPaymentBookings, isLoading: isLoadingPayment } = useCollection<Booking>(pendingPaymentQuery);
+
 
   const confirmedBooking = confirmedBookings?.[0];
   const { data: confirmedTrip } = useDoc<Trip>(
@@ -196,6 +234,52 @@ export default function HistoryPage() {
         setIsChatOpen(true);
     }
 
+    const handleOpenPaymentDialog = (booking: Booking) => {
+        setSelectedBookingForPayment(booking);
+        setIsPaymentDialogOpen(true);
+    }
+    
+    const handleConfirmPayment = async () => {
+        if (!firestore || !selectedBookingForPayment || !tripForPayment) return;
+        setIsConfirmingPayment(true);
+
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const bookingRef = doc(firestore, 'bookings', selectedBookingForPayment.id);
+                const tripRef = doc(firestore, 'trips', selectedBookingForPayment.tripId);
+                
+                const freshTrip = await transaction.get(tripRef);
+                if (!freshTrip.exists()) throw new Error("Trip does not exist.");
+
+                const availableSeats = freshTrip.data().availableSeats || 0;
+                if (availableSeats < selectedBookingForPayment.seats) {
+                    throw new Error("Not enough seats available.");
+                }
+
+                // 1. Update booking to Confirmed
+                transaction.update(bookingRef, { status: 'Confirmed', updatedAt: serverTimestamp() });
+                
+                // 2. Decrement available seats on trip
+                transaction.update(tripRef, { availableSeats: increment(-selectedBookingForPayment.seats) });
+            });
+
+            toast({
+                title: "تم تأكيد الحجز بنجاح!",
+                description: "تم خصم المقاعد وتأكيد حجزك. نتمنى لك رحلة سعيدة.",
+            });
+            
+            setIsPaymentDialogOpen(false);
+            setSelectedBookingForPayment(null);
+
+        } catch (error: any) {
+            console.error("Payment confirmation failed:", error);
+            toast({ variant: "destructive", title: "فشل تأكيد الحجز", description: error.message });
+        } finally {
+            setIsConfirmingPayment(false);
+        }
+    };
+
+
     const handleConfirmCancellation = async () => {
         if (!firestore || !itemToCancel) return;
         setIsCancelling(true);
@@ -269,12 +353,14 @@ export default function HistoryPage() {
     }
 
     // Priority 3: Show pending processes if no confirmed ticket exists.
-    const hasPendingProcesses = (pendingBookings && pendingBookings.length > 0) || (awaitingOffersTrips && awaitingOffersTrips.length > 0);
+    const hasPendingProcesses = (pendingBookings && pendingBookings.length > 0) || (awaitingOffersTrips && awaitingOffersTrips.length > 0) || (pendingPaymentBookings && pendingPaymentBookings.length > 0);
     if (hasPendingProcesses) {
         return (
              <div className="space-y-6">
+                 {pendingPaymentBookings && pendingPaymentBookings.map(booking => (
+                    <PendingPaymentWrapper key={booking.id} booking={booking} onClick={() => handleOpenPaymentDialog(booking)} />
+                 ))}
                 {pendingBookings && pendingBookings.map(booking => {
-                    // This part is a bit tricky without a dedicated hook for multiple docs
                     return <PendingBookingWrapper key={booking.id} booking={booking} />;
                 })}
                 {awaitingOffersTrips && awaitingOffersTrips.map(trip => (
@@ -302,7 +388,7 @@ export default function HistoryPage() {
     );
   };
   
-  const isLoading = isUserLoading || isLoadingConfirmed || isLoadingAwaiting || isLoadingPending;
+  const isLoading = isUserLoading || isLoadingConfirmed || isLoadingAwaiting || isLoadingPending || isLoadingPayment;
 
   return (
     <AppLayout>
@@ -339,6 +425,16 @@ export default function HistoryPage() {
             onOpenChange={setIsChatOpen}
             trip={selectedTripForChat}
         />
+        {tripForPayment && selectedBookingForPayment && (
+            <BookingPaymentDialog
+                isOpen={isPaymentDialogOpen}
+                onOpenChange={setIsPaymentDialogOpen}
+                trip={tripForPayment}
+                booking={selectedBookingForPayment}
+                onConfirm={handleConfirmPayment}
+                isProcessing={isConfirmingPayment}
+            />
+        )}
     </AppLayout>
   );
 }
@@ -351,6 +447,16 @@ function PendingBookingWrapper({ booking }: { booking: Booking }) {
     );
     if (isLoading) return <Skeleton className="h-32 w-full" />;
     return <PendingConfirmationCard booking={booking} trip={trip} />;
+}
+
+// Helper component to fetch trip for each pending payment booking
+function PendingPaymentWrapper({ booking, onClick }: { booking: Booking, onClick: () => void }) {
+    const firestore = useFirestore();
+    const { data: trip, isLoading } = useDoc<Trip>(
+        firestore ? doc(firestore, 'trips', booking.tripId) : null
+    );
+    if (isLoading) return <Skeleton className="h-32 w-full" />;
+    return <PendingPaymentCard booking={booking} trip={trip} onClick={onClick} />;
 }
 
 
