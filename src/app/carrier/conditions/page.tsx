@@ -3,13 +3,11 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { ListChecks, Route, Wallet, Save, Loader2, Upload, Car } from "lucide-react";
+import { ListChecks, Route, Wallet, Save, Loader2 } from "lucide-react";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useToast } from '@/hooks/use-toast';
 import { doc, updateDoc } from 'firebase/firestore';
@@ -25,7 +23,6 @@ const countries: { [key: string]: { name: string; cities?: string[] } } = {
 };
 
 const conditionsSchema = z.object({
-  vehicleImageUrls: z.array(z.string().url('الرجاء إدخال رابط صورة صالح').or(z.literal(''))).max(2).optional(),
   primaryRoute: z.object({
       origin: z.string().optional(),
       destination: z.string().optional(),
@@ -50,7 +47,6 @@ export default function CarrierConditionsPage() {
     const form = useForm<ConditionsFormValues>({
         resolver: zodResolver(conditionsSchema),
         defaultValues: {
-            vehicleImageUrls: ['', ''],
             primaryRoute: { origin: '', destination: '' },
             paymentInformation: '',
         }
@@ -61,7 +57,6 @@ export default function CarrierConditionsPage() {
     useEffect(() => {
         if (profile) {
             form.reset({
-                vehicleImageUrls: profile.vehicleImageUrls && profile.vehicleImageUrls.length > 0 ? (profile.vehicleImageUrls.length > 1 ? profile.vehicleImageUrls : [profile.vehicleImageUrls[0], '']) : ['', ''],
                 primaryRoute: profile.primaryRoute || { origin: '', destination: '' },
                 paymentInformation: profile.paymentInformation || '',
             });
@@ -72,16 +67,8 @@ export default function CarrierConditionsPage() {
         if (!userProfileRef) return;
         
         setIsSubmitting(true);
-        const dataToSave: Partial<ConditionsFormValues> = { ...data };
-
-        if (dataToSave.vehicleImageUrls) {
-            dataToSave.vehicleImageUrls = dataToSave.vehicleImageUrls.filter(
-                (url) => url && url.trim() !== ''
-            );
-        }
-
         try {
-            await updateDoc(userProfileRef, dataToSave);
+            await updateDoc(userProfileRef, data);
             toast({ title: 'تم تحديث الشروط الدائمة', description: 'تم حفظ تغييراتك بنجاح.' });
         } catch (error) {
             toast({ title: 'فشل التحديث', description: 'حدث خطأ ما.', variant: 'destructive' });
@@ -145,18 +132,6 @@ export default function CarrierConditionsPage() {
                                         </FormItem>
                                     )}
                                 />
-                            </CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><Car/> صور المركبة</CardTitle>
-                                <CardDescription>
-                                   هذه الصور تظهر للمسافرين في العروض والرحلات المجدولة.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <FormField control={form.control} name="vehicleImageUrls.0" render={({ field }) => (<FormItem><FormLabel className="text-xs">الصورة الأساسية (رابط)</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/main-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="vehicleImageUrls.1" render={({ field }) => (<FormItem><FormLabel className="text-xs">صورة إضافية (رابط)</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/extra-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
                             </CardContent>
                         </Card>
                         <div className="flex justify-end">

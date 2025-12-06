@@ -27,7 +27,7 @@ import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
 import { deleteUser } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, Trash2, Upload, Briefcase } from 'lucide-react';
+import { ShieldAlert, Trash2, Upload, Briefcase, Car } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useUserProfile } from '@/hooks/use-user-profile';
 
@@ -42,6 +42,7 @@ const profileFormSchema = z.object({
   vehicleYear: z.string().optional(),
   vehiclePlateNumber: z.string().optional(),
   vehicleCapacity: z.coerce.number().int().optional(),
+  vehicleImageUrls: z.array(z.string().url('الرجاء إدخال رابط صورة صالح').or(z.literal(''))).max(2).optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -74,6 +75,7 @@ export default function CarrierProfilePage() {
       vehicleYear: '',
       vehiclePlateNumber: '',
       vehicleCapacity: 0,
+      vehicleImageUrls: ['', ''],
     },
   });
 
@@ -89,6 +91,7 @@ export default function CarrierProfilePage() {
         vehicleYear: profile.vehicleYear || '',
         vehiclePlateNumber: profile.vehiclePlateNumber || '',
         vehicleCapacity: profile.vehicleCapacity || 0,
+        vehicleImageUrls: profile.vehicleImageUrls && profile.vehicleImageUrls.length > 0 ? (profile.vehicleImageUrls.length > 1 ? profile.vehicleImageUrls : [profile.vehicleImageUrls[0], '']) : ['', ''],
       });
     } else if (user) {
       form.reset({
@@ -108,6 +111,11 @@ export default function CarrierProfilePage() {
     }
     if (isNaN(dataToSave.vehicleCapacity!)) {
       delete dataToSave.vehicleCapacity;
+    }
+    if (dataToSave.vehicleImageUrls) {
+        dataToSave.vehicleImageUrls = dataToSave.vehicleImageUrls.filter(
+            (url) => url && url.trim() !== ''
+        );
     }
 
     updateDoc(userProfileRef, dataToSave);
@@ -181,6 +189,18 @@ export default function CarrierProfilePage() {
                     <FormField control={form.control} name="vehiclePlateNumber" render={({ field }) => (<FormItem><FormLabel>رقم لوحة المركبة</FormLabel><FormControl><Input placeholder="e.g., 1-12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     <FormField control={form.control} name="vehicleCapacity" render={({ field }) => (<FormItem><FormLabel>سعة الركاب</FormLabel><FormControl><Input type="number" placeholder="e.g., 4" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
+                   <Card>
+                      <CardHeader>
+                          <CardTitle className="flex items-center gap-2 text-base"><Car/> صور المركبة</CardTitle>
+                          <CardDescription className="text-xs">
+                             هذه الصور تظهر للمسافرين في العروض والرحلات المجدولة.
+                          </CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                          <FormField control={form.control} name="vehicleImageUrls.0" render={({ field }) => (<FormItem><FormLabel className="text-xs">الصورة الأساسية (رابط)</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/main-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="vehicleImageUrls.1" render={({ field }) => (<FormItem><FormLabel className="text-xs">صورة إضافية (رابط)</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/extra-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                      </CardContent>
+                  </Card>
                 </CardContent>
               </Card>
 
