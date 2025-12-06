@@ -233,6 +233,8 @@ export default function ProfilePage() {
 
   const isDevUser = user?.email === 'dev@safar.com';
   const roleIsLoading = isLoading || isSwitchingRole;
+  
+  const isCarrier = profile?.role === 'carrier';
 
 
   return (
@@ -293,7 +295,7 @@ export default function ProfilePage() {
                 </CardContent>
               </Card>
 
-              {profile?.role === 'carrier' && (
+              {isCarrier && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Briefcase /> بيانات الناقل</CardTitle>
