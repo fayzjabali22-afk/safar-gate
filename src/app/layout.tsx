@@ -6,12 +6,23 @@ import { FirebaseClientProvider } from '@/firebase';
 import InstallPrompt from '@/components/install-prompt';
 import { useEffect } from 'react';
 import { GuideTrigger } from '@/components/ai/guide-trigger';
+import { usePathname, useRouter } from 'next/navigation';
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (pathname === '/') {
+      router.replace('/landing');
+    }
+  }, [pathname, router]);
+
+
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
@@ -20,6 +31,11 @@ export default function RootLayout({
         .catch((error) => console.error('Service Worker registration failed:', error));
     }
   }, []);
+
+  // If we are on the root path, we show nothing to prevent flicker during redirect.
+  if (pathname === '/') {
+    return null;
+  }
 
   return (
     <html lang="ar" dir="rtl" className="dark" suppressHydrationWarning>
