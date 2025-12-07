@@ -27,7 +27,7 @@ export default function RootLayout({
         <title>safaryat</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <meta name="description" content="منصة safaryat لإدارة الرحلات والحجوزات بسهولة." />
-        <meta name="theme-color" content="#321118" />
+        <meta name="theme-color" content="#0A101F" />
         <link rel="icon" href="/favicon.ico" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
