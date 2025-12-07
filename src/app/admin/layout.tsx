@@ -1,8 +1,8 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useAdmin } from '@/hooks/use-admin';
-import { Loader2, ShieldCheck, Users, Ship } from 'lucide-react';
+import { ShieldCheck, Users, Ship } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -30,8 +30,20 @@ const adminNavLinks = [
 export default function AdminLayout({ children }: { children: ReactNode }) {
     const { isLoading, isAdmin } = useAdmin();
     const pathname = usePathname();
+    const [showLoading, setShowLoading] = useState(true);
 
-    if (isLoading) {
+    useEffect(() => {
+        if (!isLoading) {
+            // Add a small delay to prevent flickering
+            const timer = setTimeout(() => {
+                setShowLoading(false);
+            }, 300); // 300ms delay
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading]);
+
+
+    if (showLoading || isLoading) {
         return <AdminLoadingScreen />;
     }
 
