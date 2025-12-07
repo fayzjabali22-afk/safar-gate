@@ -8,8 +8,6 @@ export function useAdmin() {
   const { profile, isLoading: isProfileLoading, user, isUserLoading: isAuthLoading } = useUserProfile();
   const router = useRouter();
   
-  // This combined loading state is the key.
-  // It's true if auth is loading OR if we have a user but are still waiting for their profile.
   const isLoading = isAuthLoading || (user && isProfileLoading);
 
   useEffect(() => {
@@ -24,19 +22,25 @@ export function useAdmin() {
       return;
     }
 
-    // After loading, if there IS a user but their profile is not admin/owner, redirect.
-    const isAuthorized = profile?.role === 'admin' || profile?.role === 'owner';
-    if (!isAuthorized) {
-      router.replace('/dashboard'); // Redirect unauthorized users away.
+    // ** CRITICAL FIX **
+    // After loading, if there IS a user AND their profile HAS loaded,
+    // but their role is not admin/owner, THEN redirect.
+    // This prevents the redirect from happening while `profile` is still null.
+    if (profile) {
+      const isAuthorized = profile.role === 'admin' || profile.role === 'owner';
+      if (!isAuthorized) {
+        router.replace('/dashboard'); // Redirect unauthorized users away.
+      }
     }
 
   }, [user, profile, isLoading, router]);
 
   // The consuming layout should show a loading screen as long as this is true.
-  // This prevents any premature rendering of the admin layout before the check is complete.
-  const isAuthorized = profile?.role === 'admin' || profile?.role === 'owner';
+  const isAuthorized = !!(profile && (profile.role === 'admin' || profile.role === 'owner'));
+  
+  // Remain in loading state if the final authorization status is not yet determined.
   return { 
-    isLoading: isLoading || (user && !isAuthorized), // Remain in loading state if user exists but is not yet (or ever) authorized
+    isLoading: isLoading || (user && !profile), 
     isAdmin: isAuthorized
   };
 }
