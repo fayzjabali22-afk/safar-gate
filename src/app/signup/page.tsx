@@ -32,10 +32,10 @@ import { useToast } from '@/hooks/use-toast';
 import { MailCheck } from 'lucide-react';
 
 const signupFormSchema = z.object({
-  fullName: z.string().min(2, 'Full name must be at least 2 characters.'),
-  phoneNumber: z.string().min(1, 'Phone number is required.'),
-  email: z.string().email('Invalid email address.'),
-  password: z.string().min(5, 'Password must be at least 5 characters.'),
+  fullName: z.string().min(2, 'الاسم الكامل يجب أن يتكون من حرفين على الأقل.'),
+  phoneNumber: z.string().min(1, 'رقم الهاتف مطلوب.'),
+  email: z.string().email('البريد الإلكتروني غير صالح.'),
+  password: z.string().min(5, 'كلمة المرور يجب أن تتكون من 5 أحرف على الأقل.'),
 });
 
 type SignupFormValues = z.infer<typeof signupFormSchema>;
@@ -63,7 +63,7 @@ export default function SignupPage() {
 
   const onSubmit = async (data: SignupFormValues) => {
     if (!auth || !firestore) {
-        toast({ title: "Error", description: "Firebase not initialized.", variant: "destructive"});
+        toast({ title: "خطأ", description: "Firebase not initialized.", variant: "destructive"});
         return;
     };
 
@@ -89,8 +89,8 @@ export default function SignupPage() {
     const success = await initiateGoogleSignIn(auth, firestore);
     if (success) {
       toast({
-        title: 'Signed Up Successfully!',
-        description: 'You will be redirected shortly.',
+        title: 'تم إنشاء الحساب بنجاح!',
+        description: 'سيتم توجيهك قريباً.',
       });
       router.push('/dashboard');
     }
@@ -148,9 +148,9 @@ export default function SignupPage() {
       <Card className="mx-auto max-w-sm">
         <CardHeader className="text-center">
           <Logo className="mb-4 justify-center" />
-          <CardTitle className="text-2xl">Create an Account</CardTitle>
+          <CardTitle className="text-2xl">إنشاء حساب جديد</CardTitle>
           <CardDescription>
-            Enter your information to get started
+            أدخل معلوماتك للبدء
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -161,9 +161,9 @@ export default function SignupPage() {
                 name="fullName"
                 render={({ field }) => (
                   <FormItem className="grid gap-2">
-                    <FormLabel>Full name</FormLabel>
+                    <FormLabel>الاسم الكامل</FormLabel>
                     <FormControl>
-                      <Input placeholder="Fayz Al-Harbi" {...field} />
+                      <Input placeholder="فايز الحربي" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -174,7 +174,7 @@ export default function SignupPage() {
                 name="phoneNumber"
                 render={({ field }) => (
                   <FormItem className="grid gap-2">
-                    <FormLabel>Phone Number</FormLabel>
+                    <FormLabel>رقم الهاتف</FormLabel>
                     <FormControl>
                       <Input dir="ltr" placeholder="+966 50 123 4567" {...field} />
                     </FormControl>
@@ -187,7 +187,7 @@ export default function SignupPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem className="grid gap-2">
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>البريد الإلكتروني</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
@@ -204,7 +204,7 @@ export default function SignupPage() {
                 name="password"
                 render={({ field }) => (
                   <FormItem className="grid gap-2">
-                    <FormLabel>Password</FormLabel>
+                    <FormLabel>كلمة المرور</FormLabel>
                     <FormControl>
                       <Input type="password" {...field} />
                     </FormControl>
@@ -214,7 +214,7 @@ export default function SignupPage() {
               />
              
               <Button variant="secondary" type="submit" className="w-full">
-                Create an account
+                إنشاء حساب
               </Button>
             </form>
           </Form>
@@ -224,17 +224,17 @@ export default function SignupPage() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground">
-                Or continue with
+                أو أكمل باستخدام
                 </span>
             </div>
           </div>
            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
-            Sign up with Google
+            التسجيل باستخدام جوجل
           </Button>
           <div className="mt-4 text-center text-sm">
-            Already have an account?{' '}
+            لديك حساب بالفعل؟{' '}
             <Link href="/login" className="underline">
-              Login
+              تسجيل الدخول
             </Link>
           </div>
         </CardContent>

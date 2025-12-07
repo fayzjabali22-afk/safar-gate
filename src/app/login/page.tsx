@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -32,8 +31,8 @@ import { useToast } from '@/hooks/use-toast';
 import { TestTube2 } from 'lucide-react';
 
 const loginFormSchema = z.object({
-  email: z.string().email('Invalid email address.'),
-  password: z.string().min(1, 'Password is required.'),
+  email: z.string().email('البريد الإلكتروني غير صالح.'),
+  password: z.string().min(1, 'كلمة المرور مطلوبة.'),
 });
 
 type LoginFormValues = z.infer<typeof loginFormSchema>;
@@ -59,23 +58,23 @@ export default function LoginPage() {
     if (!auth) return;
     
     toast({
-      title: 'Logging in...',
-      description: 'Please wait.',
+      title: 'جاري تسجيل الدخول...',
+      description: 'الرجاء الانتظار.',
     });
 
     const success = await initiateEmailSignIn(auth, data.email, data.password);
 
     if (success) {
       toast({
-        title: 'Logged In Successfully!',
-        description: 'You will be redirected shortly.',
+        title: 'تم تسجيل الدخول بنجاح!',
+        description: 'سيتم توجيهك قريباً.',
       });
       router.push('/dashboard');
     } else {
         toast({
             variant: "destructive",
-            title: "Login Failed",
-            description: "Please check your email and password.",
+            title: "فشل تسجيل الدخول",
+            description: "الرجاء التحقق من بريدك الإلكتروني وكلمة المرور.",
         });
     }
   };
@@ -85,8 +84,8 @@ export default function LoginPage() {
     const success = await initiateGoogleSignIn(auth, firestore);
     if (success) {
       toast({
-        title: 'Logged In Successfully!',
-        description: 'You will be redirected shortly.',
+        title: 'تم تسجيل الدخول بنجاح!',
+        description: 'سيتم توجيهك قريباً.',
       });
       router.push('/dashboard');
     }
@@ -94,24 +93,24 @@ export default function LoginPage() {
   
   const handleDevSignIn = async () => {
     if (!auth || !firestore) {
-      toast({ title: "Error", description: "Firebase not initialized.", variant: "destructive" });
+      toast({ title: "خطأ", description: "Firebase not initialized.", variant: "destructive" });
       return;
     }
   
     const devEmail = 'dev@safar.com';
     const devPassword = 'password123';
   
-    toast({ title: 'Logging in as Dev...', description: 'Please wait.' });
+    toast({ title: 'جاري الدخول كمطور...', description: 'الرجاء الانتظار.' });
   
     const signInSuccess = await initiateEmailSignIn(auth, devEmail, devPassword);
   
     if (signInSuccess) {
-      toast({ title: 'Logged in as Dev', description: 'Redirecting to dev switch...' });
+      toast({ title: 'تم الدخول كمطور', description: 'جاري التوجيه...' });
       router.push('/dev-switch');
       return;
     }
   
-    toast({ title: 'Creating dev account...', description: 'One moment.' });
+    toast({ title: 'جاري إنشاء حساب المطور...', description: 'لحظة من فضلك.' });
     const devProfile = {
       firstName: 'Sovereign',
       lastName: 'Developer',
@@ -124,10 +123,10 @@ export default function LoginPage() {
     if (signUpSuccess) {
       const finalSignInSuccess = await initiateEmailSignIn(auth, devEmail, devPassword);
       if (finalSignInSuccess) {
-        toast({ title: 'Logged in as Dev', description: 'Redirecting to dev switch...' });
+        toast({ title: 'تم الدخول كمطور', description: 'جاري التوجيه...' });
         router.push('/dev-switch');
       } else {
-        toast({ title: "Dev Login Failed", description: "Could not log in after creating the dev account.", variant: "destructive"});
+        toast({ title: "فشل دخول المطور", description: "لم نتمكن من الدخول بعد إنشاء الحساب.", variant: "destructive"});
       }
     }
   };
@@ -147,9 +146,9 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
           <Logo className="mb-4 justify-center" />
-          <CardTitle className="text-2xl">Welcome Back</CardTitle>
+          <CardTitle className="text-2xl">أهلاً بعودتك</CardTitle>
           <CardDescription>
-            Use the developer login for instant access or sign in normally.
+            استخدم زر المطور للدخول الفوري، أو سجل دخولك بشكل طبيعي.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -163,7 +162,7 @@ export default function LoginPage() {
               </div>
               <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-card px-2 text-muted-foreground">
-                  Or login with
+                  أو سجل دخولك عبر
                   </span>
               </div>
             </div>
@@ -174,7 +173,7 @@ export default function LoginPage() {
                 name="email"
                 render={({ field }) => (
                   <FormItem className="grid gap-2">
-                    <FormLabel>Email</FormLabel>
+                    <FormLabel>البريد الإلكتروني</FormLabel>
                     <FormControl>
                       <Input
                         type="email"
@@ -192,12 +191,12 @@ export default function LoginPage() {
                 render={({ field }) => (
                   <FormItem className="grid gap-2">
                     <div className="flex items-center">
-                      <FormLabel>Password</FormLabel>
+                      <FormLabel>كلمة المرور</FormLabel>
                       <Link
                         href="#"
-                        className="ml-auto inline-block text-sm underline"
+                        className="mr-auto inline-block text-sm underline"
                       >
-                        Forgot your password?
+                        هل نسيت كلمة المرور؟
                       </Link>
                     </div>
                     <FormControl>
@@ -208,7 +207,7 @@ export default function LoginPage() {
                 )}
               />
               <Button type="submit" className="w-full">
-                Login
+                تسجيل الدخول
               </Button>
             </form>
           </Form>
@@ -218,17 +217,17 @@ export default function LoginPage() {
             </div>
             <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground">
-                Or continue with
+                أو أكمل باستخدام
                 </span>
             </div>
           </div>
           <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
-            Login with Google
+            تسجيل الدخول باستخدام جوجل
           </Button>
           <div className="mt-4 text-center text-sm">
-            Don&apos;t have an account?{' '}
+            ليس لديك حساب؟{' '}
             <Link href="/signup" className="underline">
-              Sign up
+              أنشئ حساباً
             </Link>
           </div>
         </CardContent>
