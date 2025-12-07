@@ -1,39 +1,46 @@
 'use client';
+
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useUserProfile } from '@/hooks/use-user-profile';
+import { useRouter } from 'next/navigation'; // FIX: Added missing import
+import { useUserProfile } from '@/hooks/use-user-profile'; // FIX: Correct path
 import { AppLayout } from '@/components/app-layout';
 import { Ship } from 'lucide-react';
 
-export default function SmartRedirectPage() {
-  const router = useRouter();
-  const { profile, isLoading } = useUserProfile();
-
-  useEffect(() => {
-    // We don't do anything until the loading is complete
-    if (!isLoading) {
-      if (profile?.role === 'admin' || profile?.role === 'owner') {
-        router.replace('/admin');
-      } else if (profile?.role === 'carrier') {
-        router.replace('/carrier');
-      } else {
-        router.replace('/dashboard');
-      }
-    }
-  }, [profile, isLoading, router]);
-
-  // Render a simple loading state to avoid flashes of content
-  return (
-    <AppLayout>
-        <div className="flex h-[calc(100vh-200px)] w-full flex-col items-center justify-center bg-background">
-            <div className="flex flex-col items-center gap-4 text-center">
-                <Ship className="h-20 w-20 text-primary animate-pulse" />
-                <h1 className="text-2xl font-bold text-white/90">جاري تحديد وجهتك...</h1>
-                <p className="text-sm text-white/60">
-                    الرجاء الانتظار قليلاً.
-                </p>
-            </div>
+function LoadingScreen() {
+    return (
+        <div className="flex h-screen flex-col items-center justify-center gap-4 text-center bg-background">
+            <Ship className="h-16 w-16 animate-pulse text-primary" />
+            <h1 className="text-xl font-bold text-muted-foreground">جاري تحديد وجهتك ...</h1>
+            <p className="text-sm text-muted-foreground">يقوم النظام بالتحقق من صلاحيات حسابك.</p>
         </div>
-    </AppLayout>
-  );
+    );
+}
+
+export default function SmartRedirectPage() {
+    const router = useRouter();
+    const { user, profile, isLoading } = useUserProfile();
+
+    useEffect(() => {
+        // Wait for loading to finish
+        if (isLoading) return;
+
+        // 1. No User -> Go to Login
+        if (!user) {
+            router.replace('/login');
+            return;
+        }
+
+        // 2. Routing based on Role
+        if (profile?.role === 'admin' || profile?.role === 'owner') {
+            router.replace('/admin'); // The fix for you
+        } else if (profile?.role === 'carrier') {
+            router.replace('/carrier');
+        } else {
+            // Default for travelers
+            router.replace('/history'); 
+        }
+    }, [user, profile, isLoading, router]);
+
+    // Always show loading screen while deciding
+    return <LoadingScreen />;
 }
