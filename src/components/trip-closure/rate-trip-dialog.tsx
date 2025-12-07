@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -15,7 +14,7 @@ import { Loader2, Send, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 import { useFirestore, addDocumentNonBlocking, updateDocumentNonBlocking, useUser } from '@/firebase';
-import { collection, doc, serverTimestamp, runTransaction, increment } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, runTransaction, increment, query, where, getDocs } from 'firebase/firestore';
 
 
 interface RateTripDialogProps {
@@ -117,6 +116,8 @@ export function RateTripDialog({ isOpen, onOpenChange, trip, onConfirm }: RateTr
         await runTransaction(firestore, async (transaction) => {
             const ratingRef = doc(collection(firestore, 'ratings'));
             const carrierRef = doc(firestore, 'users', trip.carrierId!);
+            
+            // This must be done inside the transaction to get the latest data
             const carrierDoc = await transaction.get(carrierRef);
 
             if (!carrierDoc.exists()) {
@@ -151,14 +152,14 @@ export function RateTripDialog({ isOpen, onOpenChange, trip, onConfirm }: RateTr
             const bookingQuery = query(
                 collection(firestore, 'bookings'),
                 where('tripId', '==', trip.id),
-                where('userId', '==', user.uid)
+                where('userId', '==', user.uid),
+                where('status', '==', 'Confirmed') // ensure we are completing the right one
             );
-            const bookingSnapshot = await getDocs(bookingQuery); // Use getDocs within transaction is tricky, better to have booking ID if possible
+            const bookingSnapshot = await getDocs(bookingQuery); // This is safe within a transaction if it's just reading
             if (!bookingSnapshot.empty) {
                 const bookingDocRef = bookingSnapshot.docs[0].ref;
                 transaction.update(bookingDocRef, { status: 'Completed' });
             }
-
         });
         
         toast({

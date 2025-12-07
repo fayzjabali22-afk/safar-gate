@@ -481,6 +481,12 @@ const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarri
                         <Badge variant="default" className="w-fit mb-2">تذكرة مؤكدة</Badge>
                         <CardTitle className="pt-1">{getCityName(trip.origin)} - {getCityName(trip.destination)}</CardTitle>
                     </div>
+                     {booking.status === 'Completed' && (
+                        <Button variant="secondary" onClick={() => onRateTrip(trip)}>
+                            <Flag className="ml-2 h-4 w-4" />
+                            تقييم الرحلة
+                        </Button>
+                    )}
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
@@ -561,7 +567,7 @@ const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarri
                     </Button>
                 )}
 
-                {isTripCompleted && onRateTrip && (
+                {isTripCompleted && onRateTrip && booking.status !== 'Completed' && (
                     <Button variant="default" onClick={() => onRateTrip(trip)} className="sm:col-span-2">
                         <Flag className="ml-2 h-4 w-4" />
                         تقييم وإغلاق الرحلة
