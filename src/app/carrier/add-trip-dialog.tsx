@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -36,7 +36,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { collection, serverTimestamp } from 'firebase/firestore';
-import { Loader2, CalendarIcon, Send, Clock, PlaneTakeoff, PlaneLanding, Settings, ListChecks, MapPin, Wallet } from 'lucide-react';
+import { Loader2, CalendarIcon, Send, Clock, PlaneTakeoff, PlaneLanding, Settings, ListChecks, MapPin, Wallet, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from "date-fns";
 import { Label } from '@/components/ui/label';
@@ -112,6 +112,36 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
       currency: 'د.أ',
     }
   });
+  
+  useEffect(() => {
+    if (isOpen && profile) {
+      const defaultValues: Partial<AddTripFormValues> = {};
+      if (profile.primaryRoute?.origin) {
+        defaultValues.origin = profile.primaryRoute.origin;
+        setOriginCountry(profile.primaryRoute.origin); // Also set the country selector
+      }
+       if (profile.primaryRoute?.destination) {
+        defaultValues.destination = profile.primaryRoute.destination;
+        setDestinationCountry(profile.primaryRoute.destination);
+      }
+      if (profile.vehicleCapacity) {
+        defaultValues.availableSeats = profile.vehicleCapacity;
+      }
+      
+      const defaultConditions = [];
+      if (profile.bagsPerSeat) defaultConditions.push(`حقيبة ${profile.bagsPerSeat} لكل راكب.`);
+      if (profile.numberOfStops !== undefined) {
+          if (profile.numberOfStops === 0) defaultConditions.push('الرحلة مباشرة بدون توقف.');
+          else defaultConditions.push(`تتضمن الرحلة ${profile.numberOfStops} محطة توقف.`);
+      }
+      if (defaultConditions.length > 0) {
+          defaultValues.conditions = defaultConditions.join('\n');
+      }
+
+      form.reset({ ...form.getValues(), ...defaultValues });
+    }
+  }, [isOpen, profile, form]);
+
 
   const conditionsValue = form.watch('conditions');
   const priceValue = form.watch('price');
@@ -148,6 +178,8 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
         vehicleImageUrls: profile.vehicleImageUrls || [],
         vehicleCategory: profile.vehicleCapacity && profile.vehicleCapacity > 7 ? 'bus' : 'small',
         status: 'Planned',
+        bagsPerSeat: profile.bagsPerSeat,
+        numberOfStops: profile.numberOfStops,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -189,11 +221,16 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             
+            <div className='p-2 bg-blue-950/50 border border-blue-800 rounded-lg text-blue-300 text-xs flex items-center gap-2'>
+              <Info className='h-4 w-4'/>
+              <span>يتم تعبئة بعض الحقول تلقائياً من "الشروط الدائمة" الخاصة بك.</span>
+            </div>
+            
             <Card className="bg-muted/30 border-accent/20">
               <CardContent className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className='space-y-2'>
                       <Label className='flex items-center gap-2 font-bold text-accent'><PlaneTakeoff className='h-4 w-4' /> من</Label>
-                       <Select onValueChange={setOriginCountry}>
+                       <Select onValueChange={setOriginCountry} value={originCountry}>
                           <SelectTrigger className="bg-background"><SelectValue placeholder="اختر دولة الانطلاق" /></SelectTrigger>
                           <SelectContent>
                             {Object.entries(countries).map(([key, {name}]) => (
@@ -219,7 +256,7 @@ export function AddTripDialog({ isOpen, onOpenChange }: AddTripDialogProps) {
                   </div>
                    <div className='space-y-2'>
                       <Label className='flex items-center gap-2 font-bold text-accent'><PlaneLanding className='h-4 w-4' /> إلى</Label>
-                      <Select onValueChange={setDestinationCountry}>
+                      <Select onValueChange={setDestinationCountry} value={destinationCountry}>
                           <SelectTrigger className="bg-background"><SelectValue placeholder="اختر دولة الوصول" /></SelectTrigger>
                           <SelectContent>
                           {Object.entries(countries).filter(([key]) => key !== originCountry).map(([key, {name}]) => (

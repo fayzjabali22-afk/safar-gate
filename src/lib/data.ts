@@ -90,6 +90,8 @@ export type Trip = {
   isShared?: boolean;
   targetPrice?: number;
   notes?: string;
+  bagsPerSeat?: number;
+  numberOfStops?: number;
 };
 
 export type Booking = {

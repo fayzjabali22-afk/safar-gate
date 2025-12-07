@@ -229,6 +229,14 @@
             "type": "number",
             "description": "The traveler's target price for a request."
         },
+        "bagsPerSeat": {
+            "type": "number",
+            "description": "The default number of bags allowed per passenger seat for a trip."
+        },
+        "numberOfStops": {
+            "type": "number",
+            "description": "The typical number of stops the carrier makes during a trip."
+        },
         "createdAt": {
             "type": "string",
             "format": "date-time",

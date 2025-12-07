@@ -220,12 +220,12 @@ export default function CarrierProfilePage() {
                       <CardHeader>
                           <CardTitle className="flex items-center gap-2 text-base"><Car/> صور المركبة</CardTitle>
                           <CardDescription className="text-xs">
-                             هذه الصور تظهر للمسافرين في العروض والرحلات المجدولة.
+                             لزيادة الشفافية، ضع روابط مباشرة لصور واضحة لمركبتك.
                           </CardDescription>
                       </CardHeader>
                       <CardContent className="space-y-4">
-                          <FormField control={form.control} name="vehicleImageUrls.0" render={({ field }) => (<FormItem><FormLabel className="text-xs">الصورة الأساسية (رابط)</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/main-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                          <FormField control={form.control} name="vehicleImageUrls.1" render={({ field }) => (<FormItem><FormLabel className="text-xs">صورة إضافية (رابط)</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/extra-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="vehicleImageUrls.0" render={({ field }) => (<FormItem><FormLabel className="text-xs">رابط الصورة الأمامية</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/front-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                          <FormField control={form.control} name="vehicleImageUrls.1" render={({ field }) => (<FormItem><FormLabel className="text-xs">رابط الصورة الخلفية (مع اللوحة)</FormLabel><FormControl><Input dir="ltr" placeholder="https://example.com/back-image.jpg" {...field} /></FormControl><FormMessage /></FormItem>)} />
                       </CardContent>
                   </Card>
                 </CardContent>
