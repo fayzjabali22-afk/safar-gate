@@ -28,7 +28,7 @@ service cloud.firestore {
       let isCreatingOwnDoc = isOwner(userId);
       let resourceData = request.resource.data;
       let hasRequiredFields = 'firstName' in resourceData && 'lastName' in resourceData && 'email' in resourceData;
-      let isValidRole = resourceData.role == 'traveler';
+      let isValidRole = resourceData.role in ['traveler', 'admin', 'owner'];
       
       return isCreatingOwnDoc && hasRequiredFields && isValidRole;
     }
