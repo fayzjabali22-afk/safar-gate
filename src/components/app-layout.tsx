@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -30,8 +29,10 @@ import {
   useUser,
   useFirestore,
   useCollection,
-  setDocumentNonBlocking,
+  updateDocumentNonBlocking,
   useAuth,
+  FirestorePermissionError,
+  errorEmitter
 } from '@/firebase';
 import { doc, collection, query, where, limit, updateDoc } from 'firebase/firestore';
 import type { Notification } from '@/lib/data';
@@ -82,7 +83,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const { profile, isLoading: isProfileLoading } = useUserProfile();
+  const { profile, isLoading: isProfileLoading, userProfileRef } = useUserProfile();
   const [isSwitchingRole, setIsSwitchingRole] = useState(false);
   
   const [isMounted, setIsMounted] = useState(false);
@@ -93,19 +94,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const isCarrierPath = pathname?.startsWith('/carrier');
 
-  const userProfileRef = useMemo(() => {
-    if (!firestore || !user) return null;
-    return doc(firestore, 'users', user.uid);
-  }, [firestore, user]);
-
   const notificationsQuery = useMemo(() => {
     if (!firestore || !user?.uid) return null;
+    // FIX: Query the subcollection within the user's document
     return query(
-      collection(firestore, 'notifications'),
-      where("userId", "==", user.uid),
+      collection(firestore, 'users', user.uid, 'notifications'),
       limit(20)
     );
   }, [firestore, user]);
+
 
   const { data: allNotifications } = useCollection(notificationsQuery);
 
@@ -121,8 +118,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   const handleNotificationClick = (notification: Notification) => {
     if (firestore && user && !notification.isRead) {
-      const notifRef = doc(firestore, 'notifications', notification.id);
-      setDocumentNonBlocking(notifRef, { isRead: true }, { merge: true });
+      const notifRef = doc(firestore, 'users', user.uid, 'notifications', notification.id);
+      updateDocumentNonBlocking(notifRef, { isRead: true });
     }
     if (notification.link) {
       router.push(notification.link);
@@ -157,21 +154,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (!userProfileRef || !profile) return;
     setIsSwitchingRole(true);
     const newRole = profile.role === 'carrier' ? 'traveler' : 'carrier';
-    try {
-        await updateDoc(userProfileRef, { role: newRole });
-        toast({
-            title: `تم التبديل إلى واجهة ${newRole === 'carrier' ? 'الناقل' : 'المسافر'}`,
+    const payload = { role: newRole };
+    
+    updateDoc(userProfileRef, payload)
+        .then(() => {
+            toast({
+                title: `تم التبديل إلى واجهة ${newRole === 'carrier' ? 'الناقل' : 'المسافر'}`,
+            });
+            window.location.href = newRole === 'carrier' ? '/carrier' : '/dashboard';
+        })
+        .catch(serverError => {
+            const permissionError = new FirestorePermissionError({
+                path: userProfileRef.path,
+                operation: 'update',
+                requestResourceData: payload,
+            });
+            errorEmitter.emit('permission-error', permissionError);
+            setIsSwitchingRole(false);
         });
-        // Force a reload to ensure all state is reset correctly
-        window.location.href = newRole === 'carrier' ? '/carrier' : '/dashboard';
-    } catch (e) {
-         toast({
-            variant: "destructive",
-            title: "فشل تبديل الدور",
-            description: "حدث خطأ أثناء محاولة تحديث دورك في قاعدة البيانات."
-        });
-        setIsSwitchingRole(false);
-    }
   }
 
   const handleDeleteAccount = async () => {
