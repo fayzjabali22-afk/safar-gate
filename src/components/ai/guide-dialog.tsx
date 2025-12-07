@@ -24,13 +24,32 @@ export function GuideDialog({ isOpen, onOpenChange }: GuideDialogProps) {
   const [guide, setGuide] = useState<Guide | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeStep, setActiveStep] = useState(0);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
+
+  useEffect(() => {
+    const loadVoices = () => {
+      const availableVoices = window.speechSynthesis.getVoices();
+      if (availableVoices.length > 0) {
+        setVoices(availableVoices);
+        const arabicVoice = availableVoices.find(voice => voice.lang.startsWith('ar-'));
+        setSelectedVoice(arabicVoice || availableVoices[0]);
+      }
+    };
+
+    // Load voices immediately and on change
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
-      // Simulate a small delay for a better UX, then get the guide
       const timer = setTimeout(() => {
-        // Extract a simple context from the pathname
         const context = pathname.split('/').pop() || 'dashboard';
         const relevantGuide = getRelevantGuide(context);
         setGuide(relevantGuide);
@@ -42,13 +61,18 @@ export function GuideDialog({ isOpen, onOpenChange }: GuideDialogProps) {
   }, [isOpen, pathname]);
 
   const handleSpeak = (text: string) => {
-    // Zero-Cost Voice implementation using Web Speech API
-    if ('speechSynthesis' in window) {
+    if ('speechSynthesis' in window && selectedVoice) {
+      // Cancel any previous speech to avoid overlap
+      window.speechSynthesis.cancel();
+      
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'ar-SA'; // Set language to Arabic
+      utterance.voice = selectedVoice;
+      utterance.lang = selectedVoice.lang;
+      utterance.pitch = 1;
+      utterance.rate = 1;
       window.speechSynthesis.speak(utterance);
     } else {
-      alert('عذراً، متصفحك لا يدعم ميزة النطق الصوتي.');
+      alert('عذراً، متصفحك لا يدعم ميزة النطق الصوتي أو لم يتم العثور على صوت مناسب.');
     }
   };
 
@@ -87,7 +111,7 @@ export function GuideDialog({ isOpen, onOpenChange }: GuideDialogProps) {
                 </p>
               </div>
               <div className="flex items-center justify-center gap-4">
-                 <Button variant="outline" size="icon" onClick={() => handleSpeak(guide.steps[activeStep].text)}>
+                 <Button variant="outline" size="icon" onClick={() => handleSpeak(guide.steps[activeStep].text)} disabled={!selectedVoice}>
                     <Volume2 className="h-5 w-5" />
                     <span className="sr-only">استمع</span>
                 </Button>
