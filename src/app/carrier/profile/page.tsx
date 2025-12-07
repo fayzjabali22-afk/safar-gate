@@ -23,7 +23,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useUser, useFirestore, useAuth, updateDocumentNonBlocking } from '@/firebase';
-import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { doc, deleteDoc } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
 import { deleteUser, signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
@@ -119,7 +119,7 @@ export default function CarrierProfilePage() {
         );
     }
 
-    updateDoc(userProfileRef, dataToSave);
+    updateDocumentNonBlocking(userProfileRef, dataToSave);
     toast({ title: 'تم تحديث الملف الشخصي', description: 'تم حفظ تغييراتك بنجاح.' });
   }
 

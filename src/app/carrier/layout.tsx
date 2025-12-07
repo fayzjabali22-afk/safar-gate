@@ -13,8 +13,8 @@ import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/s
 import { CarrierMobileMenu } from '@/components/carrier/carrier-mobile-menu';
 import { Logo } from '@/components/logo';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { updateDocumentNonBlocking } from '@/firebase';
 
 
 function LoadingSpinner() {
@@ -56,22 +56,18 @@ export default function CarrierLayout({
     if (!userProfileRef || !profile) return;
     setIsSwitchingRole(true);
     const newRole = profile.role === 'carrier' ? 'traveler' : 'carrier';
-    try {
-        await updateDoc(userProfileRef, { role: newRole });
+    
+    // Using non-blocking update to enable contextual error handling
+    updateDocumentNonBlocking(userProfileRef, { role: newRole });
 
-        toast({
-            title: `تم التبديل إلى واجهة ${newRole === 'carrier' ? 'الناقل' : 'المسافر'}`,
-        });
-        // Force a reload to ensure all state is reset correctly
-        window.location.href = newRole === 'carrier' ? '/carrier' : '/dashboard';
-    } catch (e) {
-         toast({
-            variant: "destructive",
-            title: "فشل تبديل الدور",
-            description: "حدث خطأ أثناء محاولة تحديث دورك في قاعدة البيانات."
-        });
-        setIsSwitchingRole(false);
-    }
+    // Optimistic UI update
+    toast({
+        title: `تم التبديل إلى واجهة ${newRole === 'carrier' ? 'الناقل' : 'المسافر'}`,
+    });
+    
+    // The error handler will catch permission issues, but we can handle UI state.
+    // We assume success for navigation and let the error boundary catch failures.
+    window.location.href = newRole === 'carrier' ? '/carrier' : '/dashboard';
   }
 
 
