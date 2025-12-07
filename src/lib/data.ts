@@ -8,6 +8,7 @@ export type UserProfile = {
   email: string;
   phoneNumber?: string;
   role?: 'traveler' | 'carrier' | 'admin';
+  isDeactivated?: boolean; // Added for account freezing
   // Carrier-specific fields are now part of the main user profile
   // for simplicity in a single-document model.
   averageRating?: number; // The overall calculated average rating

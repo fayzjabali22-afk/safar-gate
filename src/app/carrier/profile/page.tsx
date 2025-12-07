@@ -22,15 +22,16 @@ import {
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { useUser, useFirestore, useAuth } from '@/firebase';
+import { useUser, useFirestore, useAuth, updateDocumentNonBlocking } from '@/firebase';
 import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
-import { deleteUser } from 'firebase/auth';
+import { deleteUser, signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
-import { ShieldAlert, Trash2, Upload, Briefcase, Car } from 'lucide-react';
+import { ShieldAlert, Trash2, Upload, Briefcase, Car, LogOut, Loader2, UserX } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useUserProfile } from '@/hooks/use-user-profile';
-
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const profileFormSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters.'),
@@ -122,6 +123,32 @@ export default function CarrierProfilePage() {
     toast({ title: 'تم تحديث الملف الشخصي', description: 'تم حفظ تغييراتك بنجاح.' });
   }
 
+  const handleSignOut = async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+      toast({ title: 'تم تسجيل الخروج بنجاح' });
+      router.push('/login');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'فشل تسجيل الخروج',
+        description: 'حدث خطأ ما. يرجى المحاولة مرة أخرى.',
+      });
+    }
+  };
+
+  const handleAccountDeactivation = (isDeactivated: boolean) => {
+    if (!userProfileRef) return;
+    updateDocumentNonBlocking(userProfileRef, { isDeactivated });
+    toast({
+      title: isDeactivated ? 'تم تجميد الحساب' : 'تم تنشيط الحساب',
+      description: isDeactivated
+        ? 'لن تظهر للمسافرين ولن تستقبل طلبات جديدة.'
+        : 'حسابك فعال الآن وتستقبل الفرص مجدداً.',
+    });
+  };
+
   const handleDeleteAccount = async () => {
     if (!user || !auth || !firestore) {
       toast({ variant: 'destructive', title: 'خطأ', description: 'لم يتم العثور على المستخدم أو خدمات Firebase.' });
@@ -209,6 +236,35 @@ export default function CarrierProfilePage() {
               </div>
             </form>
           </Form>
+
+           <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><UserX /> إدارة الحساب</CardTitle>
+                <CardDescription>إدارة حالة حسابك وإجراءات الخروج.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex flex-row items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                        <Label htmlFor="deactivate-switch" className="text-base">تجميد الحساب</Label>
+                        <p className="text-sm text-muted-foreground">
+                           إيقاف استقبال طلبات جديدة وإخفاء ملفك مؤقتاً.
+                        </p>
+                    </div>
+                    <Switch
+                        id="deactivate-switch"
+                        checked={profile?.isDeactivated ?? false}
+                        onCheckedChange={handleAccountDeactivation}
+                        aria-label="تجميد أو تنشيط الحساب"
+                    />
+                </div>
+            </CardContent>
+            <CardFooter>
+                 <Button variant="outline" onClick={handleSignOut}>
+                    <LogOut className="ml-2 h-4 w-4" />
+                    تسجيل الخروج
+                </Button>
+            </CardFooter>
+          </Card>
 
           <Card className="border-destructive shadow-lg">
             <CardHeader><CardTitle className="flex items-center gap-2 text-destructive"><ShieldAlert /> منطقة الخطر</CardTitle><CardDescription>هذه الإجراءات دائمة ولا يمكن التراجع عنها. يرجى المتابعة بحذر.</CardDescription></CardHeader>
