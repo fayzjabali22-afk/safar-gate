@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, useCollection, useUserProfile } from '@/firebase';
+import { useUserProfile } from '@/hooks/use-user-profile';
 import { AppLayout } from '@/components/app-layout';
 import { Ship } from 'lucide-react';
 
