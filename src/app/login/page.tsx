@@ -100,20 +100,20 @@ export default function LoginPage() {
     const devEmail = 'dev@safar.com';
     const devPassword = 'password123';
   
-    toast({ title: 'جاري التحقق من هوية المدير...', description: 'الرجاء الانتظار.' });
+    toast({ title: 'جاري التحقق من هوية المطور...', description: 'الرجاء الانتظار.' });
   
     const signInSuccess = await initiateEmailSignIn(auth, devEmail, devPassword);
   
     if (signInSuccess) {
-      toast({ title: 'أهلاً بك سيادة المدير', description: 'جاري التوجيه إلى قلعة المشرف...' });
-      router.push('/admin'); // <-- DIRECT REDIRECT TO ADMIN
+      toast({ title: 'أهلاً بك أيها المطور', description: 'جاري التوجيه...' });
+      router.push('/dev-switch');
       return;
     }
   
     // If sign-in fails, it might be the first time, so we try to create the account.
-    toast({ title: 'جاري إنشاء حساب المدير الأعلى...', description: 'لحظة من فضلك.' });
+    toast({ title: 'جاري إنشاء حساب المطور الأعلى...', description: 'لحظة من فضلك.' });
     const devProfile = {
-      firstName: 'المدير',
+      firstName: 'المطور',
       lastName: 'الأعلى',
       email: devEmail,
       phoneNumber: '000-000-0000',
@@ -126,16 +126,16 @@ export default function LoginPage() {
       // After successful sign-up, try signing in again to establish the session.
       const finalSignInSuccess = await initiateEmailSignIn(auth, devEmail, devPassword);
       if (finalSignInSuccess) {
-        toast({ title: 'أهلاً بك سيادة المدير', description: 'جاري التوجيه إلى قلعة المشرف...' });
-        router.push('/admin'); // <-- DIRECT REDIRECT TO ADMIN
+        toast({ title: 'أهلاً بك أيها المطور', description: 'جاري التوجيه...' });
+        router.push('/dev-switch');
       } else {
-        toast({ title: "فشل دخول المدير", description: "لم نتمكن من الدخول بعد إنشاء الحساب.", variant: "destructive"});
+        toast({ title: "فشل دخول المطور", description: "لم نتمكن من الدخول بعد إنشاء الحساب.", variant: "destructive"});
       }
     }
   };
 
   return (
-    <div className="w-full min-h-screen p-4 flex items-center justify-center">
+    <div className="w-full min-h-screen flex items-center justify-center bg-background">
       {bgImage && (
         <Image
           src={bgImage.imageUrl}
@@ -146,13 +146,13 @@ export default function LoginPage() {
         />
       )}
       <div className="absolute inset-0 -z-10 bg-black/60" />
-      <div className="w-full flex items-center justify-center">
-        <Card className="w-full max-w-sm bg-card/80 backdrop-blur-sm border-white/20">
+      <div className="w-full max-w-sm p-4">
+        <Card className="w-full bg-card/80 backdrop-blur-sm border-white/20">
           <CardHeader className="text-center">
             <Logo className="mb-4 justify-center" />
             <CardTitle className="text-2xl">أهلاً بعودتك</CardTitle>
             <CardDescription>
-              استخدم زر المطور للدخول الفوري، أو سجل دخولك بشكل طبيعي.
+              ادخل بياناتك للمتابعة إلى حسابك
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -200,7 +200,7 @@ export default function LoginPage() {
                           href="#"
                           className="mr-auto inline-block text-sm underline"
                         >
-                          هل نسيت كلمة المرور؟
+                          نسيت كلمة المرور؟
                         </Link>
                       </div>
                       <FormControl>
