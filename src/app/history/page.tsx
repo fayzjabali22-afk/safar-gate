@@ -133,7 +133,7 @@ export default function HistoryPage() {
   // --- QUERIES FOR ALL ACTIVE STATES ---
   const confirmedQuery = useMemo(() => {
     if (!firestore || !user) return null;
-    return query(collection(firestore, 'bookings'), where('userId', '==', user.uid), where('status', '==', 'Confirmed'), limit(1));
+    return query(collection(firestore, 'bookings'), where('userId', '==', user.uid), where('status', 'in', ['Confirmed', 'Completed']), limit(1));
   }, [firestore, user]);
   
   const awaitingOffersQuery = useMemo(() => {
@@ -325,7 +325,7 @@ export default function HistoryPage() {
   );
 
   const renderContent = () => {
-    // Priority 1: Show the confirmed ticket ("the masterpiece") exclusively if it exists.
+    // Priority 1: Show the confirmed/completed ticket ("the masterpiece") exclusively if it exists.
     if (confirmedBooking && confirmedTrip) {
         return <HeroTicket key={confirmedBooking.id} trip={confirmedTrip} booking={confirmedBooking} onRateTrip={handleOpenRatingDialog} onCancelBooking={handleOpenCancellationDialog} onMessageCarrier={() => handleOpenChatDialog(confirmedTrip.id, `رحلة ${getCityName(confirmedTrip.origin)}`)} />;
     }
@@ -458,7 +458,6 @@ const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarri
     const depositAmount = (booking.totalPrice * ((trip.depositPercentage || 20) / 100));
     const remainingAmount = booking.totalPrice - depositAmount;
 
-    // This logic is now managed by the carrier. The button will appear based on trip status.
     const isTripCompleted = trip.status === 'Completed';
 
     const canCancel = useMemo(() => {
@@ -548,10 +547,12 @@ const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarri
                  )}
             </CardContent>
              <CardFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <Button variant="outline" onClick={onMessageCarrier}>
-                    <MessageSquare className="ml-2 h-4 w-4" />
-                    دردشة الرحلة الجماعية
-                </Button>
+                {!isTripCompleted && (
+                    <Button variant="outline" onClick={onMessageCarrier}>
+                        <MessageSquare className="ml-2 h-4 w-4" />
+                        دردشة الرحلة الجماعية
+                    </Button>
+                )}
 
                 {isTripCompleted && onRateTrip && (
                     <Button variant="default" onClick={() => onRateTrip(trip)} className="sm:col-span-2">

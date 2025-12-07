@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,19 +10,19 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import type { Trip, UserProfile } from '@/lib/data';
+import type { Trip, UserProfile, Rating } from '@/lib/data';
 import { Loader2, Send, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 import { useFirestore, addDocumentNonBlocking, updateDocumentNonBlocking, useUser } from '@/firebase';
-import { collection, doc, serverTimestamp, runTransaction } from 'firebase/firestore';
+import { collection, doc, serverTimestamp, runTransaction, increment } from 'firebase/firestore';
 
 
 interface RateTripDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   trip: Trip | null;
-  onConfirm: () => void; // Callback to close the parent dialog
+  onConfirm: () => void;
 }
 
 const ratingSchema = z.object({
@@ -44,15 +45,15 @@ const RATING_WEIGHTS = {
     vehicleCleanliness: 0.10,       // 10%
 };
 
-const ratingCriteria: { key: keyof RatingFormValues; label: string; weight: number }[] = [
+const ratingCriteria: { key: keyof Omit<RatingFormValues, 'comment'>; label: string; weight: number }[] = [
     { key: 'drivingProfessionalism', label: 'القيادة الآمنة والمهنية', weight: RATING_WEIGHTS.drivingProfessionalism },
     { key: 'specificationCredibility', label: 'مصداقية مواصفات المركبة', weight: RATING_WEIGHTS.specificationCredibility },
     { key: 'driverCourtesy', label: 'تهذيب ومساعدة السائق', weight: RATING_WEIGHTS.driverCourtesy },
     { key: 'vehicleQuality', label: 'جودة المركبة', weight: RATING_WEIGHTS.vehicleQuality },
     { key: 'vehicleCleanliness', label: 'نظافة المركبة', weight: RATING_WEIGHTS.vehicleCleanliness },
-]
+];
 
-// Star rating component to be used inside the form
+
 const StarRating = ({ value, onChange }: { value: number; onChange: (value: number) => void }) => {
   const [hoverValue, setHoverValue] = useState(0);
   return (
@@ -98,7 +99,10 @@ export function RateTripDialog({ isOpen, onOpenChange, trip, onConfirm }: RateTr
   }, [isOpen, form]);
 
   const onSubmit = async (data: RatingFormValues) => {
-    if (!firestore || !trip || !user) return;
+    if (!firestore || !trip || !user || !trip.carrierId) {
+        toast({ variant: 'destructive', title: 'خطأ فادح', description: 'بيانات الرحلة أو المستخدم غير مكتملة.' });
+        return;
+    }
     setIsSubmitting(true);
     
     // Calculate the weighted average rating
@@ -112,43 +116,49 @@ export function RateTripDialog({ isOpen, onOpenChange, trip, onConfirm }: RateTr
     try {
         await runTransaction(firestore, async (transaction) => {
             const ratingRef = doc(collection(firestore, 'ratings'));
-            const tripRef = doc(firestore, 'trips', trip.id);
             const carrierRef = doc(firestore, 'users', trip.carrierId!);
+            const carrierDoc = await transaction.get(carrierRef);
 
+            if (!carrierDoc.exists()) {
+                throw new Error("Carrier profile does not exist!");
+            }
+            
             // 1. Create the detailed rating document
-            const ratingData = {
-                id: ratingRef.id,
+            const ratingData: Omit<Rating, 'id'> = {
                 tripId: trip.id,
-                carrierId: trip.carrierId,
+                carrierId: trip.carrierId!,
                 userId: user.uid,
-                ratingValue: weightedAverage, // Store the final weighted average
-                details: data, // Store the detailed criteria ratings
+                ratingValue: weightedAverage,
+                details: data,
                 comment: data.comment,
-                createdAt: serverTimestamp(),
+                createdAt: serverTimestamp() as any,
             };
             transaction.set(ratingRef, ratingData);
 
-            // 2. Update the trip status to 'Completed'
-            transaction.update(tripRef, { status: 'Completed' });
-
-            // 3. Update the carrier's average rating
-            const carrierDoc = await transaction.get(carrierRef);
-            if (!carrierDoc.exists()) {
-                // In a real scenario, you might want to create the carrier profile
-                // but here we just throw an error.
-                throw new Error("Carrier profile does not exist!");
-            }
+            // 2. Update the carrier's average rating atomically
             const carrierData = carrierDoc.data() as UserProfile;
             const oldAverage = carrierData.averageRating || 0;
             const oldTotalRatings = carrierData.totalRatings || 0;
-            
-            // Incremental Average Formula: NewAvg = ((OldAvg * N) + NewRating) / (N + 1)
-            const newAverage = ((oldAverage * oldTotalRatings) + weightedAverage) / (oldTotalRatings + 1);
+            const newTotalRatings = oldTotalRatings + 1;
+            const newAverage = ((oldAverage * oldTotalRatings) + weightedAverage) / newTotalRatings;
 
             transaction.update(carrierRef, {
                 averageRating: newAverage,
-                totalRatings: (oldTotalRatings + 1)
+                totalRatings: increment(1)
             });
+            
+            // 3. Mark the traveler's booking as Completed
+            const bookingQuery = query(
+                collection(firestore, 'bookings'),
+                where('tripId', '==', trip.id),
+                where('userId', '==', user.uid)
+            );
+            const bookingSnapshot = await getDocs(bookingQuery); // Use getDocs within transaction is tricky, better to have booking ID if possible
+            if (!bookingSnapshot.empty) {
+                const bookingDocRef = bookingSnapshot.docs[0].ref;
+                transaction.update(bookingDocRef, { status: 'Completed' });
+            }
+
         });
         
         toast({
@@ -157,7 +167,7 @@ export function RateTripDialog({ isOpen, onOpenChange, trip, onConfirm }: RateTr
         });
 
         onOpenChange(false);
-        onConfirm();
+        if (onConfirm) onConfirm();
 
     } catch (error) {
         console.error("Rating and closure failed:", error);
@@ -188,7 +198,7 @@ export function RateTripDialog({ isOpen, onOpenChange, trip, onConfirm }: RateTr
                     <FormField
                         key={criterion.key}
                         control={form.control}
-                        name={criterion.key as any}
+                        name={criterion.key}
                         render={({ field }) => (
                             <FormItem className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border p-3">
                                 <FormLabel className="text-sm font-semibold mb-2 sm:mb-0">
