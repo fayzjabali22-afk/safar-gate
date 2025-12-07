@@ -8,11 +8,7 @@ import { useEffect } from 'react';
 import { GuideTrigger } from '@/components/ai/guide-trigger';
 import { usePathname, useRouter } from 'next/navigation';
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -21,7 +17,6 @@ export default function RootLayout({
       router.replace('/landing');
     }
   }, [pathname, router]);
-
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -37,6 +32,21 @@ export default function RootLayout({
     return null;
   }
 
+  return (
+    <FirebaseClientProvider>
+      {children}
+      <InstallPrompt />
+      <GuideTrigger />
+      <Toaster />
+    </FirebaseClientProvider>
+  );
+}
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
     <html lang="ar" dir="rtl" className="dark" suppressHydrationWarning>
       <head>
@@ -55,12 +65,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <FirebaseClientProvider>
-          {children}
-          <InstallPrompt />
-          <GuideTrigger />
-          <Toaster />
-        </FirebaseClientProvider>
+        <LayoutContent>{children}</LayoutContent>
       </body>
     </html>
   );
