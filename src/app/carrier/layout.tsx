@@ -85,8 +85,27 @@ export default function CarrierLayout({
           className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-black/10 px-4 text-black shadow-lg md:px-6"
           style={{ backgroundColor: '#FEFFC2' }}
         >
-            <div className="flex items-center gap-2 w-auto">
-                 {isDevUser && (
+            <div className="flex items-center gap-2">
+                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                    <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon" className="hover:bg-black/10 md:hidden">
+                            <Menu className="h-6 w-6" />
+                            <span className="sr-only">فتح القائمة</span>
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-full max-w-xs p-0 bg-card text-card-foreground">
+                       <SheetTitle className="sr-only">Carrier Navigation Menu</SheetTitle>
+                       <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} />
+                    </SheetContent>
+                </Sheet>
+            </div>
+            
+             <div className="absolute left-1/2 -translate-x-1/2">
+               <Logo />
+            </div>
+
+            <div className="flex items-center gap-2">
+                {isDevUser && (
                      <TooltipProvider>
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -112,25 +131,6 @@ export default function CarrierLayout({
                     <span className="sr-only">الملف الشخصي</span>
                   </Link>
                 </Button>
-            </div>
-            
-             <div className="absolute left-1/2 -translate-x-1/2">
-               <Logo />
-            </div>
-
-            <div className="flex items-center gap-2 w-auto">
-                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-                    <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className="hover:bg-black/10 md:hidden">
-                            <Menu className="h-6 w-6" />
-                            <span className="sr-only">فتح القائمة</span>
-                        </Button>
-                    </SheetTrigger>
-                    <SheetContent side="right" className="w-full max-w-xs p-0 bg-card text-card-foreground">
-                       <SheetTitle className="sr-only">Carrier Navigation Menu</SheetTitle>
-                       <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} />
-                    </SheetContent>
-                </Sheet>
             </div>
         </header>
         

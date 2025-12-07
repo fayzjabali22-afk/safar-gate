@@ -84,8 +84,8 @@ export default function CarrierConditionsPage() {
     }
 
     return (
-        <div className="space-y-4 w-full">
-             <header className="rounded-b-lg md:rounded-lg bg-card shadow-sm border-b md:border p-4">
+        <div className="p-4 md:p-8 space-y-4 w-full">
+             <header className="rounded-lg bg-card shadow-sm border p-4">
                 <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
                     <ListChecks className="h-6 w-6 text-primary" />
                     إدارة الإعدادات الدائمة
@@ -189,7 +189,7 @@ export default function CarrierConditionsPage() {
                                 {isSubmitting ? (
                                     <><Loader2 className="ml-2 h-4 w-4 animate-spin"/> جاري الحفظ...</>
                                 ) : (
-                                    <><Save className="ml-2 h-4 w-4"/> حفظ الإعدادات الدائمة</>
+                                    <><Save className="ml-2 h-4 w-4"/> حفظ الإعدادات</>
                                 )}
                             </Button>
                         </div>
