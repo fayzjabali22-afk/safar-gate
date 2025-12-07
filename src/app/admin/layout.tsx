@@ -38,40 +38,18 @@ import { Logo } from '@/components/logo';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { useRouter } from 'next/navigation';
 
-function AdminLoadingScreen() {
-    const [dots, setDots] = useState('');
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setDots(prev => (prev.length >= 3 ? '' : prev + '.'));
-        }, 500);
-        return () => clearInterval(interval);
-    }, []);
-
-    return (
-        <div className="flex h-screen w-full flex-col items-center justify-center bg-[#0C1117]">
-            <div className="flex flex-col items-center gap-4 text-center">
-                <ShieldCheck className="h-20 w-20 text-[#D4AF37] animate-pulse" />
-                <h1 className="text-2xl font-bold text-white/90">جاري التحقق من صلاحيات المدير</h1>
-                <p className="text-sm text-white/60">
-                    يرجى الانتظار قليلاً{dots}
-                </p>
-            </div>
-        </div>
-    );
-}
-
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  // The useAdmin hook is now deactivated and will not trigger loading or redirects.
   const { isLoading: isAdminLoading } = useAdmin();
   const { profile, user } = useUserProfile();
   const router = useRouter();
 
-  if (isAdminLoading) {
-    return <AdminLoadingScreen />;
-  }
-  
   const isDevUser = user?.email === 'dev@safar.com';
 
+  // The loading screen is no longer needed as useAdmin is bypassed.
+  // if (isAdminLoading) {
+  //   return <AdminLoadingScreen />;
+  // }
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]" dir="rtl">
