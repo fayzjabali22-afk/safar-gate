@@ -287,13 +287,19 @@ export default function HistoryPage() {
                 cancellationReason: 'تم الإلغاء من طرف المسافر'
             });
 
-            // 2. Notify carrier
+            // 2. Increment available seats on the trip
+            const tripRef = doc(firestore, 'trips', trip.id);
+            batch.update(tripRef, {
+                availableSeats: increment(booking.seats)
+            });
+
+            // 3. Notify carrier
             const notificationRef = doc(collection(firestore, 'notifications'));
             batch.set(notificationRef, {
                 id: notificationRef.id,
                 userId: trip.carrierId,
                 title: 'إلغاء حجز من مسافر',
-                message: `قام مسافر بإلغاء حجزه لـ ${booking.seats} مقعد/مقاعد في رحلتك من ${getCityName(trip.origin)} إلى ${getCityName(trip.destination)}.`,
+                message: `قام مسافر بإلغاء حجزه لـ ${booking.seats} مقعد/مقاعد في رحلتك من ${getCityName(trip.origin)} إلى ${getCityName(trip.destination)}. تم إعادة المقاعد للسوق.`,
                 link: '/carrier/bookings',
                 type: 'new_booking_request',
                 isRead: false,
@@ -304,6 +310,7 @@ export default function HistoryPage() {
 
             toast({
                 title: 'تم إلغاء الحجز بنجاح',
+                description: 'تمت إعادة المقاعد الشاغرة إلى سوق الحجوزات.'
             });
             setIsCancellationDialogOpen(false);
             setItemToCancel(null);
