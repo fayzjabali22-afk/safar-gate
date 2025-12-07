@@ -6,18 +6,12 @@ import { FirebaseClientProvider } from '@/firebase';
 import InstallPrompt from '@/components/install-prompt';
 import { useEffect } from 'react';
 import { GuideTrigger } from '@/components/ai/guide-trigger';
-import { usePathname, useRouter } from 'next/navigation';
 
-function LayoutContent({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (pathname === '/') {
-      router.replace('/landing');
-    }
-  }, [pathname, router]);
-
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
@@ -27,26 +21,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // If we are on the root path, we show nothing to prevent flicker during redirect.
-  if (pathname === '/') {
-    return null;
-  }
-
-  return (
-    <FirebaseClientProvider>
-      {children}
-      <InstallPrompt />
-      <GuideTrigger />
-      <Toaster />
-    </FirebaseClientProvider>
-  );
-}
-
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
   return (
     <html lang="ar" dir="rtl" className="dark" suppressHydrationWarning>
       <head>
@@ -65,7 +39,12 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <LayoutContent>{children}</LayoutContent>
+        <FirebaseClientProvider>
+          {children}
+          <InstallPrompt />
+          <GuideTrigger />
+          <Toaster />
+        </FirebaseClientProvider>
       </body>
     </html>
   );
