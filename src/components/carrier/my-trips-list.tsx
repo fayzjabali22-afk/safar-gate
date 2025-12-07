@@ -1,8 +1,7 @@
-
 'use client';
 import { useState, useMemo, useEffect, Fragment } from 'react';
-import { useFirestore, useCollection, useUser, updateDocumentNonBlocking } from '@/firebase';
-import { collection, query, where, orderBy, doc, writeBatch } from 'firebase/firestore';
+import { useFirestore, useCollection, useUser, addDocumentNonBlocking } from '@/firebase';
+import { collection, query, where, orderBy, doc, writeBatch, serverTimestamp, getDocs } from 'firebase/firestore';
 import { Trip, Chat, Booking } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CalendarX, ArrowRight, Calendar, Users, CircleDollarSign, CheckCircle, Clock, XCircle, MoreVertical, Pencil, Ban, Ship, List, AlertTriangle, UsersRound, PlayCircle, StopCircle, MessageSquare, Flag } from 'lucide-react';
@@ -244,10 +243,82 @@ export function MyTripsList({ trips, pendingBookingsMap }: MyTripsListProps) {
         }
     };
     
-    const handleCompleteTrip = (trip: Trip) => {
+    const handleOpenCompletionDialog = (trip: Trip) => {
         setSelectedTripForCompletion(trip);
         setIsCompletionDialogOpen(true);
     };
+
+    const handleConfirmCompletion = async (trip: Trip, returnDate: Date | null) => {
+        if (!firestore || !user) return;
+        
+        const batch = writeBatch(firestore);
+        
+        // 1. Mark current trip as Completed
+        const currentTripRef = doc(firestore, 'trips', trip.id);
+        batch.update(currentTripRef, { status: 'Completed', updatedAt: serverTimestamp() });
+
+        // 2. Close the chat for the trip
+        const chatRef = doc(firestore, 'chats', trip.id);
+        batch.update(chatRef, { isClosed: true });
+
+        // 3. If a return date is set, create a new return trip
+        if (returnDate) {
+            const newTripRef = doc(collection(firestore, 'trips'));
+            const returnTripData: Partial<Trip> = {
+                ...trip,
+                origin: trip.destination,
+                destination: trip.origin,
+                departureDate: returnDate.toISOString(),
+                status: 'Planned',
+                bookingIds: [],
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+            delete returnTripData.id;
+            batch.set(newTripRef, returnTripData);
+        }
+
+        // 4. Fetch confirmed bookings to send notifications
+        const bookingsQuery = query(
+            collection(firestore, 'bookings'),
+            where('tripId', '==', trip.id),
+            where('status', '==', 'Confirmed')
+        );
+
+        try {
+            const bookingsSnapshot = await getDocs(bookingsQuery);
+            bookingsSnapshot.forEach(bookingDoc => {
+                const booking = bookingDoc.data() as Booking;
+                const notificationRef = doc(collection(firestore, 'notifications'));
+                batch.set(notificationRef, {
+                    userId: booking.userId,
+                    title: `اكتملت رحلتك! نرجو تقييم تجربتك.`,
+                    message: `لقد وصلت رحلتك من ${getCityName(trip.origin)} إلى ${getCityName(trip.destination)}. تقييمك يساعدنا على تحسين الخدمة.`,
+                    type: 'rating_request',
+                    isRead: false,
+                    link: `/history`,
+                    createdAt: serverTimestamp(),
+                });
+            });
+            
+            // Commit all batched writes
+            await batch.commit();
+
+            toast({
+                title: 'تم إنهاء الرحلة بنجاح!',
+                description: returnDate ? 'تمت جدولة رحلة العودة وإرسال طلبات التقييم.' : 'تم إرسال طلبات التقييم للمسافرين.',
+            });
+
+        } catch (error) {
+            console.error("Failed to complete trip and send notifications:", error);
+            toast({
+                variant: 'destructive',
+                title: 'فشل إنهاء الرحلة',
+                description: 'حدث خطأ أثناء تحديث البيانات.'
+            });
+        }
+    };
+
 
     const confirmUpdateStatus = async () => {
         const trip = tripToUpdate?.trip;
@@ -258,11 +329,33 @@ export function MyTripsList({ trips, pendingBookingsMap }: MyTripsListProps) {
         const tripRef = doc(firestore, 'trips', trip.id);
         
         try {
-            await updateDocumentNonBlocking(tripRef, { status: newStatus });
+            const batch = writeBatch(firestore);
+            batch.update(tripRef, { status: newStatus });
+            
+            // If cancelling, notify passengers
+            if (newStatus === 'Cancelled' && trip.bookingIds) {
+                 const bookingsQuery = query(collection(firestore, 'bookings'), where('tripId', '==', trip.id));
+                 const bookingsSnapshot = await getDocs(bookingsQuery);
+                 bookingsSnapshot.forEach(bookingDoc => {
+                    const booking = bookingDoc.data() as Booking;
+                    const notificationRef = doc(collection(firestore, 'notifications'));
+                    batch.set(notificationRef, {
+                        userId: booking.userId,
+                        title: 'إلغاء رحلة محجوزة',
+                        message: `نعتذر، لقد قام الناقل بإلغاء رحلتك من ${getCityName(trip.origin)} إلى ${getCityName(trip.destination)}.`,
+                        type: 'trip_update',
+                        isRead: false,
+                        link: '/history',
+                        createdAt: serverTimestamp(),
+                    });
+                    batch.update(bookingDoc.ref, { status: 'Cancelled', cancelledBy: 'carrier' });
+                 });
+            }
+
+            await batch.commit();
         
             let toastTitle = '';
             if (newStatus === 'In-Transit') toastTitle = 'تم بدء الرحلة بنجاح!';
-            else if (newStatus === 'Completed') toastTitle = 'تم إنهاء الرحلة ونقلها للأرشيف.';
             else if (newStatus === 'Cancelled') toastTitle = 'تم إلغاء الرحلة بنجاح.';
 
             toast({ title: toastTitle });
@@ -299,7 +392,7 @@ export function MyTripsList({ trips, pendingBookingsMap }: MyTripsListProps) {
                         onManagePassengers={handleManagePassengersClick}
                         onUpdateStatus={handleUpdateStatus}
                         unreadCount={unreadCounts[trip.id] || 0}
-                        onCompleteTrip={handleCompleteTrip}
+                        onCompleteTrip={handleOpenCompletionDialog}
                     />
                 ))}
             </div>
@@ -317,6 +410,7 @@ export function MyTripsList({ trips, pendingBookingsMap }: MyTripsListProps) {
                 isOpen={isCompletionDialogOpen}
                 onOpenChange={setIsCompletionDialogOpen}
                 trip={selectedTripForCompletion}
+                onConfirm={handleConfirmCompletion}
             />
              <AlertDialog open={isCancelConfirmOpen} onOpenChange={setIsCancelConfirmOpen}>
                 <AlertDialogContent dir="rtl">

@@ -118,7 +118,9 @@ export default function HistoryPage() {
 
   // State for chat
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [selectedTripForChat, setSelectedTripForChat] = useState<Trip | null>(null);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [selectedChatTitle, setSelectedChatTitle] = useState('');
+
 
   // State for payment flow
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -217,9 +219,10 @@ export default function HistoryPage() {
         setIsCancellationDialogOpen(true);
     };
     
-    const handleOpenChatDialog = (trip: Trip) => {
-        setSelectedTripForChat(trip);
-        setIsChatOpen(true);
+    const handleOpenChatDialog = (chatId: string, title: string) => {
+      setSelectedChatId(chatId);
+      setSelectedChatTitle(title);
+      setIsChatOpen(true);
     }
 
     const handleOpenPaymentDialog = (booking: Booking) => {
@@ -324,7 +327,7 @@ export default function HistoryPage() {
   const renderContent = () => {
     // Priority 1: Show the confirmed ticket ("the masterpiece") exclusively if it exists.
     if (confirmedBooking && confirmedTrip) {
-        return <HeroTicket key={confirmedBooking.id} trip={confirmedTrip} booking={confirmedBooking} onRateTrip={handleOpenRatingDialog} onCancelBooking={handleOpenCancellationDialog} onMessageCarrier={handleOpenChatDialog} />;
+        return <HeroTicket key={confirmedBooking.id} trip={confirmedTrip} booking={confirmedBooking} onRateTrip={handleOpenRatingDialog} onCancelBooking={handleOpenCancellationDialog} onMessageCarrier={() => handleOpenChatDialog(confirmedTrip.id, `رحلة ${getCityName(confirmedTrip.origin)}`)} />;
     }
     
     // Priority 2: Show the offer decision room if a request has been clicked.
@@ -393,7 +396,10 @@ export default function HistoryPage() {
             isOpen={isRatingDialogOpen}
             onOpenChange={setIsRatingDialogOpen}
             trip={selectedTripForClosure}
-            onConfirm={() => setSelectedTripForClosure(null)}
+            onConfirm={() => {
+                // This callback might be used to refresh data or clear state
+                // after a successful rating.
+            }}
         />
         <CancellationDialog
             isOpen={isCancellationDialogOpen}
@@ -404,7 +410,7 @@ export default function HistoryPage() {
         <ChatDialog 
             isOpen={isChatOpen}
             onOpenChange={setIsChatOpen}
-            trip={selectedTripForChat}
+            trip={confirmedTrip} // Pass trip for group chat
         />
         {tripForPayment && selectedBookingForPayment && (
             <BookingPaymentDialog
@@ -441,7 +447,7 @@ function PendingPaymentWrapper({ booking, onClick }: { booking: Booking, onClick
 }
 
 
-const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarrier }: { trip: Trip, booking: Booking, onRateTrip: (trip: Trip) => void, onCancelBooking: (trip: Trip, booking: Booking) => void, onMessageCarrier: (trip: Trip) => void }) => {
+const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarrier }: { trip: Trip, booking: Booking, onRateTrip: (trip: Trip) => void, onCancelBooking: (trip: Trip, booking: Booking) => void, onMessageCarrier: () => void }) => {
     const firestore = useFirestore();
     const carrierProfileRef = useMemo(() => {
         if (!firestore || !trip.carrierId) return null;
@@ -542,7 +548,7 @@ const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarri
                  )}
             </CardContent>
              <CardFooter className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <Button variant="outline" onClick={() => onMessageCarrier(trip)}>
+                <Button variant="outline" onClick={onMessageCarrier}>
                     <MessageSquare className="ml-2 h-4 w-4" />
                     دردشة الرحلة الجماعية
                 </Button>

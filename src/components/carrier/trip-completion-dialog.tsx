@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -10,90 +9,86 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Flag, Loader2, RefreshCw, Moon } from 'lucide-react';
+import { Flag, Loader2, RefreshCw, Moon, Calendar as CalendarIcon, Check } from 'lucide-react';
 import type { Trip } from '@/lib/data';
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
+import { Calendar } from '../ui/calendar';
 
 interface TripCompletionDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
   trip: Trip | null;
+  onConfirm: (trip: Trip, returnDate: Date | null) => void;
 }
 
-export function TripCompletionDialog({ isOpen, onOpenChange, trip }: TripCompletionDialogProps) {
+export function TripCompletionDialog({ isOpen, onOpenChange, trip, onConfirm }: TripCompletionDialogProps) {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [returnDate, setReturnDate] = useState<Date | undefined>(undefined);
 
-  const handleAction = (action: 'schedule-return' | 'rest') => {
-    // In phase 1, we just show a toast and close the dialog.
+  const handleConfirm = async () => {
+    if (!trip) return;
     setIsProcessing(true);
-    setTimeout(() => {
-        toast({
-            title: `محاكاة: تم اختيار "${action === 'schedule-return' ? 'جدولة العودة' : 'أخذ قسط من الراحة'}"`,
-            description: "سيتم ربط هذا الإجراء في المرحلة التالية.",
-        });
+    try {
+      // The actual logic is now in my-trips-list.tsx
+      await onConfirm(trip, returnDate || null);
+      onOpenChange(false);
+    } catch (error) {
+       toast({
+        variant: "destructive",
+        title: "خطأ في تأكيد الإنهاء",
+        description: "حدث خطأ غير متوقع.",
+      });
+    } finally {
         setIsProcessing(false);
-        onOpenChange(false);
-    }, 1500);
+    }
   };
-
 
   if (!trip) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+    <Dialog open={isOpen} onOpenChange={(open) => !isProcessing && onOpenChange(open)}>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Flag className="h-6 w-6 text-primary"/>
-            نقطة القرار: لقد وصلت
+            إنهاء الرحلة وجدولة العودة
           </DialogTitle>
           <DialogDescription className="pt-2">
-            لقد أتممت رحلتك بنجاح من {trip.origin} إلى {trip.destination}. ما هي خطوتك التالية؟
+            لقد أتممت رحلتك من {trip.origin} إلى {trip.destination}. حدد تاريخ العودة لجدولتها فوراً، أو قم بإنهاء الرحلة فقط.
           </DialogDescription>
         </DialogHeader>
-        <div className="flex flex-col gap-4 py-4">
-          <Button
-            size="lg"
-            className="h-auto py-3"
-            onClick={() => handleAction('schedule-return')}
-            disabled={isProcessing}
-          >
-            {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-                <div className="flex flex-col items-start w-full text-right">
-                    <div className="flex items-center gap-2">
-                        <RefreshCw className="h-5 w-5" />
-                        <span className="font-bold text-base">إنهاء وجدولة العودة فوراً</span>
-                    </div>
-                    <p className="text-xs opacity-80 whitespace-normal mt-1">
-                        سيقوم النظام بإنهاء رحلتك الحالية وإنشاء رحلة عودة جديدة تلقائياً.
-                    </p>
-                </div>
-            )}
-          </Button>
-
-          <Button
-            size="lg"
-            variant="secondary"
-            className="h-auto py-3"
-            onClick={() => handleAction('rest')}
-            disabled={isProcessing}
-          >
-             {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-                <div className="flex flex-col items-start w-full text-right">
-                <div className="flex items-center gap-2">
-                    <Moon className="h-5 w-5" />
-                    <span className="font-bold text-base">إنهاء وأخذ قسط من الراحة</span>
-                </div>
-                <p className="text-xs opacity-80 whitespace-normal mt-1">
-                    سيقوم النظام بإنهاء رحلتك الحالية فقط، ويمكنك تصفح السوق لاحقاً.
-                </p>
-                </div>
-            )}
-          </Button>
+        
+        <div className="py-4 flex flex-col items-center justify-center">
+            <h3 className="font-semibold text-center mb-2">اختر تاريخ رحلة العودة (اختياري)</h3>
+            <Calendar
+                mode="single"
+                selected={returnDate}
+                onSelect={setReturnDate}
+                className="rounded-md border"
+            />
+            <p className="text-xs text-muted-foreground mt-2 text-center">
+                {returnDate 
+                    ? `سيتم جدولة رحلة العودة بتاريخ: ${returnDate.toLocaleDateString('ar-SA')}`
+                    : 'إذا لم تختر تاريخاً، سيتم إنهاء الرحلة الحالية فقط.'}
+            </p>
         </div>
-        <DialogFooter>
+        
+        <DialogFooter className="gap-2 sm:flex-col">
+            <Button
+                size="lg"
+                className="w-full"
+                onClick={handleConfirm}
+                disabled={isProcessing}
+            >
+                {isProcessing ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+                    <>
+                        <Check className="ml-2 h-5 w-5" />
+                         {returnDate ? 'إنهاء وجدولة العودة' : 'إنهاء الرحلة الحالية فقط'}
+                    </>
+                )}
+            </Button>
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={isProcessing}>إلغاء</Button>
         </DialogFooter>
       </DialogContent>
