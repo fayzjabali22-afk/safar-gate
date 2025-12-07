@@ -9,9 +9,8 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { getRelevantGuide, type Guide } from '@/ai/guide-engine';
-import { Bot, Lightbulb, Loader2, Volume2, StepForward, X } from 'lucide-react';
+import { Bot, Loader2, Volume2, StepForward, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 interface GuideDialogProps {
@@ -25,27 +24,24 @@ export function GuideDialog({ isOpen, onOpenChange }: GuideDialogProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [activeStep, setActiveStep] = useState(0);
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
 
+  // 1. Load Voices Ensure voices are loaded
   useEffect(() => {
     const loadVoices = () => {
       const availableVoices = window.speechSynthesis.getVoices();
       if (availableVoices.length > 0) {
         setVoices(availableVoices);
-        const arabicVoice = availableVoices.find(voice => voice.lang.startsWith('ar-'));
-        setSelectedVoice(arabicVoice || availableVoices[0]);
       }
     };
 
-    // Load voices immediately and on change
     loadVoices();
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-
-    return () => {
-      window.speechSynthesis.onvoiceschanged = null;
-    };
+    // Chrome loads voices asynchronously, so we must listen for this event
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
   }, []);
 
+  // 2. Load Guide Content
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
@@ -57,23 +53,38 @@ export function GuideDialog({ isOpen, onOpenChange }: GuideDialogProps) {
         setIsLoading(false);
       }, 300);
       return () => clearTimeout(timer);
+    } else {
+        // Cancel speech when dialog closes
+        window.speechSynthesis.cancel();
     }
   }, [isOpen, pathname]);
 
   const handleSpeak = (text: string) => {
-    if ('speechSynthesis' in window && selectedVoice) {
-      // Cancel any previous speech to avoid overlap
-      window.speechSynthesis.cancel();
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.voice = selectedVoice;
-      utterance.lang = selectedVoice.lang;
-      utterance.pitch = 1;
-      utterance.rate = 1;
-      window.speechSynthesis.speak(utterance);
-    } else {
-      alert('عذراً، متصفحك لا يدعم ميزة النطق الصوتي أو لم يتم العثور على صوت مناسب.');
+    if (!('speechSynthesis' in window)) {
+      alert('عذراً، متصفحك لا يدعم ميزة النطق الصوتي.');
+      return;
     }
+
+    // Cancel any ongoing speech to avoid overlap
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    // SMART VOICE SELECTION: Try to find a specific Arabic voice
+    const arabicVoice = voices.find(v => v.lang === 'ar-SA') || voices.find(v => v.lang.includes('ar'));
+    
+    if (arabicVoice) {
+      utterance.voice = arabicVoice;
+      utterance.lang = arabicVoice.lang;
+    } else {
+      // Fallback if no Arabic voice detected (rare in modern OS)
+      utterance.lang = 'ar-SA'; 
+    }
+
+    // Adjust rate and pitch for a better "Bot" feel
+    utterance.rate = 0.9; // Slightly slower for clarity
+    
+    window.speechSynthesis.speak(utterance);
   };
 
   const nextStep = () => {
@@ -106,12 +117,12 @@ export function GuideDialog({ isOpen, onOpenChange }: GuideDialogProps) {
             <div className="text-center space-y-4 w-full">
               <h3 className="font-bold text-lg">{guide.title}</h3>
               <div className="p-4 bg-muted/50 rounded-lg border border-dashed">
-                <p className="text-base font-semibold">
+                <p className="text-base font-semibold leading-relaxed">
                   {guide.steps[activeStep].text}
                 </p>
               </div>
               <div className="flex items-center justify-center gap-4">
-                 <Button variant="outline" size="icon" onClick={() => handleSpeak(guide.steps[activeStep].text)} disabled={!selectedVoice}>
+                 <Button variant="outline" size="icon" onClick={() => handleSpeak(guide.steps[activeStep].text)}>
                     <Volume2 className="h-5 w-5" />
                     <span className="sr-only">استمع</span>
                 </Button>
