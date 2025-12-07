@@ -1,4 +1,3 @@
-
 /**
  * @file src/ai/guide-engine.ts
  * @description The Logic Engine for the Contextual Guide.
@@ -21,14 +20,21 @@ export function getRelevantGuide(context: string, query?: string): Guide | null 
   // For now, we perform a simple, direct lookup.
   // We can map multiple page contexts to a single guide.
   const contextMap: { [key: string]: string } = {
-    'carrier_dashboard': 'carrier_add_trip',
-    'carrier_trips': 'carrier_add_trip',
+    // Carrier contexts
+    'carrier': 'carrier_add_trip', // Main dashboard for carrier
+    'opportunities': 'carrier_add_trip',
+    'trips': 'carrier_add_trip',
+    
+    // Traveler contexts
     'dashboard': 'traveler_booking_process',
-    'history': 'payment_process', // Changed from history_payment to be more general
-    'admin': 'admin_dashboard', // For the main admin page
-    'users': 'admin_users', // For the admin users page
+    'history': 'payment_process', 
+    
+    // Admin contexts
+    'admin': 'admin_dashboard',
+    'users': 'admin_users',
     'admin_dashboard': 'admin_dashboard',
     'admin_users': 'admin_users',
+    'admin_trips': 'admin_dashboard', // Assuming trips fall under general dashboard
   };
 
   const guideId = contextMap[context];
