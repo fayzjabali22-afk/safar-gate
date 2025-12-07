@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -28,7 +27,7 @@ import { Logo } from '@/components/logo';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useAuth, initiateEmailSignIn, useFirestore, initiateGoogleSignIn, initiateEmailSignUp } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { TestTube2 } from 'lucide-react';
+import { Shield, TestTube2 } from 'lucide-react';
 
 const loginFormSchema = z.object({
   email: z.string().email('البريد الإلكتروني غير صالح.'),
@@ -90,7 +89,7 @@ export default function LoginPage() {
       router.push('/dashboard');
     }
   };
-  
+
   const handleDevSignIn = async () => {
     if (!auth || !firestore) {
       toast({ title: "خطأ", description: "Firebase not initialized.", variant: "destructive" });
@@ -133,22 +132,71 @@ export default function LoginPage() {
       }
     }
   };
+  
+  const handleAdminSignIn = async () => {
+    if (!auth || !firestore) {
+      toast({ title: "خطأ", description: "Firebase not initialized.", variant: "destructive" });
+      return;
+    }
+  
+    const adminEmail = 'admin@safar.com';
+    const adminPassword = 'password123';
+  
+    toast({ title: 'جاري التحقق من هوية المدير...', description: 'الرجاء الانتظار.' });
+  
+    const signInSuccess = await initiateEmailSignIn(auth, adminEmail, adminPassword);
+  
+    if (signInSuccess) {
+      toast({ title: 'أهلاً بك أيها المدير', description: 'جاري التوجيه...' });
+      router.push('/admin');
+      return;
+    }
+  
+    toast({ title: 'جاري إنشاء حساب المدير...', description: 'لحظة من فضلك.' });
+    const adminProfile = {
+      firstName: 'المدير',
+      lastName: 'العام',
+      email: adminEmail,
+      phoneNumber: '111-111-1111',
+      role: 'admin' as const,
+    };
+  
+    const signUpSuccess = await initiateEmailSignUp(auth, firestore, adminEmail, adminPassword, adminProfile, false);
+  
+    if (signUpSuccess) {
+      const finalSignInSuccess = await initiateEmailSignIn(auth, adminEmail, adminPassword);
+      if (finalSignInSuccess) {
+        toast({ title: 'أهلاً بك أيها المدير', description: 'جاري التوجيه...' });
+        router.push('/admin');
+      } else {
+        toast({ title: "فشل دخول المدير", description: "لم نتمكن من الدخول بعد إنشاء الحساب.", variant: "destructive"});
+      }
+    }
+  };
 
   return (
-    <div className="w-full min-h-screen lg:grid lg:grid-cols-2">
-      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-sm space-y-8">
-          <div className="text-center">
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
+      <div className="flex items-center justify-center p-6 xl:p-12">
+        <div className="mx-auto w-[350px] space-y-6">
+          <div className="space-y-2 text-center">
             <Logo className="mb-4 justify-center" />
-            <h1 className="text-3xl font-bold tracking-tight">أهلاً بعودتك</h1>
-            <p className="mt-2 text-muted-foreground">
+            <h1 className="text-3xl font-bold">أهلاً بعودتك</h1>
+            <p className="text-muted-foreground">
               ادخل بياناتك للمتابعة إلى حسابك
             </p>
           </div>
-            <Button type="button" size="lg" className="w-full" onClick={handleDevSignIn}>
-              <TestTube2 className="mr-2 h-5 w-5" />
-              دخول فوري للمطور
-            </Button>
+          
+           <div className="grid grid-cols-1 gap-2">
+              <Button type="button" variant="outline" size="lg" className="w-full" onClick={handleAdminSignIn}>
+                <Shield className="mr-2 h-5 w-5 text-primary" />
+                دخول فوري كمدير
+              </Button>
+               <Button type="button" variant="secondary" size="lg" className="w-full" onClick={handleDevSignIn}>
+                <TestTube2 className="mr-2 h-5 w-5" />
+                دخول فوري كمطور
+              </Button>
+            </div>
+
             <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />
@@ -225,7 +273,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <div className="hidden lg:block relative">
+       <div className="relative hidden bg-muted lg:block">
         {bgImage && (
           <Image
             src={bgImage.imageUrl}
