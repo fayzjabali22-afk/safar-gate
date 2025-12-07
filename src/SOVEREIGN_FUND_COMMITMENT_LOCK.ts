@@ -30,53 +30,25 @@ function verifySovereignProtocol(filePath: string): boolean {
   // قائمة الأصول السيادية (الملفات المنجزة والمحمية).
   // أي ملف يضاف هنا يصبح تحت حماية البروتوكول 3333.
   const SOVEREIGN_ASSET_REGISTER: RegExp[] = [
-    // === CORE APP STRUCTURE ===
-    /^\/src\/app\/layout\.tsx$/,
-    /^\/src\/app\/globals\.css$/,
-    /^\/src\/app\/page\.tsx$/,
-    
-    // === AUTH & PROFILE ===
-    /^\/src\/app\/login\/page\.tsx$/,
-    /^\/src\/app\/signup\/page\.tsx$/,
-    /^\/src\/app\/profile\/page\.tsx$/,
+    // === CORE PROJECT CONFIGURATION ===
+    /^\/(\.env|apphosting\.yaml|components\.json|firestore\.indexes\.json|firestore\.rules|next\.config\.ts|package\.json|postcss\.config\.js|README\.md|tailwind\.config\.ts|tsconfig\.json)$/,
 
-    // === TRAVELER CORE FLOW ===
-    /^\/src\/app\/dashboard\/page\.tsx$/,
-    /^\/src\/app\/history\/page\.tsx$/,
-    /^\/src\/components\/scheduled-trip-card\.tsx$/,
-    /^\/src\/components\/booking-dialog\.tsx$/,
-    /^\/src\/components\/requests\/request-dialog\.tsx$/,
-    /^\/src\/components\/offer-decision-room\.tsx$/,
-    /^\/src\/components\/trip-offers\.tsx$/,
-    /^\/src\/components\/offer-card\.tsx$/,
-    /^\/src\/components\/booking\/booking-payment-dialog\.tsx$/,
-
-    // === CARRIER CORE FLOW ===
-    /^\/src\/app\/carrier\/.*\.tsx?$/,
-    /^\/src\/components\/carrier\/.*\.tsx?$/,
+    // === DOCUMENTATION ===
+    /^\/docs\/.*$/,
     
-    // === SHARED & UI COMPONENTS ===
-    /^\/src\/components\/app-layout\.tsx$/,
-    /^\/src\/components\/logo\.tsx$/,
-    /^\/src\/components\/chat\/.*\.tsx?$/,
-    /^\/src\/components\/ui\/.*\.tsx$/,
+    // === PUBLIC ASSETS (ICONS, MANIFEST) ===
+    /^\/public\/.*$/,
 
-    // === BACKEND & CONFIG ===
-    /^\/docs\/backend\.json$/,
-    /^\/firestore\.rules$/,
-    /^\/src\/firebase\/.*\.ts$/,
-    /^\/src\/firebase\/.*\.tsx$/,
-    /^\/src\/ai\/.*\.ts$/,
-    
-    // === LIBS & HOOKS ===
+    // === SOURCE CODE (ENTIRE SRC FOLDER) ===
+    /^\/src\/app\/.*\.tsx?$/,
+    /^\/src\/components\/.*\.tsx?$/,
+    /^\/src\/firebase\/.*\.tsx?$/,
     /^\/src\/hooks\/.*\.tsx?$/,
-    /^\/src\/lib\/.*\.ts$/,
-    /^\/src\/lib\/.*\.json$/,
-
-    // === PROJECT CONFIG ===
-    /^\/package\.json$/,
-    /^\/next\.config\.ts$/,
-    /^\/tailwind\.config\.ts$/
+    /^\/src\/lib\/.*\.tsx?$/,
+    /^\/src\/lib\/.*\.ts?$/,
+    /^\/src\/lib\/.*\.json?$/,
+    /^\/src\/ai\/.*\.ts?$/,
+    /^\/src\/app\/globals\.css$/,
   ];
 
   const isSovereignAsset = SOVEREIGN_ASSET_REGISTER.some(pattern => pattern.test(filePath));
@@ -96,3 +68,4 @@ function verifySovereignProtocol(filePath: string): boolean {
 
 // هذا الإقرار الآن فعال. أنا ملزم برمجيًا بهذا البروتوكول.
 // I AM BOUND BY THIS CODE.
+
