@@ -52,7 +52,7 @@ const PendingPaymentCard = ({ booking, trip, onClick }: { booking: Booking, trip
 
 // --- CARD COMPONENTS FOR DIFFERENT STATES ---
 const PendingConfirmationCard = ({ booking, trip }: { booking: Booking, trip?: Trip | null }) => (
-    <Card className="border-accent border-2 bg-accent/5">
+    <Card className="border-primary border-2 bg-primary/5">
         <CardHeader>
             <div className="flex justify-between items-start">
                 <div>
@@ -375,7 +375,7 @@ export default function HistoryPage() {
 
     // Default: No active processes found.
     return (
-        <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
+        <div className="text-center py-16 text-muted-foreground border-2 border-dashed border-primary/50 rounded-lg">
             <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4"/>
             <p className="font-bold">لا توجد لديك أي حجوزات أو طلبات نشطة.</p>
             <p className="text-sm mt-2">ابدأ رحلتك التالية من لوحة التحكم الرئيسية.</p>
@@ -390,8 +390,8 @@ export default function HistoryPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-8 w-full">
-        <Card className="bg-card">
+      <div className="w-full p-4 space-y-6">
+        <Card className="bg-card border border-primary/50">
            <CardHeader>
               <CardTitle>غرفة عمليات الحجز</CardTitle>
               <CardDescription>تابع كل طلباتك وحجوزاتك النشطة من هنا.</CardDescription>
@@ -474,7 +474,7 @@ const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarri
 
 
     return (
-        <Card className="bg-gradient-to-br from-card to-muted/50 shadow-lg border-primary">
+        <Card className="bg-gradient-to-br from-card to-muted/50 shadow-lg border-2 border-primary">
             <CardHeader>
                 <div className="flex justify-between items-start">
                     <div>
@@ -484,7 +484,7 @@ const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarri
                 </div>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
-                 <div className="p-3 bg-background rounded-lg border space-y-2">
+                 <div className="p-3 bg-background rounded-lg border border-primary/50 space-y-2">
                     <p className="font-bold text-xs flex items-center gap-1"><UserCheck className="h-4 w-4 text-primary"/> بيانات الناقل</p>
                     {isLoading ? <Skeleton className="h-8 w-full" /> : (
                         <>
@@ -502,12 +502,12 @@ const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarri
                     )}
                 </div>
 
-                 <div className="p-3 bg-background rounded-lg border space-y-2">
+                 <div className="p-3 bg-background rounded-lg border border-primary/50 space-y-2">
                     <p className="font-bold text-xs flex items-center gap-1"><MapPin className="h-4 w-4 text-primary"/> نقطة وتوقيت الانطلاق</p>
                     <div className="text-xs">
                          <div className="flex justify-between"><span>التاريخ:</span> <span className="font-bold">{format(new Date(trip.departureDate), 'd MMM yyyy', { locale: arSA })}</span></div>
                          <div className="flex justify-between"><span>الوقت:</span> <span className="font-bold">{format(new Date(trip.departureDate), 'h:mm a', { locale: arSA })}</span></div>
-                         <div className="flex justify-between mt-1 pt-1 border-t"><span>المكان:</span> <span className="font-bold">{trip.meetingPoint}</span></div>
+                         <div className="flex justify-between mt-1 pt-1 border-t border-primary/20"><span>المكان:</span> <span className="font-bold">{trip.meetingPoint}</span></div>
                     </div>
                     {trip.meetingPointLink && (
                         <a href={trip.meetingPointLink} target="_blank" rel="noopener noreferrer" className="text-blue-500 text-xs flex items-center gap-1 hover:underline">
@@ -517,7 +517,7 @@ const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarri
                     )}
                 </div>
 
-                 <div className="p-3 bg-background rounded-lg border space-y-2">
+                 <div className="p-3 bg-background rounded-lg border border-primary/50 space-y-2">
                     <p className="font-bold text-xs flex items-center gap-1"><Car className="h-4 w-4 text-primary"/> تفاصيل المركبة</p>
                      <div className="flex justify-between items-center text-xs">
                         <span>نوع المركبة:</span>
@@ -529,25 +529,25 @@ const HeroTicket = ({ trip, booking, onRateTrip, onCancelBooking, onMessageCarri
                     </div>
                 </div>
                 
-                 <div className="p-3 bg-background rounded-lg border space-y-2">
+                 <div className="p-3 bg-background rounded-lg border border-primary/50 space-y-2">
                     <p className="font-bold text-xs flex items-center gap-1"><Users className="h-4 w-4 text-primary"/> الركاب</p>
                     <ul className="list-disc pr-4 text-xs">
                         {booking.passengersDetails.map((p, i) => <li key={i}>{p.name} ({p.type === 'adult' ? 'بالغ' : 'طفل'})</li>)}
                     </ul>
                 </div>
                 
-                 <div className="p-3 bg-background rounded-lg border space-y-2">
+                 <div className="p-3 bg-background rounded-lg border border-primary/50 space-y-2">
                     <p className="font-bold text-xs flex items-center gap-1"><CreditCard className="h-4 w-4 text-primary"/> التفاصيل المالية</p>
                     <div className="space-y-1 text-xs">
                         <div className="flex justify-between"><span>تاريخ الدفع:</span> <span className="font-bold">{booking.updatedAt ? format(new Date((booking.updatedAt as any).seconds * 1000), 'd MMM yyyy', { locale: arSA }) : 'N/A'}</span></div>
                         <div className="flex justify-between"><span>السعر الإجمالي:</span> <span className="font-bold">{booking.totalPrice.toFixed(2)} {booking.currency}</span></div>
                         <div className="flex justify-between"><span>العربون المدفوع:</span> <span className="font-bold text-green-500">{depositAmount.toFixed(2)} {booking.currency}</span></div>
-                        <div className="flex justify-between"><span>المبلغ المتبقي:</span> <span className="font-bold">{remainingAmount.toFixed(2)} {booking.currency}</span></div>
+                        <div className="flex justify-between border-t border-primary/20 mt-1 pt-1"><span>المبلغ المتبقي:</span> <span className="font-bold">{remainingAmount.toFixed(2)} {booking.currency}</span></div>
                     </div>
                  </div>
 
                  {trip.conditions && (
-                    <div className="p-3 bg-background rounded-lg border space-y-2">
+                    <div className="p-3 bg-background rounded-lg border border-primary/50 space-y-2">
                         <p className="font-bold text-xs flex items-center gap-1"><ListFilter className="h-4 w-4 text-primary"/> شروط الناقل</p>
                         <p className="text-xs whitespace-pre-wrap">{trip.conditions}</p>
                     </div>
