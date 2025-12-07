@@ -5,6 +5,7 @@ import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
 import InstallPrompt from '@/components/install-prompt';
 import { useEffect } from 'react';
+import { GuideTrigger } from '@/components/ai/guide-trigger';
 
 export default function RootLayout({
   children,
@@ -41,6 +42,7 @@ export default function RootLayout({
         <FirebaseClientProvider>
           {children}
           <InstallPrompt />
+          <GuideTrigger />
         </FirebaseClientProvider>
         <Toaster />
       </body>
