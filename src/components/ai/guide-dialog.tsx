@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -12,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { getRelevantGuide, type Guide } from '@/ai/guide-engine';
 import { Bot, Loader2, Volume2, StepForward, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
+import { textToSpeech } from '@/ai/flows/text-to-speech-flow';
+import { useToast } from '@/hooks/use-toast';
 
 interface GuideDialogProps {
   isOpen: boolean;
@@ -20,52 +23,22 @@ interface GuideDialogProps {
 
 export function GuideDialog({ isOpen, onOpenChange }: GuideDialogProps) {
   const pathname = usePathname();
+  const { toast } = useToast();
   const [guide, setGuide] = useState<Guide | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeStep, setActiveStep] = useState(0);
-  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
-  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // SOVEREIGN CORRECTION: The previous implementation was flawed.
-  // The `getVoices()` call can return an empty list initially.
-  // We MUST wait for the `onvoiceschanged` event to fire.
-  useEffect(() => {
-    const handleVoicesChanged = () => {
-      const availableVoices = window.speechSynthesis.getVoices();
-      if (availableVoices.length > 0) {
-        setVoices(availableVoices);
-        // Prioritize a specific, high-quality voice if available, then fall back.
-        const arabicVoice = 
-            availableVoices.find(v => v.name === 'Maged' && v.lang === 'ar-SA') || // High-quality voice on some systems
-            availableVoices.find(v => v.lang === 'ar-SA') || 
-            availableVoices.find(v => v.lang.startsWith('ar-'));
-        setSelectedVoice(arabicVoice || null);
-      }
-    };
-    
-    // Check if voices are already loaded
-    if (speechSynthesis.getVoices().length > 0) {
-      handleVoicesChanged();
-    } else {
-      // Otherwise, wait for the event
-      speechSynthesis.onvoiceschanged = handleVoicesChanged;
-    }
-
-    // Cleanup
-    return () => {
-      speechSynthesis.onvoiceschanged = null;
-    };
-  }, []);
 
   // Load Guide Content
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
       const timer = setTimeout(() => {
-        // Corrected context mapping for admin screens
         let context = pathname.split('/').filter(Boolean).pop() || 'dashboard';
         if (pathname.startsWith('/admin')) {
-            context = 'admin_dashboard'; // General context for admin
+            context = 'admin_dashboard';
             if (pathname.includes('/users')) context = 'admin_users';
             if (pathname.includes('/trips')) context = 'admin_trips';
         }
@@ -76,39 +49,63 @@ export function GuideDialog({ isOpen, onOpenChange }: GuideDialogProps) {
       }, 300);
       return () => clearTimeout(timer);
     } else {
-        // Cancel speech when dialog closes
-        window.speechSynthesis.cancel();
+        // Stop audio when dialog closes
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
     }
   }, [isOpen, pathname]);
 
-  const handleSpeak = (text: string) => {
-    if (!('speechSynthesis' in window)) {
-      return; // Fail silently or show toast
+  const handleSpeak = async (text: string) => {
+    if (isSpeaking) {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
+        setIsSpeaking(false);
+        return;
     }
-
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
     
-    // Force Language Intent
-    utterance.lang = 'ar-SA'; 
-    utterance.rate = 0.9;
-    utterance.pitch = 1.0;
-
-    // Assign the specific voice if we found one
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
+    setIsSpeaking(true);
+    try {
+        const { audioDataUri } = await textToSpeech({ text });
+        if (audioRef.current) {
+            audioRef.current.src = audioDataUri;
+            audioRef.current.play();
+        }
+    } catch (error) {
+        console.error('Text-to-speech failed:', error);
+        toast({
+            variant: 'destructive',
+            title: 'فشل تشغيل الصوت',
+            description: 'حدث خطأ أثناء تحويل النص إلى كلام.',
+        });
+        setIsSpeaking(false);
     }
-
-    // Speak regardless (Browser will use default fallback if voice is null)
-    window.speechSynthesis.speak(utterance);
   };
+  
+  useEffect(() => {
+      // Create audio element on mount
+      const audio = new Audio();
+      audioRef.current = audio;
+
+      const handleAudioEnd = () => setIsSpeaking(false);
+      audio.addEventListener('ended', handleAudioEnd);
+
+      return () => {
+          audio.removeEventListener('ended', handleAudioEnd);
+      }
+  }, []);
 
 
   const nextStep = () => {
     if (guide && activeStep < guide.steps.length - 1) {
       setActiveStep(prev => prev + 1);
+       if (isSpeaking && audioRef.current) {
+          audioRef.current.pause();
+          setIsSpeaking(false);
+       }
     }
   };
   
@@ -146,7 +143,7 @@ export function GuideDialog({ isOpen, onOpenChange }: GuideDialogProps) {
                     size="icon" 
                     onClick={() => handleSpeak(guide.steps[activeStep].text)}
                   >
-                    <Volume2 className="h-5 w-5" />
+                    {isSpeaking ? <Loader2 className="h-5 w-5 animate-spin" /> : <Volume2 className="h-5 w-5" />}
                     <span className="sr-only">استمع</span>
                 </Button>
                 {activeStep < guide.steps.length - 1 ? (
