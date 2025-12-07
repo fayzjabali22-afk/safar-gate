@@ -220,68 +220,33 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           )}
         >
 
-          <div className="flex items-center gap-2 md:hidden">
-            {isMounted && !isCarrierPath && user && (
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                    <Menu className="h-5 w-5" />
-                    <span className="sr-only">القائمة الرئيسية</span>
-                  </Button>
-                </SheetTrigger>
-                <SheetContent
-                  side="right"
-                  className="w-full max-w-xs p-0 bg-background text-foreground"
-                >
-                  <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle>
-                  <nav className="grid gap-6 text-lg font-medium p-6">
-                    <div className="mb-4 flex items-center justify-center">
-                       <Logo/>
-                    </div>
-                    {mobileMenuItems.map((item) => {
-                      const isLinkActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-                      return (
-                        <Link
-                          key={item.label}
-                          href={item.href}
-                          className={cn("font-bold text-foreground hover:text-primary flex items-center gap-2", isLinkActive && "text-primary")}
-                        >
-                          {item.icon && <item.icon className="h-4 w-4" />}
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </nav>
-                </SheetContent>
-              </Sheet>
-            )}
-             {isDevUser && user && (
-                 <Tooltip>
-                    <TooltipTrigger asChild>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="rounded-full relative"
-                            onClick={handleSwitchRole}
-                            disabled={isSwitchingRole || isProfileLoading}
-                        >
-                            {isSwitchingRole ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRightLeft className="h-5 w-5" />}
-                        </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                        <p>تبديل سريع بين واجهة المسافر والناقل</p>
-                    </TooltipContent>
-                 </Tooltip>
-            )}
-          </div>
-          
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+          {/* Left Section (on LTR view) */}
+          <div className="flex items-center gap-2">
             <Link href="/">
-                <Logo />
+              <Logo />
             </Link>
           </div>
-
-          <div className="flex items-center gap-2 ms-auto">
+          
+          {/* Right Section (on LTR view) */}
+          <div className="flex items-center gap-2">
+            {isDevUser && user && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="rounded-full relative"
+                        onClick={handleSwitchRole}
+                        disabled={isSwitchingRole || isProfileLoading}
+                    >
+                        {isSwitchingRole ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRightLeft className="h-5 w-5" />}
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                    <p>تبديل سريع بين واجهة المسافر والناقل</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {user ? (
                 <>
                 <DropdownMenu>
@@ -350,6 +315,43 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </DropdownMenuContent>
                 </DropdownMenu>
                 </div>
+
+                {isMounted && !isCarrierPath && user && (
+                  <div className='md:hidden'>
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                          <Menu className="h-5 w-5" />
+                          <span className="sr-only">القائمة الرئيسية</span>
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent
+                        side="right"
+                        className="w-full max-w-xs p-0 bg-background text-foreground"
+                      >
+                        <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle>
+                        <nav className="grid gap-6 text-lg font-medium p-6">
+                          <div className="mb-4 flex items-center justify-center">
+                            <Logo/>
+                          </div>
+                          {mobileMenuItems.map((item) => {
+                            const isLinkActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                            return (
+                              <Link
+                                key={item.label}
+                                href={item.href}
+                                className={cn("font-bold text-foreground hover:text-primary flex items-center gap-2", isLinkActive && "text-primary")}
+                              >
+                                {item.icon && <item.icon className="h-4 w-4" />}
+                                {item.label}
+                              </Link>
+                            );
+                          })}
+                        </nav>
+                      </SheetContent>
+                    </Sheet>
+                  </div>
+                )}
                 </>
             ) : null }
           </div>

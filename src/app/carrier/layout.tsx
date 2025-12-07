@@ -91,7 +91,13 @@ export default function CarrierLayout({
           className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-accent px-4 text-accent-foreground shadow-lg md:px-6"
         >
             <div className="flex items-center gap-2">
-                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                 <Link href="/carrier">
+                    <Logo />
+                 </Link>
+            </div>
+
+            <div className="flex items-center gap-2">
+                <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                     <SheetTrigger asChild>
                         <Button variant="ghost" size="icon" className="md:hidden">
                             <Menu className="h-6 w-6" />
@@ -121,13 +127,6 @@ export default function CarrierLayout({
                         </TooltipContent>
                     </Tooltip>
                 )}
-            </div>
-            
-             <div className="absolute left-1/2 -translate-x-1/2">
-               <Logo />
-            </div>
-
-            <div className="flex items-center gap-2">
                 <Button asChild variant="ghost" size="icon">
                   <Link href="/carrier/profile">
                     <User className="h-6 w-6" />
