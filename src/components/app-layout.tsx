@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogOut, Settings, Menu, Bell, Trash2, ShieldAlert, Lock, AlertTriangle, MessageSquare, ArrowRightLeft, Loader2, User } from 'lucide-react';
+import { LogOut, Settings, Menu, Bell, Trash2, ShieldAlert, Lock, AlertTriangle, MessageSquare, ArrowRightLeft, Loader2, User, Shield } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -284,7 +284,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </div>
 
           <div className="flex items-center gap-2 ms-auto">
-            {user && (
+            {user ? (
+                <>
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/20 relative text-black">
@@ -326,32 +327,40 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         </div>
                     </DropdownMenuContent>
                 </DropdownMenu>
-            )}
 
-            <div className="hidden md:flex">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/20">
-                    <Avatar className="h-9 w-9 border-2 border-black/50">
-                      {user?.photoURL && (
-                        <AvatarImage
-                          src={user.photoURL}
-                          alt={profile?.firstName || ''}
-                        />
-                      )}
-                      <AvatarFallback className={cn("bg-black/20 text-black")}>
-                        {profile?.firstName
-                          ? profile.firstName.charAt(0)
-                          : user?.email?.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <UserMenuContent />
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                <div className="hidden md:flex">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="rounded-full hover:bg-black/20">
+                        <Avatar className="h-9 w-9 border-2 border-black/50">
+                        {user?.photoURL && (
+                            <AvatarImage
+                            src={user.photoURL}
+                            alt={profile?.firstName || ''}
+                            />
+                        )}
+                        <AvatarFallback className={cn("bg-black/20 text-black")}>
+                            {profile?.firstName
+                            ? profile.firstName.charAt(0)
+                            : user?.email?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                        </Avatar>
+                    </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                    <UserMenuContent />
+                    </DropdownMenuContent>
+                </DropdownMenu>
+                </div>
+                </>
+            ) : (
+                 <Button variant="ghost" size="sm" asChild>
+                    <Link href="/admin/login">
+                      <Shield className="ml-2 h-4 w-4" />
+                      دخول الإدارة
+                    </Link>
+                </Button>
+            )}
           </div>
         </header>
 

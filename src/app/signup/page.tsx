@@ -140,47 +140,6 @@ export default function SignupPage() {
     }
   };
 
-  const handleAdminSignIn = async () => {
-    if (!auth || !firestore) {
-      toast({ title: "خطأ", description: "Firebase not initialized.", variant: "destructive" });
-      return;
-    }
-  
-    const adminEmail = 'admin@safar.com';
-    const adminPassword = 'password123';
-  
-    toast({ title: 'جاري التحقق من هوية المدير...', description: 'الرجاء الانتظار.' });
-  
-    const signInSuccess = await initiateEmailSignIn(auth, adminEmail, adminPassword);
-  
-    if (signInSuccess) {
-      toast({ title: 'أهلاً بك أيها المدير', description: 'جاري التوجيه...' });
-      router.push('/admin');
-      return;
-    }
-  
-    toast({ title: 'جاري إنشاء حساب المدير...', description: 'لحظة من فضلك.' });
-    const adminProfile = {
-      firstName: 'المدير',
-      lastName: 'العام',
-      email: adminEmail,
-      phoneNumber: '111-111-1111',
-      role: 'admin' as const,
-    };
-  
-    const signUpSuccess = await initiateEmailSignUp(auth, firestore, adminEmail, adminPassword, adminProfile, false);
-  
-    if (signUpSuccess) {
-      const finalSignInSuccess = await initiateEmailSignIn(auth, adminEmail, adminPassword);
-      if (finalSignInSuccess) {
-        toast({ title: 'أهلاً بك أيها المدير', description: 'جاري التوجيه...' });
-        router.push('/admin');
-      } else {
-        toast({ title: "فشل دخول المدير", description: "لم نتمكن من الدخول بعد إنشاء الحساب.", variant: "destructive"});
-      }
-    }
-  };
-
   return (
     <div className="relative flex min-h-screen w-full flex-col items-center justify-center px-4 py-8 md:px-0">
       {bgImage && (
