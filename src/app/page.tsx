@@ -3,9 +3,7 @@
 
 import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser, useFirestore, useCollection } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
-import type { Booking, Trip } from '@/lib/data';
+import { useUser, useFirestore, useCollection, useUserProfile } from '@/firebase';
 import { AppLayout } from '@/components/app-layout';
 import { Ship } from 'lucide-react';
 
@@ -15,7 +13,7 @@ function LoadingScreen() {
             <div className="flex h-[calc(100vh-200px)] flex-col items-center justify-center gap-4 text-center">
                 <Ship className="h-16 w-16 animate-pulse text-primary" />
                 <h1 className="text-xl font-bold text-muted-foreground">جاري تحديد وجهتك ...</h1>
-                <p className="text-sm text-muted-foreground">يقوم النظام بالتحقق من حالة رحلاتك الحالية.</p>
+                <p className="text-sm text-muted-foreground">يقوم النظام بالتحقق من حالة حسابك.</p>
             </div>
         </AppLayout>
     );
@@ -23,53 +21,31 @@ function LoadingScreen() {
 
 export default function SmartRedirectPage() {
     const router = useRouter();
-    const { user, isUserLoading } = useUser();
-    const firestore = useFirestore();
-
-    // Query for any active processes for the user
-    const activeBookingsQuery = useMemo(() => {
-        if (!firestore || !user) return null;
-        return query(
-            collection(firestore, 'bookings'),
-            where('userId', '==', user.uid),
-            where('status', 'in', ['Pending-Payment', 'Confirmed', 'Pending-Carrier-Confirmation'])
-        );
-    }, [firestore, user]);
-    
-    const activeTripRequestsQuery = useMemo(() => {
-        if (!firestore || !user) return null;
-        return query(
-            collection(firestore, 'trips'),
-            where('userId', '==', user.uid),
-            where('status', '==', 'Awaiting-Offers')
-        );
-    }, [firestore, user]);
-
-    const { data: activeBookings, isLoading: isLoadingBookings } = useCollection<Booking>(activeBookingsQuery);
-    const { data: activeTripRequests, isLoading: isLoadingRequests } = useCollection<Trip>(activeTripRequestsQuery);
+    const { user, profile, isLoading } = useUserProfile();
 
     useEffect(() => {
-        // Wait until both authentication and data fetching are complete
-        if (isUserLoading || isLoadingBookings || isLoadingRequests) {
+        // Wait until the initial loading of user and profile is complete.
+        if (isLoading) {
             return;
         }
 
-        // If the user is not logged in, they should be taken to the public dashboard.
+        // If no user is logged in, redirect to the public dashboard.
         if (!user) {
+            router.replace('/login');
+            return;
+        }
+
+        // If the user has a specific role, redirect them to their respective dashboard.
+        if (profile?.role === 'admin' || profile?.role === 'owner') {
+            router.replace('/admin');
+        } else if (profile?.role === 'carrier') {
+            router.replace('/carrier');
+        } else {
+            // Default for travelers or users with no specific role set yet.
             router.replace('/dashboard');
-            return;
-        }
-        
-        // If the user has any active process (booking or request), redirect to the history page.
-        if ((activeBookings && activeBookings.length > 0) || (activeTripRequests && activeTripRequests.length > 0)) {
-            router.replace('/history');
-            return;
         }
 
-        // Default case: a logged-in user with no active processes goes to the dashboard.
-        router.replace('/dashboard');
-
-    }, [user, isUserLoading, activeBookings, activeTripRequests, isLoadingBookings, isLoadingRequests, router]);
+    }, [user, profile, isLoading, router]);
 
     // Render a loading screen while the redirection logic is processing.
     return <LoadingScreen />;

@@ -3,9 +3,9 @@
 import React from 'react';
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth, useUser as useFirebaseUser } from 'firebase/auth';
+import { getAuth, Auth, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore'
-import { FirebaseContext } from './provider';
+import { FirebaseContext, useUser as useFirebaseUser } from './provider';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
