@@ -125,9 +125,9 @@ function TripListItem({ trip, pendingBookings, onEdit, onManagePassengers, onIni
                                 <span>الوصول وإنهاء الرحلة</span>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => toast({ title: 'قيد التطوير', description: 'سيتم تفعيل هذه الميزة قريباً.' })}>
+                            <DropdownMenuItem onClick={() => onEdit(trip)}>
                                 <Pencil className="ml-2 h-4 w-4" />
-                                <span>تعديل تفاصيل الرحلة (معطل)</span>
+                                <span>تعديل تفاصيل الرحلة</span>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => onManagePassengers(trip)}>
                                 <List className="ml-2 h-4 w-4" />
@@ -247,7 +247,7 @@ export function MyTripsList({ trips, pendingBookingsMap }: MyTripsListProps) {
             // 3. Create a notification for each booked user
             bookingsSnapshot.forEach(bookingDoc => {
                 const booking = bookingDoc.data() as Booking;
-                const notificationRef = doc(collection(firestore, 'notifications'));
+                const notificationRef = doc(collection(firestore, 'users', booking.userId, 'notifications'));
                 batch.set(notificationRef, {
                     userId: booking.userId,
                     title: 'تحديث هام بخصوص رحلتك',
@@ -344,7 +344,7 @@ export function MyTripsList({ trips, pendingBookingsMap }: MyTripsListProps) {
             const bookingsSnapshot = await getDocs(bookingsQuery);
             bookingsSnapshot.forEach(bookingDoc => {
                 const booking = bookingDoc.data() as Booking;
-                const notificationRef = doc(collection(firestore, 'notifications'));
+                const notificationRef = doc(collection(firestore, 'users', booking.userId, 'notifications'));
                 batch.set(notificationRef, {
                     userId: booking.userId,
                     title: `اكتملت رحلتك! نرجو تقييم تجربتك.`,
@@ -393,7 +393,7 @@ export function MyTripsList({ trips, pendingBookingsMap }: MyTripsListProps) {
                  const bookingsSnapshot = await getDocs(bookingsQuery);
                  bookingsSnapshot.forEach(bookingDoc => {
                     const booking = bookingDoc.data() as Booking;
-                    const notificationRef = doc(collection(firestore, 'notifications'));
+                    const notificationRef = doc(collection(firestore, 'users', booking.userId, 'notifications'));
                     batch.set(notificationRef, {
                         userId: booking.userId,
                         title: 'إلغاء رحلة محجوزة',

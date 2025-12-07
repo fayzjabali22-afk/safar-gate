@@ -57,7 +57,7 @@ export * from '@/hooks/use-user-profile';
 export function useAuth(): Auth | null {
     const context = React.useContext(FirebaseContext);
     if (context === undefined) {
-      return null
+      throw new Error('useAuth must be used within a FirebaseProvider');
     }
     return context.auth;
 }
