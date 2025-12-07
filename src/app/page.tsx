@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation'; // FIX: Added missing import
-import { useUserProfile } from '@/hooks/use-user-profile'; // FIX: Correct path
-import { AppLayout } from '@/components/app-layout';
+import { useRouter } from 'next/navigation'; // تم جلب هذا الاستيراد الضروري
+import { useUserProfile } from '@/hooks/use-user-profile';
+import { AppLayout } from '@/components/app-layout'; // أو أي Layout عام
 import { Ship } from 'lucide-react';
 
 function LoadingScreen() {
@@ -21,26 +21,30 @@ export default function SmartRedirectPage() {
     const { user, profile, isLoading } = useUserProfile();
 
     useEffect(() => {
-        // Wait for loading to finish
+        // 1. بروتوكول الصبر: انتظر انتهاء التحميل تماماً
         if (isLoading) return;
 
-        // 1. No User -> Go to Login
+        // 2. بروتوكول الأمن: لا مستخدم = طرد للدخول
         if (!user) {
             router.replace('/login');
             return;
         }
 
-        // 2. Routing based on Role
+        // 3. بروتوكول التوجيه الذكي (The Brain):
+        // المالك والمدير -> القلعة
         if (profile?.role === 'admin' || profile?.role === 'owner') {
-            router.replace('/admin'); // The fix for you
-        } else if (profile?.role === 'carrier') {
+            router.replace('/admin'); 
+        } 
+        // الناقل -> غرفة العمليات
+        else if (profile?.role === 'carrier') {
             router.replace('/carrier');
-        } else {
-            // Default for travelers
+        } 
+        // المسافر -> سجل الرحلات
+        else {
             router.replace('/history'); 
         }
     }, [user, profile, isLoading, router]);
 
-    // Always show loading screen while deciding
+    // عرض شاشة الانتظار دائماً لمنع الوميض
     return <LoadingScreen />;
 }
