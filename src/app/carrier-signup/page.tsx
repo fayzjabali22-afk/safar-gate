@@ -24,20 +24,20 @@ import {
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/logo';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useFirestore, initiateEmailSignUp, useAuth, initiateGoogleSignIn } from '@/firebase';
+import { useFirestore, initiateEmailSignUp, useAuth } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
-import { User } from 'lucide-react';
+import { Ship } from 'lucide-react';
 
-const signupFormSchema = z.object({
+const carrierSignupSchema = z.object({
   fullName: z.string().min(2, 'الاسم الكامل يجب أن يتكون من حرفين على الأقل.'),
   phoneNumber: z.string().min(1, 'رقم الهاتف مطلوب.'),
   email: z.string().email('البريد الإلكتروني غير صالح.'),
   password: z.string().min(5, 'كلمة المرور يجب أن تتكون من 5 أحرف على الأقل.'),
 });
 
-type SignupFormValues = z.infer<typeof signupFormSchema>;
+type CarrierSignupFormValues = z.infer<typeof carrierSignupSchema>;
 
-export default function SignupPage() {
+export default function CarrierSignupPage() {
   const bgImage = PlaceHolderImages.find(
     (img) => img.id === 'login-background'
   );
@@ -46,8 +46,8 @@ export default function SignupPage() {
   const router = useRouter();
   const { toast } = useToast();
   
-  const form = useForm<SignupFormValues>({
-    resolver: zodResolver(signupFormSchema),
+  const form = useForm<CarrierSignupFormValues>({
+    resolver: zodResolver(carrierSignupSchema),
     defaultValues: {
       fullName: '',
       phoneNumber: '',
@@ -56,7 +56,7 @@ export default function SignupPage() {
     },
   });
 
-  const onSubmit = async (data: SignupFormValues) => {
+  const onSubmit = async (data: CarrierSignupFormValues) => {
     if (!auth || !firestore) {
         toast({ title: "خطأ", description: "Firebase not initialized.", variant: "destructive"});
         return;
@@ -68,31 +68,20 @@ export default function SignupPage() {
         lastName: lastNameParts.join(' '),
         email: data.email,
         phoneNumber: data.phoneNumber,
-        role: 'traveler' as const
+        role: 'carrier' as const // Assign 'carrier' role directly
     };
 
     const userCredential = await initiateEmailSignUp(auth, firestore, data.email, data.password, userProfile, false);
 
     if (userCredential) {
         toast({
-          title: 'تم إنشاء الحساب بنجاح!',
-          description: 'سيتم توجيهك إلى لوحة التحكم.',
+          title: 'أهلاً بك في أسطولنا!',
+          description: 'تم إنشاء حسابك كناقل بنجاح. سيتم توجيهك الآن إلى لوحة التحكم.',
         });
-        router.push('/dashboard');
+        router.push('/carrier');
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    if (!auth || !firestore) return;
-    const success = await initiateGoogleSignIn(auth, firestore);
-    if (success) {
-      toast({
-        title: 'تم إنشاء الحساب بنجاح!',
-        description: 'سيتم توجيهك قريباً.',
-      });
-      router.push('/dashboard');
-    }
-  };
 
   return (
     <div className="relative flex min-h-screen w-full flex-col items-center justify-center px-4 py-8 md:px-0">
@@ -108,38 +97,15 @@ export default function SignupPage() {
       <div className="absolute inset-0 -z-10 bg-black/60" />
       <Card className="mx-auto max-w-sm bg-card/90 backdrop-blur-sm border-border">
         <CardHeader className="text-center">
-           <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit border border-primary">
-            <User className="h-8 w-8 text-primary" />
+          <div className="mx-auto bg-primary/10 p-3 rounded-full w-fit border border-primary">
+            <Ship className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl mt-4">بوابة تسجيل المسافرين</CardTitle>
+          <CardTitle className="text-2xl mt-4">بوابة تسجيل الناقلين</CardTitle>
           <CardDescription>
-            أنشئ حسابك كمسافر وابدأ رحلتك.
+            انضم إلى أسطولنا وابدأ في تحقيق الأرباح.
           </CardDescription>
         </CardHeader>
         <CardContent>
-            <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">
-                        أكمل باستخدام
-                    </span>
-                </div>
-            </div>
-            <Button variant="outline" className="w-full mb-4" onClick={handleGoogleSignIn}>
-                التسجيل باستخدام جوجل
-            </Button>
-             <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">
-                        أو عبر البريد الإلكتروني
-                    </span>
-                </div>
-            </div>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4">
               <FormField
@@ -162,7 +128,7 @@ export default function SignupPage() {
                   <FormItem className="grid gap-2">
                     <FormLabel>رقم الهاتف</FormLabel>
                     <FormControl>
-                      <Input dir="ltr" placeholder="+962 79 123 4567" {...field} />
+                      <Input dir="ltr" placeholder="+966 50 123 4567" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -200,7 +166,7 @@ export default function SignupPage() {
               />
              
               <Button variant="default" type="submit" className="w-full">
-                إنشاء حساب مسافر
+                إنشاء حساب ناقل
               </Button>
             </form>
           </Form>
@@ -211,9 +177,9 @@ export default function SignupPage() {
             </Link>
           </div>
            <div className="mt-4 text-center text-sm">
-            هل أنت ناقل؟{' '}
-            <Link href="/carrier-signup" className="underline">
-              أنشئ حساب ناقل من هنا
+            هل أنت مسافر؟{' '}
+            <Link href="/signup" className="underline">
+              أنشئ حساب مسافر من هنا
             </Link>
           </div>
         </CardContent>
