@@ -24,7 +24,11 @@ export function getRelevantGuide(context: string, query?: string): Guide | null 
     'carrier_dashboard': 'carrier_add_trip',
     'carrier_trips': 'carrier_add_trip',
     'dashboard': 'traveler_booking_process',
-    'history_payment': 'payment_process',
+    'history': 'payment_process', // Changed from history_payment to be more general
+    'admin': 'admin_dashboard', // For the main admin page
+    'users': 'admin_users', // For the admin users page
+    'admin_dashboard': 'admin_dashboard',
+    'admin_users': 'admin_users',
   };
 
   const guideId = contextMap[context];

@@ -26,30 +26,49 @@ export function GuideDialog({ isOpen, onOpenChange }: GuideDialogProps) {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
 
-
-  // 1. Load Voices & select Arabic voice
+  // SOVEREIGN CORRECTION: The previous implementation was flawed.
+  // The `getVoices()` call can return an empty list initially.
+  // We MUST wait for the `onvoiceschanged` event to fire.
   useEffect(() => {
-    const loadAndSelectVoice = () => {
+    const handleVoicesChanged = () => {
       const availableVoices = window.speechSynthesis.getVoices();
       if (availableVoices.length > 0) {
         setVoices(availableVoices);
-        const arabicVoice = availableVoices.find(v => v.lang === 'ar-SA') || availableVoices.find(v => v.lang.includes('ar'));
+        // Prioritize a specific, high-quality voice if available, then fall back.
+        const arabicVoice = 
+            availableVoices.find(v => v.name === 'Maged' && v.lang === 'ar-SA') || // High-quality voice on some systems
+            availableVoices.find(v => v.lang === 'ar-SA') || 
+            availableVoices.find(v => v.lang.startsWith('ar-'));
         setSelectedVoice(arabicVoice || null);
       }
     };
-
-    loadAndSelectVoice();
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-      window.speechSynthesis.onvoiceschanged = loadAndSelectVoice;
+    
+    // Check if voices are already loaded
+    if (speechSynthesis.getVoices().length > 0) {
+      handleVoicesChanged();
+    } else {
+      // Otherwise, wait for the event
+      speechSynthesis.onvoiceschanged = handleVoicesChanged;
     }
+
+    // Cleanup
+    return () => {
+      speechSynthesis.onvoiceschanged = null;
+    };
   }, []);
 
-  // 2. Load Guide Content
+  // Load Guide Content
   useEffect(() => {
     if (isOpen) {
       setIsLoading(true);
       const timer = setTimeout(() => {
-        const context = pathname.split('/').pop() || 'dashboard';
+        // Corrected context mapping for admin screens
+        let context = pathname.split('/').filter(Boolean).pop() || 'dashboard';
+        if (pathname.startsWith('/admin')) {
+            context = 'admin_dashboard'; // General context for admin
+            if (pathname.includes('/users')) context = 'admin_users';
+            if (pathname.includes('/trips')) context = 'admin_trips';
+        }
         const relevantGuide = getRelevantGuide(context);
         setGuide(relevantGuide);
         setActiveStep(0);
@@ -72,16 +91,17 @@ export function GuideDialog({ isOpen, onOpenChange }: GuideDialogProps) {
 
     const utterance = new SpeechSynthesisUtterance(text);
     
-    // 1. Force Language Intent
+    // Force Language Intent
     utterance.lang = 'ar-SA'; 
     utterance.rate = 0.9;
+    utterance.pitch = 1.0;
 
-    // 2. Try to assign the specific voice if we found one
+    // Assign the specific voice if we found one
     if (selectedVoice) {
       utterance.voice = selectedVoice;
     }
 
-    // 3. Speak regardless (Browser will use default fallback if voice is null)
+    // Speak regardless (Browser will use default fallback if voice is null)
     window.speechSynthesis.speak(utterance);
   };
 
