@@ -98,7 +98,7 @@ export default function SignupPage() {
 
   if (isSignUpSuccessful) {
     return (
-        <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
+        <div className="relative flex min-h-screen w-full flex-col items-center justify-center px-4 py-8 md:px-0">
             {bgImage && (
                 <Image
                 src={bgImage.imageUrl}
@@ -109,7 +109,7 @@ export default function SignupPage() {
                 />
             )}
             <div className="absolute inset-0 -z-10 bg-black/60" />
-            <Card className="mx-auto max-w-sm text-center">
+            <Card className="mx-auto max-w-sm text-center bg-card/80 backdrop-blur-sm border-white/20">
                 <CardHeader>
                     <MailCheck className="mx-auto h-16 w-16 text-green-500" />
                     <CardTitle className="text-2xl mt-4">خطوة أخيرة!</CardTitle>
@@ -134,7 +134,7 @@ export default function SignupPage() {
 
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center px-4 py-8 md:px-0">
       {bgImage && (
         <Image
           src={bgImage.imageUrl}
@@ -145,7 +145,7 @@ export default function SignupPage() {
         />
       )}
       <div className="absolute inset-0 -z-10 bg-black/60" />
-      <Card className="mx-auto max-w-sm">
+      <Card className="mx-auto max-w-sm bg-card/80 backdrop-blur-sm border-white/20">
         <CardHeader className="text-center">
           <Logo className="mb-4 justify-center" />
           <CardTitle className="text-2xl">إنشاء حساب جديد</CardTitle>
@@ -223,7 +223,7 @@ export default function SignupPage() {
                 <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
+                <span className="bg-card/80 px-2 text-muted-foreground">
                 أو أكمل باستخدام
                 </span>
             </div>

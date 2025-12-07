@@ -132,7 +132,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col items-center justify-center p-4">
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center px-4 py-8 md:px-0">
       {bgImage && (
         <Image
           src={bgImage.imageUrl}
@@ -143,7 +143,7 @@ export default function LoginPage() {
         />
       )}
       <div className="absolute inset-0 -z-10 bg-black/60" />
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm bg-card/80 backdrop-blur-sm border-white/20">
         <CardHeader className="text-center">
           <Logo className="mb-4 justify-center" />
           <CardTitle className="text-2xl">أهلاً بعودتك</CardTitle>
@@ -161,7 +161,7 @@ export default function LoginPage() {
                   <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">
+                  <span className="bg-card/80 px-2 text-muted-foreground">
                   أو سجل دخولك عبر
                   </span>
               </div>
@@ -216,7 +216,7 @@ export default function LoginPage() {
                 <span className="w-full border-t" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
+                <span className="bg-card/80 px-2 text-muted-foreground">
                 أو أكمل باستخدام
                 </span>
             </div>
