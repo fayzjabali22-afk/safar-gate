@@ -162,17 +162,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         toast({
             title: `تم التبديل إلى واجهة ${newRole === 'carrier' ? 'الناقل' : 'المسافر'}`,
         });
-        if (newRole === 'carrier') {
-            router.push('/carrier');
-        } else {
-            router.push('/dashboard');
-        }
+        // Force a reload to ensure all state is reset correctly
+        window.location.href = newRole === 'carrier' ? '/carrier' : '/dashboard';
     } catch (e) {
          toast({
             variant: "destructive",
             title: "فشل تبديل الدور",
+            description: "حدث خطأ أثناء محاولة تحديث دورك في قاعدة البيانات."
         });
-    } finally {
         setIsSwitchingRole(false);
     }
   }
@@ -243,15 +240,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         >
 
           <div className="flex items-center gap-2 md:hidden">
-            <Button asChild variant="ghost" size="icon" className="hover:bg-black/10">
-              <Link href="/profile">
-                <User className="h-6 w-6" />
-                <span className="sr-only">الملف الشخصي</span>
-              </Link>
-            </Button>
-          </div>
-          
-          <div className="md:hidden">
             {isMounted && !isCarrierPath && (
               <Sheet>
                 <SheetTrigger asChild>
@@ -267,7 +255,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle>
                   <nav className="grid gap-6 text-lg font-medium p-6">
                     <div className="mb-4 flex items-center justify-center">
-                      <span className="text-xl font-bold">safaryat</span>
+                       <Logo/>
                     </div>
                     {mobileMenuItems.map((item) => {
                       const isLinkActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
@@ -286,17 +274,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </SheetContent>
               </Sheet>
             )}
-          </div>
-
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <Link href="/">
-                <Logo />
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-2 ms-auto">
-            
-            {isDevUser && (
+             {isDevUser && (
                  <Tooltip>
                     <TooltipTrigger asChild>
                         <Button 
@@ -314,7 +292,15 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </TooltipContent>
                  </Tooltip>
             )}
+          </div>
+          
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <Link href="/">
+                <Logo />
+            </Link>
+          </div>
 
+          <div className="flex items-center gap-2 ms-auto">
             {user && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>

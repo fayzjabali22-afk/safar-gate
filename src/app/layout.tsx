@@ -43,8 +43,8 @@ export default function RootLayout({
           {children}
           <InstallPrompt />
           <GuideTrigger />
+          <Toaster />
         </FirebaseClientProvider>
-        <Toaster />
       </body>
     </html>
   );

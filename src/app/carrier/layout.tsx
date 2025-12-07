@@ -62,24 +62,21 @@ export default function CarrierLayout({
         toast({
             title: `تم التبديل إلى واجهة ${newRole === 'carrier' ? 'الناقل' : 'المسافر'}`,
         });
-        if (newRole === 'carrier') {
-            router.push('/carrier');
-        } else {
-            router.push('/dashboard');
-        }
+        // Force a reload to ensure all state is reset correctly
+        window.location.href = newRole === 'carrier' ? '/carrier' : '/dashboard';
     } catch (e) {
          toast({
             variant: "destructive",
             title: "فشل تبديل الدور",
+            description: "حدث خطأ أثناء محاولة تحديث دورك في قاعدة البيانات."
         });
-    } finally {
         setIsSwitchingRole(false);
     }
   }
 
 
   return (
-    <>
+    <TooltipProvider>
       <div className="flex min-h-screen w-full flex-col bg-background" dir="rtl">
         <header
           className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b border-black/10 px-4 text-black shadow-lg md:px-6"
@@ -98,6 +95,24 @@ export default function CarrierLayout({
                        <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} />
                     </SheetContent>
                 </Sheet>
+                 {isDevUser && (
+                     <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="rounded-full hover:bg-black/20 relative text-black"
+                                onClick={handleSwitchRole}
+                                disabled={isSwitchingRole || isLoading}
+                            >
+                                {isSwitchingRole ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRightLeft className="h-5 w-5" />}
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>تبديل سريع بين واجهة المسافر والناقل</p>
+                        </TooltipContent>
+                    </Tooltip>
+                )}
             </div>
             
              <div className="absolute left-1/2 -translate-x-1/2">
@@ -105,26 +120,6 @@ export default function CarrierLayout({
             </div>
 
             <div className="flex items-center gap-2">
-                {isDevUser && (
-                     <TooltipProvider>
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="rounded-full hover:bg-black/20 relative text-black"
-                                    onClick={handleSwitchRole}
-                                    disabled={isSwitchingRole || isLoading}
-                                >
-                                    {isSwitchingRole ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRightLeft className="h-5 w-5" />}
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                                <p>تبديل سريع بين واجهة المسافر والناقل</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                )}
                 <Button asChild variant="ghost" size="icon" className="hover:bg-black/10">
                   <Link href="/carrier/profile">
                     <User className="h-6 w-6" />
@@ -170,6 +165,6 @@ export default function CarrierLayout({
         isOpen={isAddTripDialogOpen}
         onOpenChange={setIsAddTripDialogOpen}
       />
-    </>
+    </TooltipProvider>
   );
 }

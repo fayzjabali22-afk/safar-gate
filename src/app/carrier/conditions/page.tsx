@@ -75,7 +75,7 @@ export default function CarrierConditionsPage() {
         setIsSubmitting(true);
         try {
             await updateDoc(userProfileRef, data);
-            toast({ title: 'تم تحديث الشروط الدائمة', description: 'تم حفظ تغييراتك بنجاح.' });
+            toast({ title: 'تم تحديث الإعدادات الدائمة', description: 'تم حفظ تغييراتك بنجاح.' });
         } catch (error) {
             toast({ title: 'فشل التحديث', description: 'حدث خطأ ما.', variant: 'destructive' });
         } finally {
@@ -187,7 +187,7 @@ export default function CarrierConditionsPage() {
                         <div className="flex justify-end">
                             <Button type="submit" disabled={isSubmitting || isLoading}>
                                 {isSubmitting ? (
-                                    <><Loader2 className="ml-2 h-4 w-4 animate-spin"/> جاري الحفظ...</>
+                                    <><Loader2 className="ml-2 h-4 w-4 animate-spin"/> حفظ التغييرات...</>
                                 ) : (
                                     <><Save className="ml-2 h-4 w-4"/> حفظ الإعدادات</>
                                 )}
