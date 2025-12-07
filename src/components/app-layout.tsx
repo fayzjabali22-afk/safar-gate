@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -229,6 +230,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           
           {/* Right Section (on LTR view) */}
           <div className="flex items-center gap-2">
+            {/*
             {isDevUser && user && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -247,6 +249,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </TooltipContent>
               </Tooltip>
             )}
+            */}
             {user ? (
                 <>
                 <DropdownMenu>

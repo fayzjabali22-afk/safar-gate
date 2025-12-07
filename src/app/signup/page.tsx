@@ -157,12 +157,14 @@ export default function SignupPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/*
           <div className="grid grid-cols-1 gap-2 mb-4">
                <Button type="button" variant="secondary" size="lg" className="w-full" onClick={handleDevSignIn}>
                 <TestTube2 className="mr-2 h-5 w-5" />
                 زر الطوارئ (مطور)
               </Button>
             </div>
+            */}
             <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />

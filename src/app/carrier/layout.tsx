@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -109,6 +110,7 @@ export default function CarrierLayout({
                        <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} />
                     </SheetContent>
                 </Sheet>
+                 {/*
                  {isDevUser && (
                      <Tooltip>
                         <TooltipTrigger asChild>
@@ -127,6 +129,7 @@ export default function CarrierLayout({
                         </TooltipContent>
                     </Tooltip>
                 )}
+                */}
                 <Button asChild variant="ghost" size="icon">
                   <Link href="/carrier/profile">
                     <User className="h-6 w-6" />
