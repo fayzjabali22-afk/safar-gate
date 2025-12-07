@@ -28,7 +28,7 @@ interface BookingDialogProps {
   onOpenChange: (isOpen: boolean) => void;
   trip: Trip;
   seatCount: number;
-  onConfirm: (passengers: PassengerDetails[]) => void;
+  onConfirm: (passengers: PassengerDetails[]) => Promise<void>;
   isProcessing?: boolean; // خاصية التحكم بحالة التحميل
 }
 
@@ -38,10 +38,11 @@ export function BookingDialog({
   trip, 
   seatCount, 
   onConfirm, 
-  isProcessing = false 
 }: BookingDialogProps) {
     const { toast } = useToast();
     const [passengers, setPassengers] = useState<PassengerDetails[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
 
     useEffect(() => {
         if (isOpen) {
@@ -61,7 +62,7 @@ export function BookingDialog({
         });
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const allNamesFilled = passengers.every(p => p.name.trim() !== '');
         if (!allNamesFilled) {
             toast({
@@ -71,11 +72,19 @@ export function BookingDialog({
             });
             return;
         }
-        onConfirm(passengers);
+        setIsSubmitting(true);
+        try {
+            await onConfirm(passengers);
+            // On success, the parent component handles closing the dialog
+        } catch (error) {
+            // Errors are toasted in the parent, but we must stop the loading state here
+            setIsSubmitting(false);
+        }
+        // No need to set isSubmitting(false) on success, as the component will unmount
     };
     
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => !isProcessing && onOpenChange(open)}>
+        <Dialog open={isOpen} onOpenChange={(open) => !isSubmitting && onOpenChange(open)}>
             <DialogContent className="sm:max-w-[480px]">
                 <DialogHeader>
                 <DialogTitle>تأكيد الحجز: تفاصيل الركاب</DialogTitle>
@@ -98,7 +107,7 @@ export function BookingDialog({
                                     placeholder="أدخل الاسم الكامل كما في الهوية"
                                     value={passenger.name}
                                     onChange={(e) => handlePassengerChange(index, 'name', e.target.value)}
-                                    disabled={isProcessing}
+                                    disabled={isSubmitting}
                                     className="bg-background"
                                 />
                             </div>
@@ -110,7 +119,7 @@ export function BookingDialog({
                                     value={passenger.type}
                                     onValueChange={(value) => handlePassengerChange(index, 'type', value)}
                                     className="flex gap-4"
-                                    disabled={isProcessing}
+                                    disabled={isSubmitting}
                                 >
                                     <div className="flex items-center space-x-2 rtl:space-x-reverse border p-2 rounded-md bg-background flex-1 justify-center cursor-pointer hover:bg-accent/50 transition-colors">
                                         <RadioGroupItem value="adult" id={`adult-${index}`} />
@@ -132,25 +141,25 @@ export function BookingDialog({
                         type="button" 
                         variant="secondary" 
                         onClick={() => onOpenChange(false)} 
-                        disabled={isProcessing}
+                        disabled={isSubmitting}
                     >
                         إلغاء
                     </Button>
                     <Button 
                         type="submit" 
                         onClick={handleSubmit} 
-                        disabled={isProcessing}
+                        disabled={isSubmitting}
                         className="w-full sm:w-auto"
                     >
-                        {isProcessing ? (
+                        {isSubmitting ? (
                             <>
                                 <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                                جاري التأكيد...
+                                جاري الإرسال...
                             </>
                         ) : (
                             <>
                                 <Send className="ml-2 h-4 w-4" />
-                                تأكيد الحجز
+                                إرسال الطلب للناقل
                             </>
                         )}
                     </Button>

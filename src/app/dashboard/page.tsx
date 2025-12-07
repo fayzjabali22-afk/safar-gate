@@ -268,7 +268,7 @@ export default function DashboardPage() {
                 carrierId: selectedTripForBooking.carrierId!,
                 seats: passengers.length,
                 passengersDetails: passengers,
-                status: 'Pending-Carrier-Confirmation',
+                status: 'Pending-Payment', // QUALITY ASSURANCE FIX: Correct status for direct booking
                 totalPrice: (selectedTripForBooking.price || 0) * passengers.length,
                 currency: selectedTripForBooking.currency as any,
                 createdAt: serverTimestamp(),
@@ -277,14 +277,28 @@ export default function DashboardPage() {
 
             await addDocumentNonBlocking(collection(firestore, 'bookings'), bookingData);
 
+            // Notify Carrier
+            if (selectedTripForBooking.carrierId) {
+                const notificationPayload = {
+                    userId: selectedTripForBooking.carrierId,
+                    title: 'حجز جديد بانتظار الدفع',
+                    message: `لديك حجز جديد من مسافر لرحلتك (${getCityName(selectedTripForBooking.origin)} - ${getCityName(selectedTripForBooking.destination)}). الحجز بانتظار دفع العربون.`,
+                    type: 'new_booking_request',
+                    isRead: false,
+                    createdAt: serverTimestamp(),
+                    link: '/carrier/bookings',
+                };
+                await addDocumentNonBlocking(collection(firestore, 'notifications'), notificationPayload);
+            }
+
             toast({
-                title: 'تم إرسال طلب الحجز بنجاح!',
-                description: 'سيتم إعلامك عند تأكيد الناقل للحجز. يمكنك المتابعة من صفحة إدارة الحجز.',
+                title: 'تم إرسال الحجز بنجاح!',
+                description: 'الخطوة التالية هي دفع العربون. سيتم توجيهك الآن لصفحة إدارة الحجز.',
             });
             
             setIsBookingDialogOpen(false);
             setSelectedTripForBooking(null);
-            router.push('/history');
+            router.push('/history'); // QUALITY ASSURANCE FIX: Redirect to history page
             
         } catch (error) {
             console.error("Booking failed:", error);
