@@ -271,11 +271,6 @@ export default function LoginPage() {
               أنشئ حساباً
             </Link>
           </div>
-          <div className="mt-4 border-t pt-4">
-            <Button variant="link" size="sm" className="w-full" onClick={() => router.push('/admin')}>
-                دخول الإدارة (للمطورين)
-            </Button>
-          </div>
         </Card>
       </div>
        <div className="relative hidden bg-muted lg:block">
