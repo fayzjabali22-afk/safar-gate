@@ -203,10 +203,6 @@ export default function SignupPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 gap-2 mb-4">
-              <Button type="button" variant="outline" size="lg" className="w-full" onClick={handleAdminSignIn}>
-                <Shield className="mr-2 h-5 w-5 text-primary" />
-                زر الطوارئ (مدير)
-              </Button>
                <Button type="button" variant="secondary" size="lg" className="w-full" onClick={handleDevSignIn}>
                 <TestTube2 className="mr-2 h-5 w-5" />
                 زر الطوارئ (مطور)
