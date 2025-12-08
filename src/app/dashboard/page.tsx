@@ -268,7 +268,7 @@ export default function DashboardPage() {
                 carrierId: selectedTripForBooking.carrierId!,
                 seats: passengers.length,
                 passengersDetails: passengers,
-                status: 'Pending-Carrier-Confirmation', // ** PROTOCOL FIX: Correct status for booking requests **
+                status: 'Pending-Carrier-Confirmation',
                 totalPrice: (selectedTripForBooking.price || 0) * passengers.length,
                 currency: selectedTripForBooking.currency as any,
                 createdAt: serverTimestamp(),
@@ -277,28 +277,27 @@ export default function DashboardPage() {
 
             await addDocumentNonBlocking(collection(firestore, 'bookings'), bookingData);
 
-            // Notify Carrier
             if (selectedTripForBooking.carrierId) {
                 const notificationPayload = {
                     userId: selectedTripForBooking.carrierId,
-                    title: 'لديك طلب حجز جديد!', // ** PROTOCOL FIX: Correct notification title **
-                    message: `لديك طلب حجز جديد من مسافر لرحلتك (${getCityName(selectedTripForBooking.origin)} - ${getCityName(selectedTripForBooking.destination)}). يرجى المراجعة والرد.`, // ** PROTOCOL FIX: Correct notification message **
+                    title: 'لديك طلب حجز جديد!',
+                    message: `لديك طلب حجز جديد من مسافر لرحلتك (${getCityName(selectedTripForBooking.origin)} - ${getCityName(selectedTripForBooking.destination)}). يرجى المراجعة والرد.`,
                     type: 'new_booking_request' as const,
                     isRead: false,
                     createdAt: serverTimestamp(),
-                    link: '/carrier/bookings', // ** PROTOCOL FIX: Correct link to the new bookings page **
+                    link: '/carrier/bookings',
                 };
-                await addDocumentNonBlocking(collection(firestore, 'notifications'), notificationPayload);
+                await addDocumentNonBlocking(collection(firestore, 'users', selectedTripForBooking.carrierId, 'notifications'), notificationPayload);
             }
 
             toast({
-                title: 'تم إرسال طلب الحجز بنجاح!', // ** PROTOCOL FIX: Correct user feedback **
+                title: 'تم إرسال طلب الحجز بنجاح!',
                 description: 'سيتم إعلامك فور موافقة الناقل. يمكنك متابعة حالة الطلب من صفحة إدارة الحجز.',
             });
             
             setIsBookingDialogOpen(false);
             setSelectedTripForBooking(null);
-            router.push('/history'); // ** PROTOCOL FIX: Redirect to history page to see pending status **
+            router.push('/history');
             
         } catch (error) {
             console.error("Booking failed:", error);
@@ -597,5 +596,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
-    

@@ -113,7 +113,7 @@ export function BookingActionCard({ booking }: { booking: Booking }) {
         try {
             const batch = writeBatch(firestore);
             const bookingDocRef = doc(firestore, 'bookings', booking.id);
-            const notificationRef = doc(collection(firestore, 'notifications'));
+            const notificationRef = doc(collection(firestore, 'users', booking.userId, 'notifications'));
 
             if (action === 'confirm') {
                 batch.update(bookingDocRef, { status: 'Pending-Payment' });
