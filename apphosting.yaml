@@ -71,39 +71,6 @@ runConfig:
 #     maxAttempts: 100
 #     maxRetryDuration: "1h"
 #     minBackoff: "10s"
-body: ''
-headers: []
-serveCommand: node server.js
-stack: nodejs20
-# We can also specify the static assets for the backend.
-# staticAssets:
-#   - path: "public"
-#     # The following are optional.
-#     # The headers to apply to the static assets.
-#     # headers:
-#     #   - key: "Cache-Control"
-#     #     value: "public, max-age=3600"
-#     # The regex to apply to the static assets.
-#     # include: "/**"
-#     # exclude: "/secret/**"
-# We can also specify the redirects for the backend.
-# redirects:
-- path: "/old"
-  destination: "/new"
-  # The following are optional.
-  # The type of the redirect. Can be 301, 302, 307, 308.
-  # type: 301
-  # The regex to apply to the redirect.
-  # regex: "^/old/(.*)$"
-# We can also specify the rewrites for the backend.
-# rewrites:
-#   - path: "/api/*"
-#     function: "my-api"
-# We can also specify the i18n settings for the backend.
-# i18n:
-#   # The root directory of the i18n content.
-#   root: "/i18n"
-
 # We can also specify the custom domain for the backend.
 # customDomain: "example.com"
 # We can also specify the Firebase settings for the backend.
@@ -271,6 +238,7 @@ stack: nodejs20
 #   enabled: true
 #   # The experiments to enable.
 #   experiments: ["my-experiment"]
+headers: []
 framework: nextjs
 npmrc: 'true'
 firebase:
@@ -283,3 +251,105 @@ firebase:
   databaseURL: https://studio-9145223887-757dc-default-rtdb.firebaseio.com/
   locationId: us-central1
   default: true
+serveCommand: npm run start
+stack: nodejs20
+rewrites:
+  - source: /**
+    destination: /
+redirects:
+  - path: "/old"
+    destination: "/new"
+    # The following are optional.
+    # The type of the redirect. Can be 301, 302, 307, 308.
+    # type: 301
+    # The regex to apply to the redirect.
+    # regex: "^/old/(.*)$"
+i18n:
+  root: /
+# We can also specify the custom domain for the backend.
+# customDomain: "example.com"
+# We can also specify the caching settings for the backend.
+# caching:
+#   # The TTL for the cache.
+#   ttl: "3600s"
+#   # The CDN TTL for the cache.
+#   cdnTtl: "3600s"
+#   # The client TTL for the cache.
+#   clientTtl: "3600s"
+#   # The browser TTL for the cache.
+#   browserTtl: "3600s"
+#   # The status codes to cache.
+#   cacheableStatusCodes: [200, 203, 300, 301, 302, 307, 410]
+
+# We can also specify the security settings for the backend.
+# security:
+#   # The security level for the backend. Can be "SECURE_OPTIONAL" or "SECURE_ALWAYS".
+#   securityLevel: "SECURE_ALWAYS"
+#   # The headers to apply to the backend.
+#   headers:
+#     - key: "Strict-Transport-Security"
+#       value: "max-age=31536000; includeSubDomains"
+#     - key: "X-Frame-Options"
+#       value: "SAMEORIGIN"
+#     - key: "X-Content-Type-Options"
+#       value: "nosniff"
+#     - key: "X-XSS-Protection"
+#       value: "1; mode=block"
+#     - key: "Referrer-Policy"
+#       value: "no-referrer"
+#     - key: "Content-Security-Policy"
+#       value: "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google-analytics.com https://www.googletagmanager.com https://www.google.com https://www.gstatic.com https://*.firebaseio.com https://*.googleapis.com; object-src 'self'; report-uri /csp-report"
+
+# We can also specify the optimization settings for the backend.
+# optimization:
+#   # Enable or disable the optimization.
+#   enabled: true
+#   # The optimization level. Can be "basic", "advanced", or "aggressive".
+#   level: "advanced"
+#   # The image optimization settings.
+#   images:
+#     # Enable or disable the image optimization.
+#     enabled: true
+#     # The image quality.
+#     quality: 85
+#     # The image formats to optimize.
+#     formats: ["webp", "jpeg", "png"]
+#   # The CSS optimization settings.
+#   css:
+#     # Enable or disable the CSS optimization.
+#     enabled: true
+#     # The CSS level. Can be 1, 2, or 3.
+#     level: 2
+#     # The CSS presets to use.
+#     presets: ["default", "safe"]
+#   # The JavaScript optimization settings.
+#   js:
+#     # Enable or disable the JavaScript optimization.
+#     enabled: true
+#     # The JavaScript level. Can be 1, 2, or 3.
+#     level: 2
+#     # The JavaScript presets to use.
+#     presets: ["default", "safe"]
+#   # The HTML optimization settings.
+#   html:
+#     # Enable or disable the HTML optimization.
+#     enabled: true
+#     # The HTML level. Can be 1, 2, or 3.
+#     level: 2
+#     # The HTML presets to use.
+#     presets: ["default", "safe"]
+#   # The Brotli compression settings.
+#   brotli:
+#     # Enable or disable the Brotli compression.
+#     enabled: true
+#     # The Brotli compression level.
+#     level: 11
+
+# We can also specify the experiments for the backend.
+# experiments:
+#   # Enable or disable the experiments.
+#   enabled: true
+#   # The experiments to enable.
+#   experiments: ["my-experiment"]
+
+    
