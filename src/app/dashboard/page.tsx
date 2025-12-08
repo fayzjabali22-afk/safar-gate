@@ -268,7 +268,7 @@ export default function DashboardPage() {
                 carrierId: selectedTripForBooking.carrierId!,
                 seats: passengers.length,
                 passengersDetails: passengers,
-                status: 'Pending-Payment', // QUALITY ASSURANCE FIX: Correct status for direct booking
+                status: 'Pending-Carrier-Confirmation', // ** PROTOCOL FIX: Correct status for booking requests **
                 totalPrice: (selectedTripForBooking.price || 0) * passengers.length,
                 currency: selectedTripForBooking.currency as any,
                 createdAt: serverTimestamp(),
@@ -281,24 +281,24 @@ export default function DashboardPage() {
             if (selectedTripForBooking.carrierId) {
                 const notificationPayload = {
                     userId: selectedTripForBooking.carrierId,
-                    title: 'حجز جديد بانتظار الدفع',
-                    message: `لديك حجز جديد من مسافر لرحلتك (${getCityName(selectedTripForBooking.origin)} - ${getCityName(selectedTripForBooking.destination)}). الحجز بانتظار دفع العربون.`,
-                    type: 'new_booking_request',
+                    title: 'لديك طلب حجز جديد!', // ** PROTOCOL FIX: Correct notification title **
+                    message: `لديك طلب حجز جديد من مسافر لرحلتك (${getCityName(selectedTripForBooking.origin)} - ${getCityName(selectedTripForBooking.destination)}). يرجى المراجعة والرد.`, // ** PROTOCOL FIX: Correct notification message **
+                    type: 'new_booking_request' as const,
                     isRead: false,
                     createdAt: serverTimestamp(),
-                    link: '/carrier/bookings',
+                    link: '/carrier/bookings', // ** PROTOCOL FIX: Correct link to the new bookings page **
                 };
                 await addDocumentNonBlocking(collection(firestore, 'notifications'), notificationPayload);
             }
 
             toast({
-                title: 'تم إرسال الحجز بنجاح!',
-                description: 'الخطوة التالية هي دفع العربون. سيتم توجيهك الآن لصفحة إدارة الحجز.',
+                title: 'تم إرسال طلب الحجز بنجاح!', // ** PROTOCOL FIX: Correct user feedback **
+                description: 'سيتم إعلامك فور موافقة الناقل. يمكنك متابعة حالة الطلب من صفحة إدارة الحجز.',
             });
             
             setIsBookingDialogOpen(false);
             setSelectedTripForBooking(null);
-            router.push('/history'); // QUALITY ASSURANCE FIX: Redirect to history page
+            router.push('/history'); // ** PROTOCOL FIX: Redirect to history page to see pending status **
             
         } catch (error) {
             console.error("Booking failed:", error);
@@ -468,7 +468,7 @@ export default function DashboardPage() {
                           <SelectTrigger id="destination-city"><SelectValue placeholder="اختر مدينة الوصول" /></SelectTrigger>
                           <SelectContent>
                             {searchDestinationCountry && countries[searchDestinationCountry as keyof typeof countries]?.cities.map(cityKey => (
-                              <SelectItem key={cityKey} value={cityKey}>{cities[cityKey]}</SelectItem>
+                              <SelectItem key={key} value={cityKey}>{cities[cityKey]}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -597,3 +597,5 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+
+    
