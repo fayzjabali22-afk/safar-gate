@@ -111,30 +111,38 @@ export function BookingActionCard({ booking }: { booking: Booking }) {
         setIsProcessing(true);
 
         try {
+            const batch = writeBatch(firestore);
             const bookingDocRef = doc(firestore, 'bookings', booking.id);
+            const notificationRef = doc(collection(firestore, 'notifications'));
+
             if (action === 'confirm') {
-                // Change status to Pending-Payment, DO NOT decrement seats yet.
-                await updateDocumentNonBlocking(bookingDocRef, { status: 'Pending-Payment' });
+                batch.update(bookingDocRef, { status: 'Pending-Payment' });
+                batch.set(notificationRef, {
+                    userId: booking.userId,
+                    type: 'payment_reminder' as const,
+                    isRead: false,
+                    createdAt: serverTimestamp(),
+                    title: 'تمت الموافقة على طلبك! 🎉',
+                    message: `وافق الناقل على طلب حجزك لرحلة ${getCityName(trip.origin)}. الخطوة التالية هي دفع العربون لتأكيد الحجز نهائياً.`,
+                    link: '/history',
+                });
+                logEvent('BOOKING_CONFIRMED', { carrierId: booking.carrierId, bookingId: booking.id });
             } else { // reject
-                await updateDocumentNonBlocking(bookingDocRef, { status: 'Cancelled', cancelledBy: 'carrier', cancellationReason: 'تم رفض الطلب من قبل الناقل' });
+                batch.update(bookingDocRef, { status: 'Cancelled', cancelledBy: 'carrier', cancellationReason: 'تم رفض الطلب من قبل الناقل' });
+                 batch.set(notificationRef, {
+                    userId: booking.userId,
+                    type: 'booking_confirmed' as const, // This should probably be a different type, but reusing for now.
+                    isRead: false,
+                    createdAt: serverTimestamp(),
+                    title: 'عذراً، تم رفض طلب الحجز',
+                    message: `نعتذر، لم يتمكن الناقل من تأكيد حجزك لرحلة ${getCityName(trip.origin)} إلى ${getCityName(trip.destination)}.`,
+                    link: '/history',
+                });
             }
 
-            // Send notification outside of transaction
-            const notificationPayload = {
-                userId: booking.userId,
-                type: action === 'confirm' ? 'payment_reminder' as const : 'booking_confirmed' as const,
-                isRead: false,
-                createdAt: serverTimestamp(),
-                title: action === 'confirm' ? 'تمت الموافقة على طلبك! 🎉' : 'عذراً، تم رفض طلب الحجز',
-                message: action === 'confirm'
-                    ? `وافق الناقل على طلب حجزك لرحلة ${getCityName(trip.origin)}. الخطوة التالية هي دفع العربون لتأكيد الحجز نهائياً.`
-                    : `نعتذر، لم يتمكن الناقل من تأكيد حجزك لرحلة ${getCityName(trip.origin)} إلى ${getCityName(trip.destination)}.`,
-                link: '/history',
-            };
-            await addDocumentNonBlocking(collection(firestore, 'notifications'), notificationPayload);
+            await batch.commit();
 
             toast({ title: `تم ${action === 'confirm' ? 'إرسال طلب الدفع' : 'رفض الحجز'} بنجاح!` });
-            if (action === 'confirm') logEvent('BOOKING_CONFIRMED', { carrierId: booking.carrierId, bookingId: booking.id });
         } catch (error: any) {
             console.error("Booking action failed:", error);
             toast({ title: 'فشل الإجراء', description: error.toString(), variant: 'destructive' });
