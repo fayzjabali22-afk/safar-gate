@@ -1,15 +1,18 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-  output: 'export',
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  // لقد قمنا بإزالة السطر: output: 'export' للسماح للسيرفر بالعمل
+
   images: {
-    unoptimized: true,
+    // هذه الإعدادات تسمح بجلب الصور من مصادر خارجية
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: 'picsum.photos' },
-      { protocol: 'https', hostname: 'i.postimg.cc' },
+      { protocol: 'https', hostname: 'firebasestorage.googleapis.com' } 
     ],
+    // unoptimized: true, // يمكنك تفعيل هذا السطر إذا واجهت مشاكل في الصور لاحقاً
   },
-  typescript: { ignoreBuildErrors: true },
-  eslint: { ignoreDuringBuilds: true },
+    typescript: { ignoreBuildErrors: true },
+    eslint: { ignoreDuringBuilds: true },
 };
-module.exports = nextConfig;
+
+export default nextConfig;
