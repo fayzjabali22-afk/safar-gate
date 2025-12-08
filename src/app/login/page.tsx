@@ -122,7 +122,7 @@ export default function LoginPage() {
         
           <div className="mt-6 text-center text-sm">
             هل تملك حساباً بالفعل؟{' '}
-            <Link href="/login-form" className="underline font-bold">
+            <Link href="/login" className="underline font-bold">
               سجل دخولك من هنا
             </Link>
           </div>
