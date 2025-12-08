@@ -42,7 +42,7 @@ export default function SmartRedirectPage() {
         } 
         // إذا لم يكن أي مما سبق، فهو مسافر.
         else {
-            router.replace('/history');
+            router.replace('/dashboard');
         }
         
     }, [user, profile, isLoading, router]);
