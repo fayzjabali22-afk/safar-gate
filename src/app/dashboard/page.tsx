@@ -327,7 +327,7 @@ export default function DashboardPage() {
   const renderTripGroup = (groupedTrips: GroupedTrips, isAlternative = false) => {
     return (
         <div>
-            {isAlternative && <h3 className="text-xl font-bold mb-4 border-t pt-6">لا يوجد تطابق تام، ولكن هذه رحلات بديلة</h3>}
+            {isAlternative && <h3 class="text-xl font-bold mb-4 border-t pt-6">لا يوجد تطابق تام، ولكن هذه رحلات بديلة</h3>}
             <Accordion type="multiple" value={openAccordion} onValueChange={setOpenAccordion} className="space-y-4">
             {Object.keys(groupedTrips).map(tripDate => (
             <AccordionItem key={tripDate} value={tripDate} className="border-none">
