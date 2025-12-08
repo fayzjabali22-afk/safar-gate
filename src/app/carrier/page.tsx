@@ -1,3 +1,4 @@
+
 'use client';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -62,7 +63,7 @@ export default function CarrierDashboardPage() {
           <AlertCircle className="h-4 w-4 text-accent" />
           <AlertTitle className="text-accent font-bold">تنويه قانوني</AlertTitle>
           <AlertDescription className="text-muted-foreground text-xs">
-            نود تذكيركم بأن تطبيق "safaryat" يعمل كوسيط لتسهيل التواصل بين الناقلين والمسافرين. التطبيق غير مسؤول عن أي اتفاقات أو تعاملات تتم خارج المنصة. يرجى التأكد من اللتزام بالقوانين واللوائح المحلية المنظمة لعمليات النقل.
+            نود تذكيركم بأن تطبيق "سفريات" يعمل كوسيط لتسهيل التواصل بين الناقلين والمسافرين. التطبيق غير مسؤول عن أي اتفاقات أو تعاملات تتم خارج المنصة. يرجى التأكد من الالتزام بالقوانين واللوائح المحلية المنظمة لعمليات النقل.
           </AlertDescription>
         </Alert>
       </div>
