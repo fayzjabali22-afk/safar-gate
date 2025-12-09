@@ -12,14 +12,14 @@ export default function CarrierDashboardPage() {
   const { profile, isLoading } = useUserProfile();
 
   return (
-    <div className="space-y-8 w-full">
+    <div className="w-full space-y-4 md:space-y-6">
       {/* Header is now empty */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
         
       </header>
 
       {/* Main Content */}
-      <div className="space-y-8">
+      <div className="space-y-4 md:space-y-6">
         
         <DashboardStats />
         <QuickActions />

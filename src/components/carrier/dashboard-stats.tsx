@@ -32,13 +32,13 @@ const stats = [
 
 export function DashboardStats() {
   return (
-    <Accordion type="single" collapsible className="w-full">
-      <AccordionItem value="item-1" className="border-b-0">
-        <AccordionTrigger className="text-xl font-bold hover:no-underline">
+    <Accordion type="single" collapsible className="w-full" defaultValue='item-1'>
+      <AccordionItem value="item-1" className="border border-primary rounded-lg bg-card">
+        <AccordionTrigger className="text-xl font-bold hover:no-underline px-4 py-3">
           نظرة سريعة
         </AccordionTrigger>
         <AccordionContent>
-          <div className="grid gap-4 pt-4 md:grid-cols-1 lg:grid-cols-3">
+          <div className="grid gap-4 pt-2 px-4 md:grid-cols-1 lg:grid-cols-3">
             {stats.map((stat) => (
               <Card
                 key={stat.title}
