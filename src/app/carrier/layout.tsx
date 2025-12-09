@@ -152,9 +152,9 @@ export default function CarrierLayout({
 
         <div className="grid h-full flex-1 grid-cols-1 md:grid-cols-[240px_1fr]">
             <aside className="hidden h-full border-l bg-card p-4 overflow-y-auto md:block">
-                <Button className="mb-4 w-full" onClick={() => setIsAddTripDialogOpen(true)}>
+                <Button className="mb-4 w-full bg-turquoise text-white hover:bg-turquoise/90" onClick={() => setIsAddTripDialogOpen(true)}>
                     <PlusCircle className="ml-2 h-4 w-4" />
-                    تأسيس رحلة جديدة
+                    تأسيس رحلة
                 </Button>
                 <nav className="flex flex-col gap-1">
                     {sidebarNavLinks.map(link => {

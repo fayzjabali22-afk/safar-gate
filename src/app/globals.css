@@ -32,6 +32,8 @@
     --input: 0 0% 14%;
     --ring: 46 36% 61%;
     
+    --turquoise: 180 30% 55%; /* NEW COLOR */
+    
     --chart-1: 45 74% 49%;
     --chart-2: 350 20% 40%;
     --chart-3: 210 40% 58%;
@@ -69,6 +71,8 @@
     --border: 46 36% 61%; /* Golden border */
     --input: 0 0% 14%;
     --ring: 46 36% 61%;
+    
+    --turquoise: 180 30% 55%; /* NEW COLOR */
   }
 }
 

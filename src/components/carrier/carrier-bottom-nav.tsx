@@ -44,9 +44,9 @@ export function CarrierBottomNav({ onAddTripClick, navLinks }: CarrierBottomNavP
         <div className="absolute left-1/2 -top-7 -translate-x-1/2 flex items-center justify-center">
             <Button
                 size="icon"
-                className="w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 focus:ring-4 focus:ring-primary/50"
+                className="w-16 h-16 rounded-full bg-turquoise text-white shadow-lg hover:bg-turquoise/90 focus:ring-4 focus:ring-turquoise/50"
                 onClick={onAddTripClick}
-                aria-label="تأسيس رحلة جديدة"
+                aria-label="تأسيس رحلة"
             >
                 <PlusCircle className="h-8 w-8" />
             </Button>
