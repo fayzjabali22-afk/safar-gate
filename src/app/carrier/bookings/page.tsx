@@ -1,7 +1,6 @@
 'use client';
 import { useMemo } from 'react';
-import { type Booking, Trip } from '@/lib/data';import { Inbox, History, Hourglass, UserCheck } from 'lucide-react';
-import { BookingActionCard } from '@/components/carrier/booking-action-card';
+import { type Booking, type Trip } from '@/lib/data';import { BookingActionCard } from '@/components/carrier/booking-action-card';
 import { useFirestore, useCollection, useUser } from '@/firebase';
 import { collection, query, where } from 'firebase/firestore';
 import { DirectRequestActionCard } from '@/components/carrier/direct-request-action-card';
