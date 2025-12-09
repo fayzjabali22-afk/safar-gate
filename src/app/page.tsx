@@ -20,33 +20,33 @@ export default function SmartRedirectPage() {
     const { user, profile, isLoading } = useUserProfile();
 
     useEffect(() => {
-        // بروتوكول الصبر: لا تتخذ أي قرار حتى انتهاء التحميل بشكل كامل.
+        // The Patience Protocol: Make no decision until loading is fully complete.
         if (isLoading) {
             return;
         }
 
-        // بروتوكول الأمن: إذا لم يكن هناك مستخدم مسجل، يتم توجيهه إلى بوابة الدخول.
+        // The Security Protocol: If there is no registered user, they are redirected to the entrance gate.
         if (!user) {
             router.replace('/login');
             return;
         }
         
-        // بروتوكول التوجيه الطبقي الصارم (النسخة النهائية)
-        // الأولوية القصوى للمالك والمدير. هذا الشرط يُحسم أولاً.
+        // The Strict Layered Routing Protocol (Final Version)
+        // The highest priority for the owner and admin. This condition is decided first.
         if (profile?.role === 'admin' || profile?.role === 'owner') {
             router.replace('/admin');
         } 
-        // إذا لم يكن مديراً، تحقق من دوره كناقل.
+        // If not an admin, check their role as a carrier.
         else if (profile?.role === 'carrier') {
             router.replace('/carrier');
         } 
-        // إذا لم يكن أي مما سبق، فهو مسافر.
+        // If none of the above, they are a traveler.
         else {
             router.replace('/dashboard');
         }
         
     }, [user, profile, isLoading, router]);
 
-    // عرض شاشة التحميل بشكل دائم حتى يتم اتخاذ قرار التوجيه الصحيح والوحيد.
+    // Always display the loading screen until the correct and sole routing decision is made.
     return <LoadingScreen />;
 }
