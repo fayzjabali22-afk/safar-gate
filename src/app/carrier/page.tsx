@@ -66,7 +66,7 @@ export default function CarrierDashboardPage() {
         <Alert variant="default" className="bg-card/50 border-accent/30">
           <AlertCircle className="h-4 w-4 text-accent" />
           <AlertTitle className="text-accent font-bold">تنويه قانوني</AlertTitle>
-          <AlertDescription className="text-muted-foreground text-xs">
+          <AlertDescription className="text-xs text-muted-foreground">
             نود تذكيركم بأن تطبيق "سفريات" يعمل كوسيط لتسهيل التواصل بين الناقلين والمسافرين. التطبيق غير مسؤول عن أي اتفاقات أو تعاملات تتم خارج المنصة. يرجى التأكد من الالتزام بالقوانين واللوائح المحلية المنظمة لعمليات النقل.
           </AlertDescription>
         </Alert>
