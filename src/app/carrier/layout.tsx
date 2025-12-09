@@ -67,39 +67,12 @@ export default function CarrierLayout({
   return (
     <TooltipProvider>
       <div className="flex min-h-screen w-full flex-col bg-background" dir="rtl">
-        <header
-          className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-accent px-4 text-accent-foreground shadow-lg md:px-6"
-        >
-          {/* Right Section: Logo */}
-          <Link href="/carrier">
-              <Logo />
-          </Link>
-          
-          {/* Left Section: Controls */}
-          <div className="flex items-center gap-2">
-              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-                  <SheetTrigger asChild>
-                      <Button variant="ghost" size="icon" className="md:hidden">
-                          <Menu className="h-6 w-6" />
-                          <span className="sr-only">فتح القائمة</span>
-                      </Button>
-                  </SheetTrigger>
-                  <SheetContent side="right" className="w-full max-w-xs p-0 bg-card text-card-foreground">
-                     <SheetTitle className="sr-only">Carrier Navigation Menu</SheetTitle>
-                     <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} />
-                  </SheetContent>
-              </Sheet>
-              <Button asChild variant="ghost" size="icon">
-                <Link href="/carrier/profile">
-                  <User className="h-6 w-6" />
-                  <span className="sr-only">الملف الشخصي</span>
-                </Link>
-              </Button>
-          </div>
-        </header>
         
         <div className="grid h-full flex-1 grid-cols-1 md:grid-cols-[240px_1fr]">
             <aside className="hidden h-full border-l bg-card p-4 overflow-y-auto md:block">
+                <div className="p-4 border-b mb-4">
+                    <Logo />
+                </div>
                 <Button className="mb-4 w-full" onClick={() => setIsAddTripDialogOpen(true)}>
                     <PlusCircle className="ml-2 h-4 w-4" />
                     تأسيس رحلة جديدة
