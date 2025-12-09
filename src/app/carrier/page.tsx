@@ -10,25 +10,12 @@ import { PaymentInstructionsDisplay } from '@/components/carrier/payment-instruc
 
 export default function CarrierDashboardPage() {
   const { profile, isLoading } = useUserProfile();
-  const [currentDate, setCurrentDate] = useState('');
-
-  useEffect(() => {
-    // This effect runs only on the client, after hydration, preventing mismatches.
-    setCurrentDate(new Date().toLocaleDateString('ar-SA', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    }));
-  }, []); // Empty dependency array ensures it runs once on mount
 
   return (
     <div className="space-y-8 w-full">
-      {/* Header */}
+      {/* Header is now empty */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <div className="text-sm text-muted-foreground font-medium bg-card border px-3 py-1.5 rounded-md min-w-[180px] text-center">
-          {currentDate ? currentDate : <Skeleton className="h-5 w-full" />}
-        </div>
+        
       </header>
 
       {/* Main Content */}
