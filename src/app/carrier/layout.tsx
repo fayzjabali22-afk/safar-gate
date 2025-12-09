@@ -3,7 +3,7 @@
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Ship, LayoutDashboard, Search, PlusCircle, Archive, Menu, Route, User, ArrowRightLeft, Loader2, ListChecks, Briefcase } from 'lucide-react';
+import { Ship, LayoutDashboard, Search, PlusCircle, Archive, Menu, Route, User, ArrowRightLeft, Loader2, ListChecks, List } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -33,7 +33,7 @@ const sidebarNavLinks = [
     { href: '/carrier', label: 'لوحة القيادة', icon: LayoutDashboard, exact: true },
     { href: '/carrier/opportunities', label: 'مركز الفرص', icon: Search, exact: false },
     { href: '/carrier/trips', label: 'رحلاتي المجدولة', icon: Route, exact: false },
-    { href: '/carrier/bookings', label: 'طلبات الحجز', icon: Briefcase, exact: false },
+    { href: '/carrier/bookings', label: 'طلبات الحجز', icon: List, exact: false },
     { href: '/carrier/archive', label: 'الأرشيف', icon: Archive, exact: false },
     { href: '/carrier/conditions', label: 'الشروط الدائمة', icon: ListChecks, exact: false },
 ];
