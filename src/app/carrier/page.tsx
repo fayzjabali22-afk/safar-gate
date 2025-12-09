@@ -26,18 +26,6 @@ export default function CarrierDashboardPage() {
     <div className="space-y-8 w-full">
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-            {isLoading ? (
-              <Skeleton className="h-9 w-48" />
-            ) : (
-              `أهلاً بك، ${profile?.firstName || 'أيها الناقل'}`
-            )}
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            هذه هي غرفة عملياتك. نأمل لك يوماً مثمراً.
-          </p>
-        </div>
         <div className="text-sm text-muted-foreground font-medium bg-card border px-3 py-1.5 rounded-md min-w-[180px] text-center">
           {currentDate ? currentDate : <Skeleton className="h-5 w-full" />}
         </div>
