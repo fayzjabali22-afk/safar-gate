@@ -6,6 +6,8 @@ import { QuickActions } from '@/components/carrier/quick-actions';
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useState, useEffect } from 'react';
+import { DashboardStats } from '@/components/carrier/dashboard-stats';
+import { PaymentInstructionsDisplay } from '@/components/carrier/payment-instructions-display';
 
 export default function CarrierDashboardPage() {
   const { profile, isLoading } = useUserProfile();
@@ -55,8 +57,10 @@ export default function CarrierDashboardPage() {
       {/* Main Content */}
       <div className="space-y-8">
         
-        {/* Quick Actions Section */}
+        <DashboardStats />
         <QuickActions />
+        <PaymentInstructionsDisplay />
+
 
         {/* Legal Disclaimer */}
         <Alert variant="default" className="bg-card/50 border-accent/30">

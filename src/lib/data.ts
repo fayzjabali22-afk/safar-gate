@@ -7,7 +7,7 @@ export type UserProfile = {
   lastName: string;
   email: string;
   phoneNumber?: string;
-  role?: 'traveler' | 'carrier' | 'admin';
+  role?: 'traveler' | 'carrier' | 'admin' | 'owner'; // Added 'owner'
   isDeactivated?: boolean; // Added for account freezing
   // Carrier-specific fields are now part of the main user profile
   // for simplicity in a single-document model.
@@ -92,6 +92,7 @@ export type Trip = {
   notes?: string;
   bagsPerSeat?: number;
   numberOfStops?: number;
+  cancellationReason?: string; // Added field for cancellation reason
 };
 
 export type Booking = {
