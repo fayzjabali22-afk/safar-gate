@@ -13,8 +13,6 @@ import { Label } from '@/components/ui/label';
 import { OfferDialog } from '@/components/carrier/offer-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useUserProfile } from '@/hooks/use-user-profile';
-import { DirectRequestActionCard } from '@/components/carrier/direct-request-action-card';
-import { TransferRequestCard } from '@/components/carrier/transfer-request-card';
 import { suggestOfferPrice, SuggestOfferPriceInput, SuggestOfferPriceOutput } from '@/ai/flows/suggest-offer-price-flow';
 
 
@@ -51,7 +49,7 @@ function NoOpportunitiesState({ isFiltered }: { isFiltered: boolean }) {
       <div className="flex flex-col items-center justify-center text-center py-16 border-2 border-dashed rounded-lg bg-card/50">
         <PackageOpen className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
         <h3 className="text-xl font-bold">
-            {isFiltered ? "لا توجد فرص تطابق تخصصك وسعة مركبتك" : "لا توجد فرص متاحة حالياً"}
+            {isFiltered ? "لا توجد فرص تطابق تخصصك وسعة مركبتك" : "لا توجد فرص متاحة حالياً في السوق العام"}
         </h3>
         <p className="text-muted-foreground mt-2">
           {isFiltered ? "يمكنك إيقاف الفلترة لعرض كل الفرص المتاحة." : "سيتم عرض الطلبات الجديدة هنا فور وصولها."}
@@ -74,44 +72,33 @@ export default function CarrierOpportunitiesPage() {
   const [isSuggestingPrice, setIsSuggestingPrice] = useState(false);
 
 
-  // --- QUERIES ---
+  // --- QUERY FOR GENERAL MARKET REQUESTS ---
   const opportunitiesQuery = useMemo(() => {
     if (!firestore || !user || userProfile?.isDeactivated) return null;
-    let generalQuery = query(collection(firestore, 'trips'), where('status', '==', 'Awaiting-Offers'), where('requestType', '==', 'General'));
-    let directQuery = query(collection(firestore, 'trips'), where('status', 'in', ['Awaiting-Offers', 'Pending-Carrier-Confirmation']), where('requestType', '==', 'Direct'), where('targetCarrierId', '==', user.uid));
+    
+    let q = query(
+        collection(firestore, 'trips'), 
+        where('status', '==', 'Awaiting-Offers'), 
+        where('requestType', '==', 'General')
+    );
     
     if (filterBySpecialization && userProfile?.primaryRoute?.origin && userProfile?.primaryRoute?.destination) {
-        generalQuery = query(generalQuery, where('origin', '==', userProfile.primaryRoute.origin), where('destination', '==', userProfile.primaryRoute.destination));
-        directQuery = query(directQuery, where('origin', '==', userProfile.primaryRoute.origin), where('destination', '==', userProfile.primaryRoute.destination));
+        q = query(q, where('origin', '==', userProfile.primaryRoute.origin), where('destination', '==', userProfile.primaryRoute.destination));
     }
     if (userProfile?.vehicleCapacity && userProfile.vehicleCapacity > 0) {
-        generalQuery = query(generalQuery, where('passengers', '<=', userProfile.vehicleCapacity));
-        directQuery = query(directQuery, where('passengers', '<=', userProfile.vehicleCapacity));
+        q = query(q, where('passengers', '<=', userProfile.vehicleCapacity));
     }
-    return { generalQuery, directQuery };
+    return q;
   }, [firestore, user, filterBySpecialization, userProfile]);
 
-  const transferRequestsQuery = useMemo(() => {
-    if (!firestore || !user) return null;
-    return query(collection(firestore, 'transferRequests'), where('toCarrierId', '==', user.uid), where('status', '==', 'pending'));
-  }, [firestore, user]);
-
-  // --- DATA FETCHING ---
-  const { data: generalRequests, isLoading: isLoadingGeneral } = useCollection<Trip>(opportunitiesQuery?.generalQuery);
-  const { data: directRequests, isLoading: isLoadingDirect } = useCollection<Trip>(opportunitiesQuery?.directQuery);
-  const { data: transferRequests, isLoading: isLoadingTransfers } = useCollection<TransferRequest>(transferRequestsQuery);
+  const { data: generalRequests, isLoading: isLoadingGeneral } = useCollection<Trip>(opportunitiesQuery);
   
   const opportunities = useMemo(() => {
-    const combined = [...(directRequests || []), ...(generalRequests || [])];
-    const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
-    return unique.sort((a, b) => {
-        if (a.requestType === 'Direct' && b.requestType !== 'Direct') return -1;
-        if (b.requestType === 'Direct' && a.requestType !== 'Direct') return 1;
-        return new Date(b.createdAt?.seconds * 1000).getTime() - new Date(a.createdAt?.seconds * 1000).getTime();
-    });
-  }, [generalRequests, directRequests]);
+    if (!generalRequests) return [];
+    return [...generalRequests].sort((a, b) => new Date(b.createdAt?.seconds * 1000).getTime() - new Date(a.createdAt?.seconds * 1000).getTime());
+  }, [generalRequests]);
 
-  const isLoading = isLoadingProfile || isLoadingGeneral || isLoadingDirect || isLoadingTransfers;
+  const isLoading = isLoadingProfile || isLoadingGeneral;
 
   const handleOfferClick = (trip: Trip) => {
     setSelectedTrip(trip);
@@ -157,10 +144,8 @@ export default function CarrierOpportunitiesPage() {
             createdAt: serverTimestamp() as any,
         };
 
-        // Create the offer document
         await addDoc(offersCollection, offerPayload);
 
-        // Send a notification to the traveler
         const notificationPayload = {
             userId: selectedTrip.userId,
             title: 'عرض جديد لرحلتك!',
@@ -180,179 +165,6 @@ export default function CarrierOpportunitiesPage() {
         return false;
     }
   };
-
-   const handleApproveDirect = async (trip: Trip, finalPrice: number, currency: string): Promise<boolean> => {
-     if (!firestore || !user || !userProfile) return false;
-
-    try {
-        await runTransaction(firestore, async (transaction) => {
-            const tripRef = doc(firestore, 'trips', trip.id);
-            const offerRef = doc(collection(firestore, 'trips', trip.id, 'offers'));
-            
-            // Create a pseudo-offer that is immediately accepted by the system
-            const offerPayload = {
-                carrierId: user.uid,
-                price: finalPrice,
-                currency: currency,
-                status: 'Accepted', // The offer is implicitly accepted by the carrier
-                createdAt: serverTimestamp(),
-                vehicleType: userProfile.vehicleType || 'غير محدد',
-                depositPercentage: userProfile.isDeactivated === true ? 20 : (userProfile.paymentInformation ? 10 : 0),
-            };
-            
-            transaction.set(offerRef, offerPayload);
-            
-            // Create the booking document right away with Pending-Payment status
-            const bookingRef = doc(collection(firestore, 'bookings'));
-            const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'> = {
-                tripId: trip.id,
-                userId: trip.userId,
-                carrierId: user.uid,
-                seats: trip.passengers || 1,
-                passengersDetails: trip.passengersDetails || [],
-                status: 'Pending-Payment',
-                totalPrice: finalPrice,
-                currency: currency as Booking['currency'],
-            };
-            transaction.set(bookingRef, { ...newBookingData, id: bookingRef.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
-
-            // Update the trip to reflect the accepted state
-            transaction.update(tripRef, { 
-                price: finalPrice,
-                currency: currency,
-                status: 'Pending-Payment', // The trip is now pending payment from the traveler
-                acceptedOfferId: offerRef.id,
-                bookingIds: [bookingRef.id],
-            });
-
-            // Create notification for traveler
-            const notifRef = doc(collection(firestore, 'users', trip.userId, 'notifications'));
-            transaction.set(notifRef, {
-                userId: trip.userId,
-                title: 'موافقة على طلبك المباشر!',
-                message: `وافق الناقل ${userProfile.firstName} على طلبك، وتم تحديد السعر. الرجاء إتمام عملية الدفع لتأكيد الحجز.`,
-                type: 'payment_reminder', isRead: false, createdAt: serverTimestamp(), link: '/history'
-            });
-        });
-        toast({ title: 'تمت الموافقة بنجاح!', description: 'بانتظار دفع العربون من المسافر.' });
-        return true;
-    } catch (error) {
-        console.error("Error approving direct request:", error);
-        toast({ variant: 'destructive', title: 'فشل إرسال الموافقة', description: 'حدث خطأ ما.' });
-        return false;
-    }
-  };
-
-   const handleRejectDirect = async (trip: Trip, reason: string): Promise<boolean> => {
-     if (!firestore) {
-        toast({ variant: 'destructive', title: 'خطأ', description: 'خدمة Firestore غير متاحة' });
-        return false;
-     }
-     
-     try {
-        await runTransaction(firestore, async (transaction) => {
-            const tripRef = doc(firestore, 'trips', trip.id);
-            transaction.update(tripRef, { status: 'Cancelled', cancellationReason: reason });
-
-            // Create notification for traveler
-            const notificationPayload = {
-                userId: trip.userId,
-                title: 'نعتذر، تم رفض طلبك المباشر',
-                message: `لم يتمكن الناقل من قبول طلبك. السبب: ${reason}`,
-                type: 'trip_update' as const,
-                isRead: false,
-                createdAt: serverTimestamp(),
-                link: '/dashboard',
-            };
-            const notifRef = doc(collection(firestore, 'users', trip.userId, 'notifications'));
-            transaction.set(notifRef, notificationPayload);
-        });
-
-        toast({ title: 'تم الاعتذار عن الطلب بنجاح' });
-        return true;
-     } catch (error) {
-        console.error("Error rejecting direct request:", error);
-        toast({ variant: 'destructive', title: 'فشل رفض الطلب', description: 'حدث خطأ ما.' });
-        return false;
-     }
-  };
-
-  const handleAcceptTransfer = async (request: TransferRequest) => {
-    if (!firestore || !user) return;
-    try {
-        await runTransaction(firestore, async (transaction) => {
-            const transferReqRef = doc(firestore, 'transferRequests', request.id);
-            const tripRef = doc(firestore, 'trips', request.originalTripId);
-            const batch = writeBatch(firestore); // Use a batch for notifications outside transaction
-
-            // 1. Update TransferRequest status
-            transaction.update(transferReqRef, { status: 'accepted', updatedAt: serverTimestamp() });
-
-            // 2. Update the original Trip's carrierId
-            transaction.update(tripRef, { carrierId: request.toCarrierId, carrierName: userProfile?.firstName });
-
-            // 3. Update all associated bookings
-            const bookingsQuery = query(collection(firestore, 'bookings'), where('tripId', '==', request.originalTripId));
-            const bookingsSnapshot = await getDocs(bookingsQuery);
-            
-            const passengerUserIds: string[] = [];
-            bookingsSnapshot.forEach(bookingDoc => {
-                transaction.update(bookingDoc.ref, { carrierId: request.toCarrierId });
-                passengerUserIds.push(bookingDoc.data().userId);
-            });
-            
-            // 4. Prepare Notifications (to be committed outside transaction)
-            // Notify original carrier
-            const fromCarrierNotifRef = doc(collection(firestore, 'users', request.fromCarrierId, 'notifications'));
-            batch.set(fromCarrierNotifRef, {
-                userId: request.fromCarrierId,
-                title: 'تم قبول طلب نقل الرحلة',
-                message: `وافق الناقل البديل على استلام رحلتك. تم نقل المسؤولية بنجاح.`,
-                type: 'trip_update', isRead: false, createdAt: serverTimestamp(), link: '/carrier/archive'
-            });
-
-            // Notify all passengers
-            passengerUserIds.forEach(userId => {
-                const passengerNotifRef = doc(collection(firestore, 'users', userId, 'notifications'));
-                 batch.set(passengerNotifRef, {
-                    userId: userId,
-                    title: 'تحديث هام بخصوص رحلتك',
-                    message: `تم نقل رحلتك إلى ناقل آخر. الرجاء مراجعة تفاصيل الناقل الجديد في صفحة إدارة الحجز.`,
-                    type: 'trip_update', isRead: false, createdAt: serverTimestamp(), link: '/history'
-                });
-            });
-
-            // Commit notifications after transaction succeeds
-            await batch.commit();
-        });
-
-        toast({ title: 'تم استلام الرحلة بنجاح!', description: 'تم تحديث بيانات الرحلة والحجوزات وإعلام جميع الأطراف.' });
-        // The card will disappear automatically due to the status change
-    } catch (error) {
-        console.error("Error accepting transfer:", error);
-        toast({ variant: 'destructive', title: 'فشل قبول النقل', description: 'حدث خطأ ما. لا يمكن إكمال العملية.' });
-    }
-  }
-  
-  const handleRejectTransfer = async (request: TransferRequest) => {
-    if (!firestore) return;
-    try {
-      const transferReqRef = doc(firestore, 'transferRequests', request.id);
-      await updateDocumentNonBlocking(transferReqRef, { status: 'rejected', updatedAt: serverTimestamp() });
-      // Also notify the original carrier
-      const notifPayload = {
-          userId: request.fromCarrierId,
-          title: 'تم رفض طلب نقل الرحلة',
-          message: 'نعتذر، لم يتمكن الناقل البديل من قبول طلبك لنقل الرحلة.',
-          type: 'trip_update' as const, isRead: false, createdAt: serverTimestamp(), link: '/carrier/trips'
-      }
-      await addDocumentNonBlocking(collection(firestore, 'users', request.fromCarrierId, 'notifications'), notifPayload);
-      toast({ title: 'تم رفض الطلب', variant: 'default' });
-    } catch (error) {
-       toast({ title: 'فشل رفض الطلب', variant: 'destructive' });
-    }
-  }
-
 
   if (isLoading) return <LoadingState />;
   
@@ -380,7 +192,6 @@ export default function CarrierOpportunitiesPage() {
   }
   
   const hasOpportunities = opportunities && opportunities.length > 0;
-  const hasTransferRequests = transferRequests && transferRequests.length > 0;
 
   return (
     <>
@@ -406,45 +217,14 @@ export default function CarrierOpportunitiesPage() {
         </div>
 
         <div className="space-y-6">
-            {hasTransferRequests && (
-                <div>
-                    <h2 className="text-lg font-bold mb-3 flex items-center gap-2 text-orange-500">
-                        <UsersRound className="h-5 w-5"/>
-                        طلبات نقل من زملاء
-                    </h2>
-                    <div className="space-y-3">
-                        {transferRequests.map(req => (
-                            <TransferRequestCard 
-                              key={req.id} 
-                              request={req} 
-                              onAccept={handleAcceptTransfer}
-                              onReject={handleRejectTransfer}
-                            />
-                        ))}
-                    </div>
-                </div>
-            )}
-            
             {hasOpportunities ? (
-                <div>
-                    {hasTransferRequests && <h2 className="text-lg font-bold mb-3 mt-6 border-t pt-4">طلبات من المسافرين</h2>}
-                    <div className="space-y-3">
-                        {opportunities.map(req => (
-                            req.requestType === 'Direct' ? (
-                               <DirectRequestActionCard 
-                                    key={req.id} 
-                                    tripRequest={req}
-                                    onApprove={handleApproveDirect}
-                                    onReject={handleRejectDirect}
-                                />
-                            ) : (
-                               <RequestCard key={req.id} tripRequest={req} onOffer={handleOfferClick} />
-                            )
-                        ))}
-                    </div>
+                <div className="space-y-3">
+                    {opportunities.map(req => (
+                       <RequestCard key={req.id} tripRequest={req} onOffer={handleOfferClick} />
+                    ))}
                 </div>
             ) : (
-                !hasTransferRequests && <NoOpportunitiesState isFiltered={filterBySpecialization && canFilter} />
+                <NoOpportunitiesState isFiltered={filterBySpecialization && canFilter} />
             )}
         </div>
     </div>

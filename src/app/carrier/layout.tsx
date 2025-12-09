@@ -2,7 +2,7 @@
 
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Ship, LayoutDashboard, Search, PlusCircle, Archive, Menu, Route, User, ArrowRightLeft, Loader2, ListChecks, List, CircleUser } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
@@ -14,9 +14,10 @@ import { CarrierMobileMenu } from '@/components/carrier/carrier-mobile-menu';
 import { Logo } from '@/components/logo';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
-import { updateDoc } from 'firebase/firestore';
-import { errorEmitter, FirestorePermissionError } from '@/firebase';
+import { updateDoc, collection, query, where } from 'firebase/firestore';
+import { errorEmitter, FirestorePermissionError, useCollection, useFirestore } from '@/firebase';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 
 
 function LoadingSpinner() {
@@ -30,16 +31,6 @@ function LoadingSpinner() {
     );
 }
 
-const sidebarNavLinks = [
-    { href: '/carrier', label: 'لوحة القيادة', icon: LayoutDashboard, exact: true },
-    { href: '/carrier/opportunities', label: 'مركز الفرص', icon: Search, exact: false },
-    { href: '/carrier/trips', label: 'رحلاتي المجدولة', icon: Route, exact: false },
-    { href: '/carrier/bookings', label: 'طلبات الحجز', icon: List, exact: false },
-    { href: '/carrier/archive', label: 'الأرشيف', icon: Archive, exact: false },
-    { href: '/carrier/conditions', label: 'الشروط الدائمة', icon: ListChecks, exact: false },
-];
-
-
 export default function CarrierLayout({
   children,
 }: {
@@ -49,9 +40,50 @@ export default function CarrierLayout({
   const router = useRouter();
   const [isAddTripDialogOpen, setIsAddTripDialogOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSwitchingRole, setIsSwitchingRole] = useState(false);
-  const { toast } = useToast();
   const { user, profile, isLoading, userProfileRef } = useUserProfile();
+  const firestore = useFirestore();
+
+  // === DATA QUERIES FOR BADGES ===
+  const opportunitiesQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    return query(collection(firestore, 'trips'), where('status', '==', 'Awaiting-Offers'), where('requestType', '==', 'General'));
+  }, [firestore, user]);
+
+  const bookingRequestsQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    return query(
+        collection(firestore, 'bookings'),
+        where('carrierId', '==', user.uid),
+        where('status', '==', 'Pending-Carrier-Confirmation')
+    );
+  }, [firestore, user]);
+
+  const directTripRequestsQuery = useMemo(() => {
+    if (!firestore || !user) return null;
+    return query(
+        collection(firestore, 'trips'),
+        where('requestType', '==', 'Direct'),
+        where('targetCarrierId', '==', user.uid),
+        where('status', 'in', ['Awaiting-Offers', 'Pending-Carrier-Confirmation'])
+    );
+  }, [firestore, user]);
+
+  const { data: opportunitiesData } = useCollection(opportunitiesQuery);
+  const { data: bookingRequestsData } = useCollection(bookingRequestsQuery);
+  const { data: directTripRequestsData } = useCollection(directTripRequestsQuery);
+
+  const bookingRequestsCount = (bookingRequestsData?.length || 0) + (directTripRequestsData?.length || 0);
+  const opportunitiesCount = opportunitiesData?.length || 0;
+  
+  const sidebarNavLinks = useMemo(() => [
+    { href: '/carrier', label: 'لوحة القيادة', icon: LayoutDashboard, exact: true, count: 0 },
+    { href: '/carrier/opportunities', label: 'سوق الطلبات', icon: Search, exact: false, count: opportunitiesCount },
+    { href: '/carrier/bookings', label: 'طلبات الحجز', icon: List, exact: false, count: bookingRequestsCount },
+    { href: '/carrier/trips', label: 'رحلاتي المجدولة', icon: Route, exact: false, count: 0 },
+    { href: '/carrier/archive', label: 'الأرشيف', icon: Archive, exact: false, count: 0 },
+    { href: '/carrier/conditions', label: 'الشروط الدائمة', icon: ListChecks, exact: false, count: 0 },
+  ], [opportunitiesCount, bookingRequestsCount]);
+
 
   // === CARRIER GUARD PROTOCOL ===
   useEffect(() => {
@@ -72,7 +104,6 @@ export default function CarrierLayout({
       <div className="flex min-h-screen w-full flex-col bg-background" dir="rtl">
         
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
-            {/* Right Section: Logo */}
             <div className="flex items-center gap-2">
                 <div className="md:hidden">
                     <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
@@ -82,7 +113,7 @@ export default function CarrierLayout({
                         </Button>
                       </SheetTrigger>
                       <SheetContent side="right" className="p-0">
-                         <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} />
+                         <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} navLinks={sidebarNavLinks} />
                       </SheetContent>
                     </Sheet>
                 </div>
@@ -95,7 +126,6 @@ export default function CarrierLayout({
               <Logo />
             </div>
 
-            {/* Left Section: Controls */}
             <div className='flex items-center gap-4'>
                 {isDevUser && (
                     <Button variant="outline" size="icon" onClick={() => router.push('/dashboard')}>
@@ -132,11 +162,14 @@ export default function CarrierLayout({
                         return (
                             <Link key={link.href} href={link.href}>
                                 <div className={cn(
-                                    "flex items-center gap-3 rounded-lg px-3 py-2.5 text-foreground transition-all hover:bg-muted/50 hover:text-primary-foreground",
+                                    "flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-foreground transition-all hover:bg-muted/50 hover:text-primary-foreground",
                                     isActive && "bg-primary text-primary-foreground font-bold"
                                 )}>
-                                    <link.icon className="h-4 w-4" />
-                                    {link.label}
+                                    <div className="flex items-center gap-3">
+                                      <link.icon className="h-4 w-4" />
+                                      {link.label}
+                                    </div>
+                                    {link.count > 0 && <Badge variant="destructive" className="bg-orange-500 text-white">{link.count}</Badge>}
                                 </div>
                             </Link>
                         )
@@ -149,7 +182,7 @@ export default function CarrierLayout({
             </main>
         </div>
         
-        <CarrierBottomNav onAddTripClick={() => setIsAddTripDialogOpen(true)} />
+        <CarrierBottomNav onAddTripClick={() => setIsAddTripDialogOpen(true)} navLinks={sidebarNavLinks.filter(l => l.href !== '/carrier/conditions')} />
       </div>
       
       <AddTripDialog 

@@ -6,9 +6,9 @@ export default function CarrierOpportunitiesLayout({ children }: { children: Rea
     return (
         <div className="space-y-4 w-full">
             <header>
-                <h1 className="text-xl md:text-2xl font-bold">مركز الفرص</h1>
+                <h1 className="text-xl md:text-2xl font-bold">سوق الطلبات العامة</h1>
                 <p className="text-muted-foreground text-sm md:text-base">
-                    استعرض كل الفرص المتاحة من السوق العام والطلبات المباشرة في مكان واحد.
+                    استعرض كل الفرص المتاحة من السوق العام وقدم عروضك التنافسية.
                 </p>
             </header>
             <main>

@@ -6,9 +6,9 @@ export default function CarrierBookingsLayout({ children }: { children: ReactNod
     return (
         <div className="space-y-4 w-full">
             <header>
-                <h1 className="text-xl md:text-2xl font-bold">طلبات الحجز والموافقة</h1>
+                <h1 className="text-xl md:text-2xl font-bold">طلبات الحجز الموجهة</h1>
                 <p className="text-muted-foreground text-sm md:text-base">
-                    قم بتأكيد أو رفض طلبات الحجز الواردة من المسافرين لرحلاتك المجدولة.
+                    إدارة جميع الطلبات الموجهة إليك، سواء كانت لرحلة جديدة أو لحجز مقاعد في رحلة قائمة.
                 </p>
             </header>
             <main>

@@ -2,30 +2,45 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Archive, Search, Route, PlusCircle, LayoutDashboard } from 'lucide-react';
+import { Archive, Search, Route, PlusCircle, LayoutDashboard, LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
-// 5-column grid with a placeholder for the central FAB
-const navItems = [
-  { href: '/carrier', label: 'الرئيسية', icon: LayoutDashboard, exact: true },
-  { href: '/carrier/opportunities', label: 'الفرص', icon: Search },
-  null, // Placeholder for the central FAB
-  { href: '/carrier/trips', label: 'رحلاتي', icon: Route },
-  { href: '/carrier/archive', label: 'الأرشيف', icon: Archive },
-];
+interface NavLink {
+    href: string;
+    label: string;
+    icon: LucideIcon;
+    exact?: boolean;
+    count: number;
+}
 
 interface CarrierBottomNavProps {
   onAddTripClick: () => void;
+  navLinks: NavLink[];
 }
 
-export function CarrierBottomNav({ onAddTripClick }: CarrierBottomNavProps) {
+export function CarrierBottomNav({ onAddTripClick, navLinks }: CarrierBottomNavProps) {
   const pathname = usePathname();
+
+  // Create the display items, inserting the FAB placeholder in the middle
+  const displayItems: (NavLink | null)[] = [];
+  const middleIndex = Math.floor(navLinks.length / 2);
+  navLinks.forEach((link, index) => {
+      if (index === middleIndex) {
+          displayItems.push(null); // FAB placeholder
+      }
+      displayItems.push(link);
+  });
+  // If the list was even, the placeholder needs to be inserted manually
+  if (navLinks.length % 2 === 0) {
+      displayItems.splice(middleIndex, 0, null);
+  }
+
 
   return (
     <div className="carrier-bottom-nav">
       <div className="relative h-full">
-        {/* Floating Action Button for Add Trip */}
         <div className="absolute left-1/2 -top-7 -translate-x-1/2 flex items-center justify-center">
             <Button
                 size="icon"
@@ -38,8 +53,7 @@ export function CarrierBottomNav({ onAddTripClick }: CarrierBottomNavProps) {
         </div>
 
         <nav className="grid grid-cols-5 h-full items-center px-2">
-          {navItems.map((item, index) => {
-            // The middle item is a spacer for the FAB
+          {displayItems.slice(0, 5).map((item, index) => {
             if (!item) {
                 return <div key={`spacer-${index}`} aria-hidden="true" />;
             }
@@ -48,7 +62,12 @@ export function CarrierBottomNav({ onAddTripClick }: CarrierBottomNavProps) {
             const Icon = item.icon;
 
             return (
-              <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-1 w-full py-2 h-full">
+              <Link key={item.href} href={item.href} className="relative flex flex-col items-center justify-center gap-1 w-full py-2 h-full">
+                {item.count > 0 && (
+                    <Badge variant="destructive" className="absolute top-1 right-2 bg-orange-500 text-white px-1.5 py-0.5 text-[10px] rounded-full">
+                        {item.count}
+                    </Badge>
+                )}
                 <Icon
                   className={cn(
                     'h-6 w-6 transition-colors',
