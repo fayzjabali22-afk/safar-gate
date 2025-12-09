@@ -2,7 +2,7 @@
 import { RequestCard } from '@/components/carrier/request-card';
 import { useFirestore, useCollection, useUser, addDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase';
 import { collection, query, where, doc, writeBatch, serverTimestamp, runTransaction, getDocs, addDoc } from 'firebase/firestore';
-import { PackageOpen, Settings, AlertTriangle, ListFilter, Armchair, UserCheck } from 'lucide-react';
+import { PackageOpen, Settings, AlertTriangle, ListFilter, Armchair, UserCheck, UsersRound } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Trip, Offer, TransferRequest, Booking } from '@/lib/data';
 import { useState, useMemo } from 'react';
@@ -170,7 +170,7 @@ export default function CarrierOpportunitiesPage() {
             createdAt: serverTimestamp(),
             link: '/history',
         };
-        await addDocumentNonBlocking(collection(firestore, 'notifications'), notificationPayload);
+        await addDocumentNonBlocking(collection(firestore, 'users', selectedTrip.userId, 'notifications'), notificationPayload);
 
         toast({ title: 'تم إرسال العرض بنجاح!', description: 'سيتم إعلام المسافر بعرضك.' });
         return true;
@@ -188,25 +188,53 @@ export default function CarrierOpportunitiesPage() {
         await runTransaction(firestore, async (transaction) => {
             const tripRef = doc(firestore, 'trips', trip.id);
             const offerRef = doc(collection(firestore, 'trips', trip.id, 'offers'));
-
+            
+            // Create a pseudo-offer that is immediately accepted by the system
             const offerPayload = {
                 carrierId: user.uid,
                 price: finalPrice,
                 currency: currency,
-                status: 'Pending',
+                status: 'Accepted', // The offer is implicitly accepted by the carrier
                 createdAt: serverTimestamp(),
                 vehicleType: userProfile.vehicleType || 'غير محدد',
-                depositPercentage: userProfile.isDeactivated === true ? 20 : 10,
+                depositPercentage: userProfile.isDeactivated === true ? 20 : (userProfile.paymentInformation ? 10 : 0),
             };
             
             transaction.set(offerRef, offerPayload);
+            
+            // Create the booking document right away with Pending-Payment status
+            const bookingRef = doc(collection(firestore, 'bookings'));
+            const newBookingData: Omit<Booking, 'id' | 'createdAt' | 'updatedAt'> = {
+                tripId: trip.id,
+                userId: trip.userId,
+                carrierId: user.uid,
+                seats: trip.passengers || 1,
+                passengersDetails: trip.passengersDetails || [],
+                status: 'Pending-Payment',
+                totalPrice: finalPrice,
+                currency: currency as Booking['currency'],
+            };
+            transaction.set(bookingRef, { ...newBookingData, id: bookingRef.id, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
+
+            // Update the trip to reflect the accepted state
             transaction.update(tripRef, { 
-                price: finalPrice, // Set final price on the trip itself
-                status: 'Pending-Carrier-Confirmation', // Await traveler's final approval
-                acceptedOfferId: offerRef.id
+                price: finalPrice,
+                currency: currency,
+                status: 'Pending-Payment', // The trip is now pending payment from the traveler
+                acceptedOfferId: offerRef.id,
+                bookingIds: [bookingRef.id],
+            });
+
+            // Create notification for traveler
+            const notifRef = doc(collection(firestore, 'users', trip.userId, 'notifications'));
+            transaction.set(notifRef, {
+                userId: trip.userId,
+                title: 'موافقة على طلبك المباشر!',
+                message: `وافق الناقل ${userProfile.firstName} على طلبك، وتم تحديد السعر. الرجاء إتمام عملية الدفع لتأكيد الحجز.`,
+                type: 'payment_reminder', isRead: false, createdAt: serverTimestamp(), link: '/history'
             });
         });
-        toast({ title: 'تم إرسال الموافقة والسعر', description: 'بانتظار موافقة المسافر النهائية على السعر.' });
+        toast({ title: 'تمت الموافقة بنجاح!', description: 'بانتظار دفع العربون من المسافر.' });
         return true;
     } catch (error) {
         console.error("Error approving direct request:", error);
@@ -236,7 +264,7 @@ export default function CarrierOpportunitiesPage() {
                 createdAt: serverTimestamp(),
                 link: '/dashboard',
             };
-            const notifRef = doc(collection(firestore, 'notifications'));
+            const notifRef = doc(collection(firestore, 'users', trip.userId, 'notifications'));
             transaction.set(notifRef, notificationPayload);
         });
 
@@ -261,7 +289,7 @@ export default function CarrierOpportunitiesPage() {
             transaction.update(transferReqRef, { status: 'accepted', updatedAt: serverTimestamp() });
 
             // 2. Update the original Trip's carrierId
-            transaction.update(tripRef, { carrierId: request.toCarrierId });
+            transaction.update(tripRef, { carrierId: request.toCarrierId, carrierName: userProfile?.firstName });
 
             // 3. Update all associated bookings
             const bookingsQuery = query(collection(firestore, 'bookings'), where('tripId', '==', request.originalTripId));
@@ -275,7 +303,7 @@ export default function CarrierOpportunitiesPage() {
             
             // 4. Prepare Notifications (to be committed outside transaction)
             // Notify original carrier
-            const fromCarrierNotifRef = doc(collection(firestore, 'notifications'));
+            const fromCarrierNotifRef = doc(collection(firestore, 'users', request.fromCarrierId, 'notifications'));
             batch.set(fromCarrierNotifRef, {
                 userId: request.fromCarrierId,
                 title: 'تم قبول طلب نقل الرحلة',
@@ -285,7 +313,7 @@ export default function CarrierOpportunitiesPage() {
 
             // Notify all passengers
             passengerUserIds.forEach(userId => {
-                const passengerNotifRef = doc(collection(firestore, 'notifications'));
+                const passengerNotifRef = doc(collection(firestore, 'users', userId, 'notifications'));
                  batch.set(passengerNotifRef, {
                     userId: userId,
                     title: 'تحديث هام بخصوص رحلتك',
@@ -316,9 +344,9 @@ export default function CarrierOpportunitiesPage() {
           userId: request.fromCarrierId,
           title: 'تم رفض طلب نقل الرحلة',
           message: 'نعتذر، لم يتمكن الناقل البديل من قبول طلبك لنقل الرحلة.',
-          type: 'trip_update', isRead: false, createdAt: serverTimestamp(), link: '/carrier/trips'
+          type: 'trip_update' as const, isRead: false, createdAt: serverTimestamp(), link: '/carrier/trips'
       }
-      await addDocumentNonBlocking(collection(firestore, 'notifications'), notifPayload);
+      await addDocumentNonBlocking(collection(firestore, 'users', request.fromCarrierId, 'notifications'), notifPayload);
       toast({ title: 'تم رفض الطلب', variant: 'default' });
     } catch (error) {
        toast({ title: 'فشل رفض الطلب', variant: 'destructive' });
@@ -380,7 +408,10 @@ export default function CarrierOpportunitiesPage() {
         <div className="space-y-6">
             {hasTransferRequests && (
                 <div>
-                    <h2 className="text-lg font-bold mb-3">عروض نقل من زملاء</h2>
+                    <h2 className="text-lg font-bold mb-3 flex items-center gap-2 text-orange-500">
+                        <UsersRound className="h-5 w-5"/>
+                        طلبات نقل من زملاء
+                    </h2>
                     <div className="space-y-3">
                         {transferRequests.map(req => (
                             <TransferRequestCard 
@@ -431,5 +462,3 @@ export default function CarrierOpportunitiesPage() {
     </>
   );
 }
-
-    
