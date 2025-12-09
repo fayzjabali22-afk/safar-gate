@@ -1,4 +1,3 @@
-
 'use client';
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { Skeleton } from '@/components/ui/skeleton';
