@@ -133,6 +133,8 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       </aside>
       <div className="flex flex-col">
         <header className="flex h-14 items-center justify-between gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+          
+          {/* Right Section: Mobile nav and Logo */}
           <div className='flex items-center gap-4'>
             <Sheet>
               <SheetTrigger asChild>
@@ -149,7 +151,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 <nav className="grid gap-2 text-lg font-medium">
                   <Link
                     href="#"
-                    className="flex items-center gap-2 text-lg font-semibold"
+                    className="flex items-center gap-2 text-lg font-semibold mb-4"
                   >
                     <Logo />
                   </Link>
@@ -163,13 +165,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
                 </nav>
               </SheetContent>
             </Sheet>
-            <div className="w-full flex-1 md:hidden">
+             <div className="md:hidden">
               <Link href="/admin">
                 <Logo />
               </Link>
             </div>
           </div>
           
+          {/* Left Section: Controls */}
           <div className='flex items-center gap-4'>
             {isDevUser && (
                 <Button variant="outline" size="icon" onClick={() => router.push('/dashboard')}>

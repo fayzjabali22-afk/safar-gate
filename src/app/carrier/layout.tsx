@@ -70,12 +70,12 @@ export default function CarrierLayout({
         <header
           className="sticky top-0 z-40 flex h-16 items-center justify-between gap-4 border-b bg-accent px-4 text-accent-foreground shadow-lg md:px-6"
         >
-            <div className="flex items-center gap-2">
-                 <Link href="/carrier">
-                    <Logo />
-                 </Link>
-            </div>
-
+            {/* Right Section: Logo */}
+            <Link href="/carrier">
+                <Logo />
+            </Link>
+            
+            {/* Left Section: Controls */}
             <div className="flex items-center gap-2">
                 <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                     <SheetTrigger asChild>
@@ -89,26 +89,6 @@ export default function CarrierLayout({
                        <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} />
                     </SheetContent>
                 </Sheet>
-                 {/*
-                 {isDevUser && (
-                     <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="rounded-full relative"
-                                onClick={handleSwitchRole}
-                                disabled={isSwitchingRole || isLoading}
-                            >
-                                {isSwitchingRole ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRightLeft className="h-5 w-5" />}
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>تبديل سريع بين واجهة المسافر والناقل</p>
-                        </TooltipContent>
-                    </Tooltip>
-                )}
-                */}
                 <Button asChild variant="ghost" size="icon">
                   <Link href="/carrier/profile">
                     <User className="h-6 w-6" />

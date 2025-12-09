@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -220,36 +219,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             "bg-accent text-accent-foreground"
           )}
         >
-
-          {/* Left Section (on LTR view) */}
-          <div className="flex items-center gap-2">
-            <Link href="/">
+          {/* Right Section: Logo */}
+          <Link href="/">
               <Logo />
-            </Link>
-          </div>
+          </Link>
           
-          {/* Right Section (on LTR view) */}
+          {/* Left Section: Controls */}
           <div className="flex items-center gap-2">
-            {/*
-            {isDevUser && user && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="rounded-full relative"
-                        onClick={handleSwitchRole}
-                        disabled={isSwitchingRole || isProfileLoading}
-                    >
-                        {isSwitchingRole ? <Loader2 className="h-5 w-5 animate-spin" /> : <ArrowRightLeft className="h-5 w-5" />}
-                    </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                    <p>تبديل سريع بين واجهة المسافر والناقل</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-            */}
             {user ? (
                 <>
                 <DropdownMenu>
