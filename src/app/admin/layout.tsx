@@ -14,6 +14,7 @@ import {
   Menu,
   ShieldCheck,
   ArrowRightLeft,
+  Loader2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -39,18 +40,35 @@ import { useUserProfile } from '@/hooks/use-user-profile';
 import { useRouter } from 'next/navigation';
 import { GuideTrigger } from '@/components/ai/guide-trigger';
 
+function AdminLoadingScreen() {
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-background">
+            <div className="flex flex-col items-center gap-4">
+                <ShieldCheck className="h-16 w-16 animate-pulse text-primary" />
+                <p className="font-bold text-lg text-muted-foreground">جاري التحقق من صلاحيات المدير...</p>
+            </div>
+        </div>
+    );
+}
+
+
 export default function AdminLayout({ children }: { children: ReactNode }) {
-  // The useAdmin hook is now deactivated and will not trigger loading or redirects.
-  const { isLoading: isAdminLoading } = useAdmin();
+  // The useAdmin hook is now re-activated to guard the layout.
+  const { isLoading: isAdminLoading, isAdmin } = useAdmin();
   const { profile, user } = useUserProfile();
   const router = useRouter();
 
-  const isDevUser = user?.email === 'dev@safar.com';
+  if (isAdminLoading) {
+    return <AdminLoadingScreen />;
+  }
+  
+  if (!isAdmin) {
+    // This part should theoretically not be reached if useAdmin works correctly,
+    // but it's a good failsafe.
+    return <AdminLoadingScreen />;
+  }
 
-  // The loading screen is no longer needed as useAdmin is bypassed.
-  // if (isAdminLoading) {
-  //   return <AdminLoadingScreen />;
-  // }
+  const isDevUser = user?.email === 'dev@safar.com';
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]" dir="rtl">

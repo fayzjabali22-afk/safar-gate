@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -53,38 +52,17 @@ export default function CarrierLayout({
   const { toast } = useToast();
   const { user, profile, isLoading, userProfileRef } = useUserProfile();
 
-  const isDevUser = user?.email === 'dev@safar.com';
+  // === CARRIER GUARD PROTOCOL ===
+  useEffect(() => {
+    if (!isLoading && profile && profile.role !== 'carrier') {
+      router.replace('/dashboard');
+    }
+  }, [isLoading, profile, router]);
 
-  const handleSwitchRole = async () => {
-    if (!userProfileRef || !profile) return;
-    setIsSwitchingRole(true);
-    const newRole = profile.role === 'carrier' ? 'traveler' : 'carrier';
-    const payload = { role: newRole };
-
-    // Use updateDoc with explicit error handling to generate contextual errors
-    updateDoc(userProfileRef, payload)
-        .then(() => {
-            // Optimistic UI update on success
-            toast({
-                title: `جاري التبديل إلى واجهة ${newRole === 'carrier' ? 'الناقل' : 'المسافر'}...`,
-                description: "سيتم إعادة تحميل الصفحة.",
-            });
-            setTimeout(() => {
-                window.location.href = newRole === 'carrier' ? '/carrier' : '/dashboard';
-            }, 1500);
-        })
-        .catch(serverError => {
-            // Create and emit the contextual error
-            const permissionError = new FirestorePermissionError({
-                path: userProfileRef.path,
-                operation: 'update',
-                requestResourceData: payload,
-            });
-            errorEmitter.emit('permission-error', permissionError);
-            setIsSwitchingRole(false); // Re-enable the button on error
-        });
+  if (isLoading || !profile) {
+    return <LoadingSpinner />;
   }
-
+  // ===============================
 
   return (
     <TooltipProvider>
