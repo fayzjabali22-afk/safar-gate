@@ -291,9 +291,11 @@
             "type": "object",
             "properties": {
               "name": { "type": "string", "description": "Full name of the passenger." },
+              "nationality": { "type": "string", "description": "Nationality of the passenger." },
+              "documentNumber": { "type": "string", "description": "Passport or National ID number of the passenger." },
               "type": { "type": "string", "enum": ["adult", "child"], "description": "Type of passenger (adult or child)." }
             },
-            "required": ["name", "type"]
+            "required": ["name", "nationality", "documentNumber", "type"]
           }
         },
         "status": {

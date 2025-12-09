@@ -1,6 +1,13 @@
 'use client';
 // src/lib/data.ts
 
+export type PassengerDetails = {
+  name: string;
+  nationality: string;
+  documentNumber: string;
+  type: 'adult' | 'child';
+};
+
 export type UserProfile = {
   id: string;
   firstName: string;
@@ -66,7 +73,7 @@ export type Trip = {
   status: 'Planned' | 'In-Transit' | 'Completed' | 'Cancelled' | 'Awaiting-Offers' | 'Pending-Carrier-Confirmation' | 'Pending-Payment';
   cargoDetails?: string;
   passengers?: number;
-  passengersDetails?: { name: string; type: 'adult' | 'child' }[]; // For trip requests
+  passengersDetails?: PassengerDetails[]; // For trip requests
   price?: number;
   currency?: string;
   availableSeats?: number;
@@ -101,7 +108,7 @@ export type Booking = {
   userId: string;
   carrierId: string;
   seats: number;
-  passengersDetails: { name: string; type: 'adult' | 'child' }[];
+  passengersDetails: PassengerDetails[];
   status: 'Confirmed' | 'Pending-Payment' | 'Cancelled' | 'Completed' | 'Pending-Carrier-Confirmation';
   totalPrice: number;
   currency?: 'JOD' | 'SAR' | 'USD';

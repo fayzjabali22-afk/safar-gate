@@ -14,14 +14,11 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useState, useEffect } from 'react';
-import type { Trip } from '@/lib/data';
+import type { Trip, PassengerDetails } from '@/lib/data';
 import { Send, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-export interface PassengerDetails {
-  name: string;
-  type: 'adult' | 'child';
-}
+export type { PassengerDetails };
 
 interface BookingDialogProps {
   isOpen: boolean;
@@ -47,7 +44,7 @@ export function BookingDialog({
     useEffect(() => {
         if (isOpen) {
             // إعادة تعيين النموذج عند فتح النافذة
-            setPassengers(Array.from({ length: seatCount }, () => ({ name: '', type: 'adult' })));
+            setPassengers(Array.from({ length: seatCount }, () => ({ name: '', nationality: '', documentNumber: '', type: 'adult' })));
         }
     }, [isOpen, seatCount]);
 
@@ -63,12 +60,12 @@ export function BookingDialog({
     };
 
     const handleSubmit = async () => {
-        const allNamesFilled = passengers.every(p => p.name.trim() !== '');
+        const allNamesFilled = passengers.every(p => p.name.trim() !== '' && p.nationality.trim() !== '' && p.documentNumber.trim() !== '');
         if (!allNamesFilled) {
             toast({
                 variant: 'destructive',
                 title: 'بيانات غير مكتملة',
-                description: 'الرجاء إدخال أسماء جميع الركاب لإتمام الحجز.',
+                description: 'الرجاء إدخال كافة البيانات المطلوبة لكل راكب (الاسم، الجنسية، رقم الوثيقة).',
             });
             return;
         }
@@ -99,12 +96,11 @@ export function BookingDialog({
                         <div key={index} className="p-4 border rounded-lg space-y-4 bg-muted/30">
                             <Label className="font-bold text-primary">الراكب {index + 1}</Label>
                             
-                            {/* حقل الاسم */}
                             <div className="grid gap-2">
-                                <Label htmlFor={`name-${index}`}>الاسم الكامل</Label>
+                                <Label htmlFor={`name-${index}`}>الاسم الكامل (كما في الوثيقة)</Label>
                                 <Input
                                     id={`name-${index}`}
-                                    placeholder="أدخل الاسم الكامل كما في الهوية"
+                                    placeholder="أدخل الاسم الكامل"
                                     value={passenger.name}
                                     onChange={(e) => handlePassengerChange(index, 'name', e.target.value)}
                                     disabled={isSubmitting}
@@ -112,24 +108,29 @@ export function BookingDialog({
                                 />
                             </div>
 
-                            {/* خيارات الفئة العمرية */}
-                            <div className="grid gap-2">
-                                <Label>الفئة العمرية</Label>
-                                <RadioGroup
-                                    value={passenger.type}
-                                    onValueChange={(value) => handlePassengerChange(index, 'type', value)}
-                                    className="flex gap-4"
-                                    disabled={isSubmitting}
-                                >
-                                    <div className="flex items-center space-x-2 rtl:space-x-reverse border p-2 rounded-md bg-background flex-1 justify-center cursor-pointer hover:bg-accent/50 transition-colors">
-                                        <RadioGroupItem value="adult" id={`adult-${index}`} />
-                                        <Label htmlFor={`adult-${index}`} className="cursor-pointer">بالغ</Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2 rtl:space-x-reverse border p-2 rounded-md bg-background flex-1 justify-center cursor-pointer hover:bg-accent/50 transition-colors">
-                                        <RadioGroupItem value="child" id={`child-${index}`} />
-                                        <Label htmlFor={`child-${index}`} className="cursor-pointer">طفل</Label>
-                                    </div>
-                                </RadioGroup>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor={`nationality-${index}`}>الجنسية</Label>
+                                    <Input
+                                        id={`nationality-${index}`}
+                                        placeholder="مثال: أردني"
+                                        value={passenger.nationality}
+                                        onChange={(e) => handlePassengerChange(index, 'nationality', e.target.value)}
+                                        disabled={isSubmitting}
+                                        className="bg-background"
+                                    />
+                                </div>
+                                 <div className="grid gap-2">
+                                    <Label htmlFor={`document-${index}`}>رقم جواز السفر/الهوية</Label>
+                                    <Input
+                                        id={`document-${index}`}
+                                        placeholder="أدخل رقم الوثيقة"
+                                        value={passenger.documentNumber}
+                                        onChange={(e) => handlePassengerChange(index, 'documentNumber', e.target.value)}
+                                        disabled={isSubmitting}
+                                        className="bg-background"
+                                    />
+                                </div>
                             </div>
                         </div>
                         ))}

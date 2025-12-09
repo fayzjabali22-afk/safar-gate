@@ -4,56 +4,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import type { Trip, Booking, UserProfile } from '@/lib/data';
-import { User, ShieldCheck, Phone, Users as UsersIcon } from 'lucide-react';
+import type { Trip, Booking, UserProfile, PassengerDetails } from '@/lib/data';
+import { User, ShieldCheck, Phone, Users as UsersIcon, Printer } from 'lucide-react';
 import { Skeleton } from '../ui/skeleton';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { useCollection, useDoc, useFirestore } from '@/firebase';
 import { collection, doc, query, where } from 'firebase/firestore';
-
-
-function BookingGroup({ booking }: { booking: Booking }) {
-    const firestore = useFirestore();
-
-    const userProfileRef = useMemo(() => {
-        if (!firestore) return null;
-        return doc(firestore, 'users', booking.userId);
-    }, [firestore, booking.userId]);
-
-    const { data: user, isLoading } = useDoc<UserProfile>(userProfileRef);
-
-    if (isLoading || !user) {
-        return <Skeleton className="h-24 w-full rounded-md" />;
-    }
-
-    return (
-        <div className="p-3 border rounded-lg bg-muted/30 space-y-3">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10 border">
-                        <AvatarFallback>{user?.firstName.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                        <p className="font-bold text-sm">{user?.firstName} {user?.lastName}</p>
-                        <p className="text-xs text-muted-foreground">المسافر المسؤول</p>
-                    </div>
-                </div>
-                 <a href={`tel:${user.phoneNumber}`} className="flex items-center gap-2 text-xs font-semibold text-primary hover:underline">
-                    <Phone className="h-4 w-4"/>
-                    <span>{user.phoneNumber}</span>
-                </a>
-            </div>
-             <div className="border-t pt-2 space-y-2">
-                <p className="text-xs font-bold flex items-center gap-1"><UsersIcon className="h-4 w-4"/> قائمة الركاب ({booking.passengersDetails.length})</p>
-                <ul className="list-disc pr-5 text-xs text-muted-foreground space-y-1">
-                    {booking.passengersDetails.map((p, index) => (
-                        <li key={index}>{p.name}</li>
-                    ))}
-                </ul>
-            </div>
-        </div>
-    );
-}
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 
 interface PassengersListDialogProps {
     isOpen: boolean;
@@ -75,49 +32,89 @@ export function PassengersListDialog({ isOpen, onOpenChange, trip }: PassengersL
     
     const { data: bookings, isLoading } = useCollection<Booking>(bookingsQuery);
 
-    const totalPassengers = useMemo(() => {
-        if (!bookings) return 0;
-        return bookings.reduce((acc, booking) => acc + booking.seats, 0);
+    const allPassengers = useMemo(() => {
+        if (!bookings) return [];
+        return bookings.flatMap(b => b.passengersDetails);
     }, [bookings]);
 
+    const totalPassengers = allPassengers.length;
+    
+    const handlePrint = () => {
+        const printWindow = window.open('', '_blank');
+        if (printWindow) {
+            printWindow.document.write('<html><head><title>كشف المسافرين (المانيفست)</title>');
+            printWindow.document.write('<style>body{direction: rtl; font-family: sans-serif;} table {width: 100%; border-collapse: collapse;} th, td {border: 1px solid #ddd; padding: 8px; text-align: right;} th {background-color: #f2f2f2;}</style>');
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(`<h1>كشف المسافرين (المانيفست)</h1>`);
+            printWindow.document.write(`<p><strong>الرحلة:</strong> ${trip?.origin} إلى ${trip?.destination}</p>`);
+            printWindow.document.write(`<p><strong>تاريخ الرحلة:</strong> ${trip?.departureDate ? new Date(trip.departureDate).toLocaleDateString('ar-SA') : ''}</p>`);
+            printWindow.document.write('<table>');
+            printWindow.document.write('<thead><tr><th>#</th><th>الاسم الكامل</th><th>الجنسية</th><th>رقم الوثيقة</th></tr></thead>');
+            printWindow.document.write('<tbody>');
+            allPassengers.forEach((p, index) => {
+                printWindow.document.write(`<tr><td>${index + 1}</td><td>${p.name}</td><td>${p.nationality}</td><td>${p.documentNumber}</td></tr>`);
+            });
+            printWindow.document.write('</tbody></table>');
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
+        }
+    };
 
     return (
-        <>
-            <Dialog open={isOpen} onOpenChange={onOpenChange}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>كشف ركاب الرحلة</DialogTitle>
-                        <DialogDescription>
-                            قائمة الركاب المؤكدين للرحلة من {trip?.origin} إلى {trip?.destination}.
-                            <br/>
-                            <span className="font-bold">إجمالي الركاب: {totalPassengers}</span>
-                        </DialogDescription>
-                    </DialogHeader>
-                    <ScrollArea className="max-h-[60vh] -mx-4 px-4">
-                        <div className="space-y-3 py-4">
-                            {isLoading ? (
-                                <div className="space-y-2">
-                                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
-                                </div>
-                            ) : bookings && bookings.length > 0 ? (
-                                bookings.map(booking => (
-                                    <BookingGroup key={booking.id} booking={booking} />
-                                ))
-                            ) : (
-                                <div className="text-center py-12 text-muted-foreground">
-                                    <User className="mx-auto h-8 w-8 mb-2" />
-                                    لا يوجد ركاب مؤكدون لهذه الرحلة بعد.
-                                </div>
-                            )}
-                        </div>
-                    </ScrollArea>
-                    <DialogFooter>
-                        <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
-                            إغلاق
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </>
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>كشف ركاب الرحلة (المانيفست)</DialogTitle>
+                    <DialogDescription>
+                        قائمة الركاب المؤكدين للرحلة من {trip?.origin} إلى {trip?.destination}.
+                        <br/>
+                        <span className="font-bold">إجمالي الركاب: {totalPassengers}</span>
+                    </DialogDescription>
+                </DialogHeader>
+                <ScrollArea className="max-h-[60vh] -mx-4 px-4">
+                    <div className="py-4">
+                        {isLoading ? (
+                            <div className="space-y-2">
+                                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+                            </div>
+                        ) : allPassengers.length > 0 ? (
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>الاسم الكامل</TableHead>
+                                        <TableHead>الجنسية</TableHead>
+                                        <TableHead>رقم الوثيقة</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {allPassengers.map((passenger, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell className="font-medium">{passenger.name}</TableCell>
+                                            <TableCell>{passenger.nationality}</TableCell>
+                                            <TableCell>{passenger.documentNumber}</TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="text-center py-12 text-muted-foreground">
+                                <User className="mx-auto h-8 w-8 mb-2" />
+                                لا يوجد ركاب مؤكدون لهذه الرحلة بعد.
+                            </div>
+                        )}
+                    </div>
+                </ScrollArea>
+                <DialogFooter className="gap-2 sm:gap-4">
+                    <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+                        إغلاق
+                    </Button>
+                    <Button type="button" onClick={handlePrint} disabled={allPassengers.length === 0}>
+                        <Printer className="ml-2 h-4 w-4" />
+                        طباعة المانيفست
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
