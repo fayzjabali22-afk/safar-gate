@@ -9,7 +9,7 @@ function LoadingScreen() {
     return (
         <div className="flex h-screen flex-col items-center justify-center gap-4 text-center bg-background">
             <Ship className="h-16 w-16 animate-pulse text-primary" />
-            <h1 className="text-xl font-bold text-muted-foreground">جاري التحقق من الهوية السيادية...</h1>
+            <h1 className="text-xl font-bold text-muted-foreground">جاري التحقق من الهوية...</h1>
             <p className="text-sm text-muted-foreground">الرجاء الانتظار.</p>
         </div>
     );
