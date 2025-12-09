@@ -45,15 +45,15 @@ export function PaymentInstructionsDisplay() {
                 ) : (
                     <div className="text-center text-muted-foreground p-8">
                         <p className="font-bold">لم يتم إضافة تعليمات دفع بعد.</p>
-                        <p className="text-sm mt-1">اذهب إلى ملفك الشخصي لإضافة التعليمات.</p>
+                        <p className="text-sm mt-1">اذهب إلى الشروط الدائمة لإضافة التعليمات.</p>
                     </div>
                 )}
             </CardContent>
             <CardFooter>
                 <Button asChild>
-                    <Link href="/profile">
+                    <Link href="/carrier/conditions">
                         <Pencil className="ml-2 h-4 w-4" />
-                        تعديل التعليمات في الملف الشخصي
+                        تعديل التعليمات من الشروط الدائمة
                     </Link>
                 </Button>
             </CardFooter>
