@@ -12,7 +12,7 @@ export function Logo({ className }: { className?: string }) {
       )}
     >
       <Image
-        src="https://i.ibb.co/6n21c3Z/safar-logo.png"
+        src="/safar-logo.png"
         alt="safaryat Logo"
         width={120}
         height={90}
