@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogOut, Settings, Menu, Bell, Trash2, ShieldAlert, Lock, AlertTriangle, MessageSquare, ArrowRightLeft, Loader2, User, Shield } from 'lucide-react';
+import { LogOut, Settings, Menu, Bell, Trash2, ShieldAlert, Lock, AlertTriangle, MessageSquare, ArrowRightLeft, Loader2, User, Shield, CircleUser } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -214,15 +214,50 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     <TooltipProvider>
       <div className="flex min-h-screen w-full flex-col bg-background" dir="rtl">
         <header 
-          className={cn(
-            "sticky top-0 z-50 flex h-16 items-center justify-between px-4 md:px-6",
-            "bg-accent text-accent-foreground"
-          )}
+          className="sticky top-0 z-50 flex h-16 items-center justify-between gap-4 border-b bg-card px-4 md:px-6"
         >
-          {/* Right Section: Logo */}
-          <Link href="/">
+          {/* Right Section: Logo & Mobile Menu */}
+          <div className="flex items-center gap-2">
+             {isMounted && !isCarrierPath && user && (
+                  <div className='md:hidden'>
+                    <Sheet>
+                      <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                          <Menu className="h-5 w-5" />
+                          <span className="sr-only">القائمة الرئيسية</span>
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent
+                        side="right"
+                        className="w-full max-w-xs p-0 bg-background text-foreground"
+                      >
+                        <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle>
+                        <nav className="grid gap-6 text-lg font-medium p-6">
+                          <div className="mb-4 flex items-center justify-center">
+                            <Logo/>
+                          </div>
+                          {mobileMenuItems.map((item) => {
+                            const isLinkActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+                            return (
+                              <Link
+                                key={item.label}
+                                href={item.href}
+                                className={cn("font-bold text-foreground hover:text-primary flex items-center gap-2", isLinkActive && "text-primary")}
+                              >
+                                {item.icon && <item.icon className="h-4 w-4" />}
+                                {item.label}
+                              </Link>
+                            );
+                          })}
+                        </nav>
+                      </SheetContent>
+                    </Sheet>
+                  </div>
+                )}
+             <Link href="/">
               <Logo />
-          </Link>
+            </Link>
+          </div>
           
           {/* Left Section: Controls */}
           <div className="flex items-center gap-2">
@@ -270,73 +305,23 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </DropdownMenuContent>
                 </DropdownMenu>
 
-                <div className="hidden md:flex">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="rounded-full">
-                        <Avatar className="h-9 w-9 border-2 border-border">
-                        {user?.photoURL && (
-                            <AvatarImage
-                            src={user.photoURL}
-                            alt={profile?.firstName || ''}
-                            />
-                        )}
-                        <AvatarFallback className="bg-secondary text-secondary-foreground">
-                            {profile?.firstName
-                            ? profile.firstName.charAt(0)
-                            : user?.email?.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                        </Avatar>
-                    </Button>
+                        <Button variant="secondary" size="icon" className="rounded-full">
+                           <CircleUser className="h-5 w-5" />
+                        </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-56">
-                    <UserMenuContent />
+                       <UserMenuContent />
                     </DropdownMenuContent>
                 </DropdownMenu>
-                </div>
 
-                {isMounted && !isCarrierPath && user && (
-                  <div className='md:hidden'>
-                    <Sheet>
-                      <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                          <Menu className="h-5 w-5" />
-                          <span className="sr-only">القائمة الرئيسية</span>
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent
-                        side="right"
-                        className="w-full max-w-xs p-0 bg-background text-foreground"
-                      >
-                        <SheetTitle className="sr-only">القائمة الرئيسية</SheetTitle>
-                        <nav className="grid gap-6 text-lg font-medium p-6">
-                          <div className="mb-4 flex items-center justify-center">
-                            <Logo/>
-                          </div>
-                          {mobileMenuItems.map((item) => {
-                            const isLinkActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
-                            return (
-                              <Link
-                                key={item.label}
-                                href={item.href}
-                                className={cn("font-bold text-foreground hover:text-primary flex items-center gap-2", isLinkActive && "text-primary")}
-                              >
-                                {item.icon && <item.icon className="h-4 w-4" />}
-                                {item.label}
-                              </Link>
-                            );
-                          })}
-                        </nav>
-                      </SheetContent>
-                    </Sheet>
-                  </div>
-                )}
                 </>
             ) : null }
           </div>
         </header>
 
-        {isMounted && !isCarrierPath && <nav className="sticky top-16 z-40 hidden h-12 items-center justify-center gap-8 border-b bg-accent px-6 text-accent-foreground shadow-sm md:flex">
+        {isMounted && !isCarrierPath && <nav className="sticky top-16 z-40 hidden h-12 items-center justify-center gap-8 border-b bg-card px-6 text-muted-foreground shadow-sm md:flex">
           {menuItems.map((item) => {
             const isDisabled = item.auth && !user;
             const linkClass = cn(

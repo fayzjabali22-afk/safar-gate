@@ -12,10 +12,10 @@ export function Logo({ className }: { className?: string }) {
       )}
     >
       <Image
-        src="/safar-logo.png"
+        src="https://i.postimg.cc/7ZwPgpD6/lwjw-sfryat.png"
         alt="safaryat Logo"
-        width={120}
-        height={90}
+        width={145}
+        height={125}
         priority
         className="object-contain"
       />

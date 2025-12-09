@@ -3,7 +3,7 @@
 import { useUserProfile } from '@/hooks/use-user-profile';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Ship, LayoutDashboard, Search, PlusCircle, Archive, Menu, Route, User, ArrowRightLeft, Loader2, ListChecks, List } from 'lucide-react';
+import { Ship, LayoutDashboard, Search, PlusCircle, Archive, Menu, Route, User, ArrowRightLeft, Loader2, ListChecks, List, CircleUser } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useToast } from '@/hooks/use-toast';
 import { updateDoc } from 'firebase/firestore';
 import { errorEmitter, FirestorePermissionError } from '@/firebase';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 
 function LoadingSpinner() {
@@ -64,15 +65,63 @@ export default function CarrierLayout({
   }
   // ===============================
 
+  const isDevUser = user?.email === 'dev@safar.com';
+
   return (
     <TooltipProvider>
       <div className="flex min-h-screen w-full flex-col bg-background" dir="rtl">
         
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b bg-card px-4 md:px-6">
+            {/* Right Section: Logo */}
+            <div className="flex items-center gap-2">
+                <div className="md:hidden">
+                    <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                      <SheetTrigger asChild>
+                        <Button variant="outline" size="icon">
+                            <Menu className="h-5 w-5" />
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="right" className="p-0">
+                         <CarrierMobileMenu onLinkClick={() => setIsMobileMenuOpen(false)} />
+                      </SheetContent>
+                    </Sheet>
+                </div>
+                <Link href="/carrier" className="hidden md:flex">
+                  <Logo />
+                </Link>
+            </div>
+            
+            <div className="md:hidden">
+              <Logo />
+            </div>
+
+            {/* Left Section: Controls */}
+            <div className='flex items-center gap-4'>
+                {isDevUser && (
+                    <Button variant="outline" size="icon" onClick={() => router.push('/dashboard')}>
+                        <ArrowRightLeft className="h-4 w-4"/>
+                    </Button>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" size="icon" className="rounded-full">
+                      <CircleUser className="h-5 w-5" />
+                      <span className="sr-only">Toggle user menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>مرحباً، {profile?.firstName || 'أيها الناقل'}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push('/carrier/profile')}>الإعدادات</DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem>تسجيل الخروج</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+        </header>
+
         <div className="grid h-full flex-1 grid-cols-1 md:grid-cols-[240px_1fr]">
             <aside className="hidden h-full border-l bg-card p-4 overflow-y-auto md:block">
-                <div className="p-4 border-b mb-4">
-                    <Logo />
-                </div>
                 <Button className="mb-4 w-full" onClick={() => setIsAddTripDialogOpen(true)}>
                     <PlusCircle className="ml-2 h-4 w-4" />
                     تأسيس رحلة جديدة

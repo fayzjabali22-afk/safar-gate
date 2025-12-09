@@ -74,7 +74,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]" dir="rtl">
       <aside className="hidden border-l bg-card md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
-          <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <div className="flex h-16 items-center border-b px-4 lg:px-6">
             <Link href="/admin" className="flex items-center gap-2 font-semibold">
               <Logo />
             </Link>
@@ -132,40 +132,42 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div className="flex flex-col">
-        <header className="flex h-14 items-center justify-between gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+        <header className="flex h-16 items-center justify-between gap-4 border-b bg-card px-4 lg:px-6">
           
           {/* Right Section: Mobile nav and Logo */}
           <div className='flex items-center gap-4'>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="shrink-0 md:hidden"
-                >
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle navigation menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="flex flex-col">
-                <nav className="grid gap-2 text-lg font-medium">
-                  <Link
-                    href="#"
-                    className="flex items-center gap-2 text-lg font-semibold mb-4"
-                  >
-                    <Logo />
-                  </Link>
-                  <Link
-                    href="/admin"
-                    className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
-                  >
-                    <Home className="h-5 w-5" />
-                    لوحة التحكم
-                  </Link>
-                </nav>
-              </SheetContent>
-            </Sheet>
-             <div className="md:hidden">
+            <div className="md:hidden">
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                    >
+                      <Menu className="h-5 w-5" />
+                      <span className="sr-only">Toggle navigation menu</span>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="flex flex-col">
+                    <nav className="grid gap-2 text-lg font-medium">
+                      <Link
+                        href="#"
+                        className="flex items-center gap-2 text-lg font-semibold mb-4"
+                      >
+                        <Logo />
+                      </Link>
+                      <Link
+                        href="/admin"
+                        className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
+                      >
+                        <Home className="h-5 w-5" />
+                        لوحة التحكم
+                      </Link>
+                    </nav>
+                  </SheetContent>
+                </Sheet>
+            </div>
+             <div className="hidden md:flex">
               <Link href="/admin">
                 <Logo />
               </Link>
